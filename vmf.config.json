@@ -1,0 +1,22 @@
+{
+	"entitiesFolder": "res://examples/entities",
+	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
+	"instancesFolder": "res://examples/instances",
+	"materialsFolder": "res://examples/materials",
+	"mdl2obj": "C:/Steam/steamapps/sourcemods/mymod/tools/mdl2obj",
+	"modelsFolder": "res://examples/models",
+	"nodeConfig": {
+		"defaultTextureSize": 512,
+		"fallbackMaterial": null,
+		"generateCollision": true,
+		"generateCollisionForModel": true,
+		"ignoreTextures": [
+			"TOOLS/TOOLSNODRAW"
+		],
+		"importModels": false,
+		"importScale": 0.025,
+		"overrideModels": true,
+		"textureImportMode": 1
+	},
+	"vtflib": "C:/Steam/steamapps/sourcemods/mymod/tools/vtflib"
+}

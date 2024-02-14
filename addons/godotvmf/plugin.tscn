@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://d2ikk3rylrg4r"]
+
+[node name="Plugin" type="HBoxContainer"]
+offset_right = 236.0
+offset_bottom = 31.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Reimport VMF:"
+
+[node name="ReimportVMF" type="Button" parent="."]
+layout_mode = 2
+text = "Full"
+
+[node name="ReimportEntities" type="Button" parent="."]
+layout_mode = 2
+text = "Entities"
+
+[node name="ReimportGeometry" type="Button" parent="."]
+layout_mode = 2
+text = "Geometry"
