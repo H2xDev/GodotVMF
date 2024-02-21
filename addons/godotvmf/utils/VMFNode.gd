@@ -121,6 +121,7 @@ static func createMesh(
 	var materialSides = {};
 	var textureCache = {};
 	var mesh = ArrayMesh.new();
+	var isNotResaved = false;
 
 	## TODO Add displacement support
 	##		I'm too dumb for this logic :'C
@@ -143,7 +144,12 @@ static func createMesh(
 		var normals = [];
 		var indices = [];
 
+
 		for side in sides:
+			if not "vertices_plus" in side:
+				isNotResaved = true;
+				continue;
+
 			var vertex_count = side.vertices_plus.v.size()
 			if vertex_count < 3:
 				continue;
@@ -232,6 +238,10 @@ static func createMesh(
 
 	if elapsedTime > 100:
 		VMFLogger.warn("Mesh generation took " + str(elapsedTime) + "ms");
+
+	if isNotResaved:
+		VMFLogger.warn("The VMF you imported has no vertices_plus data. Try to resave this map in Valve Hammer Editor and reimport.");
+
 
 	return mesh;
 

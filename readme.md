@@ -1,6 +1,10 @@
 # GodotVMF
 **THIS PROJECT STILL IN ACTIVE DEVELOPMENT THERE MIGHT BE BUGS**  
-An importer of VMF files into Godot. Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.
+  
+An importer of VMF files into Godot.  
+Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.  
+  
+For now this importer supports only the [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) VMF format.
 
 ![Example](assets/example.jpg)
 

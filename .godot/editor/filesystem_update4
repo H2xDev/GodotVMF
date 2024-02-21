@@ -1,1 +1,4 @@
-res://examples/entity.tscn
+res://examples/test.tscn
+res://vmf.config.json
+res://addons/godotvmf/utils/VMFTool.gd
+res://addons/godotvmf/utils/VMFNode.gd
