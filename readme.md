@@ -4,7 +4,7 @@
 An importer of VMF files into Godot.  
 Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.  
   
-For now this importer supports only the [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) VMF format.
+Highly recomment to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it support precised vertex data that allows you use concave brushes.
 
 ![Example](assets/example.jpg)
 
@@ -33,7 +33,6 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - There might be some problems with materials with displacement map that requires some texture manipulation in Hammer (usually rotate texture by 90 degrees solves the problem)
 - Wasn't tested on Linux and MacOS
 - Tested only on 4.1+
-- Supports only Hammer++ VMFs
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!

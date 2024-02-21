@@ -87,6 +87,33 @@ var _currentMesh: MeshInstance3D = $Geometry if has_node("Geometry") else null;
 var _entitiesNode: Node3D = $Entities if has_node("Entities") else null;
 var _owner = null;
 
+
+## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
+class VectorSorter:
+	var normal: Vector3;
+	var center: Vector3;
+	var pp: Vector3;
+	var qp: Vector3;
+
+	func longer(a, b):
+		return a if a.length() > b.length() else b;
+
+	func _init(normal, center):
+		self.normal = normal;
+		self.center = center;
+
+		var i = normal.cross(Vector3(1, 0, 0));
+		var j = normal.cross(Vector3(0, 1, 0));
+		var k = normal.cross(Vector3(0, 0, 1));
+
+		self.pp = longer(i, longer(j, k));
+		self.qp = normal.cross(self.pp);
+
+	func getOrder(v):
+		var normalized = v - self.center;
+		return atan2(self.normal.dot(normalized.cross(self.pp)), self.normal.dot(normalized.cross(self.qp)));
+
+
 func _collectDetails():
 	VMFLogger.log("Making all func_detail as default geometry");
 
@@ -101,6 +128,43 @@ func _collectDetails():
 			_structure.world.solid.append_array(ent.solid);
 		else:
 			_structure.world.solid.append(ent.solid);
+
+## Returns vertices_plus
+static func calculateVertices(side, brush):
+	var vertices = [];
+
+	var vectorExists = func(vectors, vector):
+		for v in vectors:
+			if v.distance_to(vector) < 0.2:
+				return true;
+		return false;
+
+	for side2 in brush.side:
+		for side3 in brush.side:
+			var vertex = side.plane.value.intersect_3(side2.plane.value, side3.plane.value);
+
+			if vertex == null:
+				continue;
+
+			if vectorExists.call(vertices, vertex):
+				continue;
+
+			if not brush.side.all(func(side):
+				return side.plane.value.distance_to(vertex) < 0.2;
+			):
+				continue;
+
+			vertices.append(vertex);
+
+	var brushCenter = vertices.reduce(func(acc, vector): return acc + vector, Vector3.ZERO) / vertices.size();
+	var sideNormal = side.plane.value.normal.normalized();
+	var vectorSorter = VectorSorter.new(sideNormal, brushCenter);
+
+	vertices.sort_custom(func(a, b):
+		return vectorSorter.getOrder(a) < vectorSorter.getOrder(b);
+	);
+
+	return vertices;
 
 ## Returns MeshInstance3D from parsed VMF structure
 static func createMesh(
@@ -121,8 +185,6 @@ static func createMesh(
 	var materialSides = {};
 	var textureCache = {};
 	var mesh = ArrayMesh.new();
-	var isNotResaved = false;
-
 	## TODO Add displacement support
 	##		I'm too dumb for this logic :'C
 
@@ -135,7 +197,10 @@ static func createMesh(
 
 			if not material in materialSides:
 				materialSides[material] = [];
-			materialSides[material].append(side);
+			materialSides[material].append({
+				"side": side,
+				"brush": brush,
+			});
 
 	var index = 0;
 	for sides in materialSides.values():
@@ -144,17 +209,20 @@ static func createMesh(
 		var normals = [];
 		var indices = [];
 
+		for sideData in sides:
+			var side = sideData.side;
 
-		for side in sides:
+			## IF classig VMF format (not Hammer++)
 			if not "vertices_plus" in side:
-				isNotResaved = true;
-				continue;
+				side.vertices_plus = {
+					"v": calculateVertices(side, sideData.brush),
+				};
 
 			var vertex_count = side.vertices_plus.v.size()
 			if vertex_count < 3:
 				continue;
 
-			var base_index = verts.size()
+			var base_index = verts.size();
 
 			for vertex in side.vertices_plus.v:
 				var vt = Vector3(vertex.x * _scale, vertex.z * _scale, -vertex.y * _scale) - _offset;
@@ -198,10 +266,7 @@ static func createMesh(
 
 				uvs.append(Vector2(u, v));
 				
-				var ab = side.plane[0] - side.plane[1];
-				var ac = side.plane[2] - side.plane[1];
-				var normal = ab.cross(ac).normalized();
-
+				var normal = side.plane.value.normal;
 				normals.append(normal);
 				
 				# TODO Here should be a logic for smoothing groups
@@ -222,14 +287,14 @@ static func createMesh(
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface)
 
 		if _textureImportMode == VMTManager.TextureImportMode.COLLATE_BY_NAME:
-			var godotMaterial = VMTManager.getMaterialFromProject(sides[0].material);
+			var godotMaterial = VMTManager.getMaterialFromProject(sides[0].side.material);
 
 			if godotMaterial:
 				mesh.surface_set_material(index, godotMaterial);
 			else: if _fallbackMaterial:
 				mesh.surface_set_material(index, _fallbackMaterial);
 		else: if _textureImportMode == VMTManager.TextureImportMode.IMPORT_DIRECTLY:
-			var material = VMTManager.importMaterial(sides[0].material);
+			var material = VMTManager.importMaterial(sides[0].side.material);
 			if material:
 				mesh.surface_set_material(index, material);
 
@@ -238,10 +303,6 @@ static func createMesh(
 
 	if elapsedTime > 100:
 		VMFLogger.warn("Mesh generation took " + str(elapsedTime) + "ms");
-
-	if isNotResaved:
-		VMFLogger.warn("The VMF you imported has no vertices_plus data. Try to resave this map in Hammer++ by ficool2 and reimport.");
-
 
 	return mesh;
 
@@ -276,7 +337,9 @@ func _importGeometry(_reimport = false):
 
 	add_child(_currentMesh);
 	_currentMesh.set_owner(_owner);
-	_currentMesh.create_trimesh_collision();
+
+	if projectConfig.nodeConfig.generateCollision:
+		_currentMesh.create_trimesh_collision();
 
 func _importMaterials():
 	var list = [];
@@ -358,7 +421,7 @@ func _readVMF():
 	_structure = ValveFormatParser.parse(vmf);
 
 	## NOTE: In case if "entity" or "solid" fields are Dictionary,
-	## 		 we need to convert them to Array
+	##		 we need to convert them to Array
 
 	if "entity" in _structure:
 		_structure.entity = [_structure.entity] if not _structure.entity is Array else _structure.entity;

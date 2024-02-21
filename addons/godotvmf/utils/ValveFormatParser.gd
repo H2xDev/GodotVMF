@@ -87,12 +87,15 @@ static func parse(filePath):
 				var values = m.get_string(i).split(' ');
 
 				vector.x = float(values[0]);
-				vector.y = float(values[2]);
-				vector.z = -float(values[1]);
+				vector.y = float(values[1]);
+				vector.z = float(values[2]);
 
 				plane.append(vector);
 
-			return plane;
+			return {
+				"value": Plane(plane[0], plane[1], plane[2]),
+				"points": plane,
+			}
 		else: if valueString.is_valid_float():
 			return float(valueString);
 		else: if valueString.is_valid_int():
