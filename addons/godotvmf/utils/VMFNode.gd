@@ -240,7 +240,7 @@ static func createMesh(
 		VMFLogger.warn("Mesh generation took " + str(elapsedTime) + "ms");
 
 	if isNotResaved:
-		VMFLogger.warn("The VMF you imported has no vertices_plus data. Try to resave this map in Valve Hammer Editor and reimport.");
+		VMFLogger.warn("The VMF you imported has no vertices_plus data. Try to resave this map in Hammer++ by ficool2 and reimport.");
 
 
 	return mesh;
