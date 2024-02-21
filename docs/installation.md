@@ -7,8 +7,8 @@ Default config:
 ```json
 {
 	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
-	"vtflib": "C:/Steam/steamapps/sourcemods/mymod/tools/vtflib",
-	"mdl2obj": "C:/Steam/steamapps/sourcemods/mymod/tools/mdl2obj",
+	"vtflib": "C:/Steam/steamapps/sourcemods/mymod/tools/vtflib/VTFLib.exe",
+	"mdl2obj": "C:/Steam/steamapps/sourcemods/mymod/tools/mdl2obj.exe",
 	"modelsFolder": "res://Assets/Models",
 	"materialsFolder": "res://Assets/Materials",
 	"instancesFolder": "res://Assets/Instances",
