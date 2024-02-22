@@ -4,7 +4,7 @@
 An importer of VMF files into Godot.  
 Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.  
   
-Highly recomment to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it support precised vertex data that allows you use concave brushes.
+Highly recommend to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it support precised vertex data that allows you use concave brushes.
 
 ![Example](assets/example.jpg)
 

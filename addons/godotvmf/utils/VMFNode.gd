@@ -301,6 +301,8 @@ func _importGeometry(_reimport = false):
 	else:
 		VMFLogger.log("Generating the map mesh");
 
+	_currentMesh = _currentMesh if _currentMesh != null else get_node_or_null("Geometry");
+
 	if _currentMesh != null:
 		remove_child(_currentMesh);
 		_currentMesh.queue_free();

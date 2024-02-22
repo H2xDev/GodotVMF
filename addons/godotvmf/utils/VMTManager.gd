@@ -43,7 +43,7 @@ static var _missingTextures = [];
 
 static var config:
 	get:
-		return VMFConfig.config;
+		return VMFConfig.getConfig();
 
 static func resetCache():
 	_textureCache = {};
@@ -162,7 +162,11 @@ static func getTextureInfo(material: String) -> TextureInfo:
 	if material in _textureCache:
 		return _textureCache[material];
 
-	var gameInfoPath = config.gameInfoPath;
+	var gameInfoPath = config.gameInfoPath if "gameInfoPath" in config else null;
+
+	if not gameInfoPath:
+		VMFLogger.error('Missing "gameInfoPath" in vmf.config.json');
+		return;
 
 	var vmtPath = (gameInfoPath + '/materials/' + material + '.vmt').replace('//', '/').to_lower();
 	var vmt = ValveFormatParser.parse(vmtPath);
