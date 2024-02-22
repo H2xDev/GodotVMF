@@ -20,56 +20,12 @@ var vmf: String = '';
 		importMap();
 		import = false;
 
-## This scale will be applied on everything that imports from VMF includes models, instances, etc.
-var importScale: float = 0.025
-
-## If true, then the collision will be generated for
-## the imported geometry
-var generateCollision: bool = true;
-
-
-## Used in case when target texture was not found
-## this value will be used as width and height of
-## the texture
-var defaultTextureSize: int = 512
-
-## This material will be used in case if target
-## material was not found
-var fallbackMaterial: Material = null;
-
-## Faces with specified textures will be ignored
-var ignoreTextures: Array = ['TOOLS/TOOLSNODRAW'];
-
-## During import automatically converts VTFs into 
-## JPG and copies them to the project folder with
-## saved folder structure
-var textureImportMode: VMTManager.TextureImportMode = 1;
-
-## If true, then the importer converts mdl files into obj and 
-## convert again into godot mesh. 
-##
-## The import destination you can change in the vmf.config.json
-##
-## Materials of the model will be copied into the materials folder
-## speciefied in the vmf.config.json
-##
-## Requires mdl2obj tool specified in vmf.config.json
-var importModels: bool = false;
-
-## If true, then the collision will be generated for the imported models
-## by using create_multiple_convex_collisions
-var generateCollisionForModel: bool = true;
-
-## In case if model is already imported it will be overriden
-var overrideModels: bool = true;
-
 @export_category("Config")
 
 ## Click here to reload vmf.config.json
 @export var reloadConfig: bool = false:
 	set(value):
 		VMFConfig.checkProjectConfig();
-		applyConfig(VMFConfig.getConfig().nodeConfig);
 		reloadConfig = false;
 
 ## Use it in case you updated materials in your mod's folder
@@ -151,15 +107,17 @@ static func calculateVertices(side, brush):
 	return vertices;
 
 ## Returns MeshInstance3D from parsed VMF structure
-static func createMesh(
-	vmfStructure: Dictionary,
-	_scale = 0.1,
-	_defaultTextureSize = 512,
-	_textureImportMode: VMTManager.TextureImportMode = 0,
-	_ignoreTextures = [],
-	_fallbackMaterial: Material = null,
-	_offset: Vector3 = Vector3(0, 0, 0),
-) -> Mesh:
+static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> Mesh:
+	var projectConfig = VMFConfig.getConfig();
+
+	var fbm = projectConfig.nodeConfig.fallbackMaterial;
+
+	var _scale = projectConfig.nodeConfig.importScale;
+	var _defaultTextureSize = projectConfig.nodeConfig.defaultTextureSize;
+	var _ignoreTextures = projectConfig.nodeConfig.ignoreTextures;
+	var _fallbackMaterial = load(fbm) if fbm && ResourceLoader.exists(fbm) else null;
+	var _textureImportMode = projectConfig.nodeConfig.textureImportMode;
+
 	var elapsedTime = Time.get_ticks_msec();
 
 	if not "solid" in vmfStructure.world:
@@ -307,14 +265,7 @@ func _importGeometry(_reimport = false):
 		remove_child(_currentMesh);
 		_currentMesh.queue_free();
 
-	var mesh = VMFNode.createMesh(
-		_structure,
-		importScale,
-		defaultTextureSize,
-		textureImportMode,
-		ignoreTextures,
-		fallbackMaterial,
-	);
+	var mesh = VMFNode.createMesh(_structure);
 
 	if not mesh:
 		return;
@@ -332,6 +283,7 @@ func _importGeometry(_reimport = false):
 func _importMaterials():
 	var list = [];
 	var elapsedTime = Time.get_ticks_msec();
+	var resFileSystem = EditorInterface.get_resource_filesystem();
 
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
@@ -360,7 +312,7 @@ func _importMaterials():
 	VMFLogger.log("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsedTime) + "ms");
 
 func _importModels():
-	if not importModels:
+	if not projectConfig.nodeConfig.importModels:
 		return false;
 
 	VMFLogger.log("Importing models");
@@ -379,7 +331,8 @@ func _importModels():
 		if not "model" in ent:
 			continue;
 		
-		var resource = MDLManager.loadModel(ent.model, generateCollisionForModel, overrideModels);
+		var resource = MDLManager.loadModel(ent.model, projectConfig.nodeConfig.generateCollisionForModel, projectConfig.nodeConfig.overrideModels);
+		var importScale = projectConfig.nodeConfig.importScale;
 
 		if not resource:
 			continue;
@@ -419,6 +372,8 @@ func _readVMF():
 
 func _importEntities(_reimport = false):
 	var elapsedTime = Time.get_ticks_msec();
+	var importScale = projectConfig.nodeConfig.importScale;
+
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
 
@@ -479,47 +434,13 @@ func _importEntities(_reimport = false):
 	var time = Time.get_ticks_msec() - elapsedTime;
 	VMFLogger.log("Imported entities in " + str(time) + "ms");
 
-func applyConfig(config):
-	var keys = [
-		'importScale',
-		'defaultTextureSize',
-		'textureImportMode',
-		'ignoreTextures',
-		'importModels',
-		'fallbackMaterial',
-		'generateCollisionForModel',
-		'overrideModels',
-		'generateCollision',
-	]
-
-	for key in keys:
-		if not key in config:
-			continue;
-
-		var value = config[key];
-
-		if key == 'fallbackMaterial' and value != null:
-			value = load(value);
-			if not value:
-				continue;
-
-		self[key] = value;
-
-func applySettingsFrom(vmfNode):
-	importScale = vmfNode.importScale;
-	defaultTextureSize = vmfNode.defaultTextureSize;
-	textureImportMode = vmfNode.textureImportMode;
-	ignoreTextures = vmfNode.ignoreTextures;
-	importModels = vmfNode.importModels;
-	fallbackMaterial = vmfNode.fallbackMaterial;
-	generateCollisionForModel = vmfNode.generateCollisionForModel;
-	overrideModels = vmfNode.overrideModels;
-	generateCollision = vmfNode.generateCollision;
+func importGeometryOnly():
+	_readVMF();
+	_importMaterials();
+	_importGeometry(true);
 
 func importMap():
 	VMFConfig.checkProjectConfig();
-	applyConfig(VMFConfig.getConfig().nodeConfig);
-
 	VMFLogger.log('Gameinfo path: ' + projectConfig.gameInfoPath);
 
 	if not Engine.is_editor_hint():

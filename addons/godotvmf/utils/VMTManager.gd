@@ -77,15 +77,13 @@ static func preloadMaterial(materialPath: String, modelMaterial = false):
 	if not textureInfo:
 		return false;
 
-	if not FileAccess.file_exists(ProjectSettings.globalize_path(pngPath)):
-		var isSuccess = copyTexture(textureInfo.baseTexturePath);
+	var texture = getTexture(textureInfo.baseTexturePath);
 
-		if not isSuccess:
-			return false;
+	if not texture:
+		_missingTextures.append(textureInfo.baseTexturePath);
+		return false;
 
 	material = StandardMaterial3D.new();
-	var texture = load(pngPath);
-
 	material.albedo_texture = texture;
 
 	if modelMaterial:
@@ -94,7 +92,6 @@ static func preloadMaterial(materialPath: String, modelMaterial = false):
 	ResourceSaver.save(material, targetFile + '.tres');
 
 	return true;
-
 
 ## Returns a material from the materials folder or imports 
 ## In case of importing, the material is saved to the materials folder
@@ -117,20 +114,20 @@ static func importMaterial(materialPath: String, modelMaterial = false):
 
 
 ## Converts vtf to png and copies it to the materials folder
-static func copyTexture(baseTexture: String) -> bool:
+static func getTexture(baseTexture: String):
 	baseTexture = baseTexture.to_lower();
 
-	if not "vtfedit" in config:
-		VMFLogger.error('Missing "vtfedit" path in vmf.config.json');
-		return false;
+	if not "vtflib" in config:
+		VMFLogger.error('Missing "vtflib" path in vmf.config.json');
+		return null;
 
-	if not FileAccess.file_exists(config.vtfedit):
-		VMFLogger.error('Missing VTFEdit: ' + config.vtfedit + '\nTexture copying is skipped.');
-		return false;
+	if not FileAccess.file_exists(config.vtflib):
+		VMFLogger.error('Missing VTFLib: ' + config.vtflib + '\nTexture copying is skipped.');
+		return null;
 
 	if not config.materialsFolder.begins_with('res://'):
 		VMFLogger.error('Invalid materials folder: ' + config.materialsFolder + '\nThe path must start with "res://"');
-		return false;
+		return null;
 
 	var outputPath = ProjectSettings.globalize_path(config.materialsFolder);
 	var vtf = (config.gameInfoPath + '/materials/' + baseTexture + '.vtf')\
@@ -140,20 +137,26 @@ static func copyTexture(baseTexture: String) -> bool:
 	var folder = "/".join((outputPath + '/' + baseTexture).split('/').slice(0, -1));
 	var copyArgs = ['-file', vtf, '-exportformat', '"png"'];
 	var pngFile = vtf.replace('.vtf', '.png');
-	var outPngFile = outputPath + '/' + baseTexture + '.png';
 
 	if not FileAccess.file_exists(vtf):
-		return false;
+		return null;
 
 	DirAccess.make_dir_recursive_absolute(folder);
 
-	OS.execute(config.vtfedit, copyArgs, [], false, false);
-	DirAccess.copy_absolute(pngFile, outPngFile);
+	OS.execute(config.vtflib, copyArgs, [], false, false);
+
+	var img = Image.load_from_file(pngFile);
+	if not img:
+		VMFLogger.error('Failed to convert texture: ' + pngFile);
+		return null;
+
+	img.compress(0);
+
+	var texture = ImageTexture.create_from_image(img);
+
 	DirAccess.remove_absolute(pngFile);
 
-	VMFLogger.log('Copied texture: ' + pngFile);
-
-	return true;
+	return texture;
 
 static func getTextureInfo(material: String) -> TextureInfo:
 	_missingTextures = _missingTextures if _missingTextures else [];
