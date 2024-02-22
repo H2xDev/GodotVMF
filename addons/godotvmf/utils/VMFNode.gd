@@ -208,10 +208,8 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 				uvs.append(Vector2(u, v));
 				
-				var ab = side.plane.points[0] - side.plane.points[1];
-				var ac = side.plane.points[2] - side.plane.points[1];
-				var normal = ab.cross(ac).normalized();
-				normals.append(normal);
+				var normal = side.plane.value.normal;
+				normals.append(Vector3(normal.x, normal.z, -normal.y));
 				
 				# TODO Here should be a logic for smoothing groups
 

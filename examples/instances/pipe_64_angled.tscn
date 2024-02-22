@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://bm1bc74v46spg"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/utils/VMFNode.gd" id="1_kewqf"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_u1x2j"]
+
+[node name="pipe_64_angled_instance" type="Node3D"]
+script = ExtResource("1_kewqf")
+vmf = "D:/Projects/brutalist/Levels/instances/pipe_64_angled.vmf"
+
+[node name="Geometry" type="MeshInstance3D" parent="."]
+mesh = SubResource("ArrayMesh_u1x2j")
+
+[node name="Entities" type="Node3D" parent="."]

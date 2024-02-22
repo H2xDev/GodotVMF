@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://dx8yfcn6b2h0h"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/utils/VMFNode.gd" id="1_j84mf"]
+
+[node name="pipe_64_instance" type="Node3D"]
+script = ExtResource("1_j84mf")
+vmf = "D:/Projects/brutalist/Levels/instances/pipe_64.vmf"
+
+[node name="Entities" type="Node3D" parent="."]
