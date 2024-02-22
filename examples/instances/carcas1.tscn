@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://0uelsihvkuc8"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/utils/VMFNode.gd" id="1_ax6hs"]
+
+[node name="carcas1_instance" type="Node3D"]
+script = ExtResource("1_ax6hs")
+vmf = "D:/Projects/brutalist/Levels/instances/carcas1.vmf"
+
+[node name="Entities" type="Node3D" parent="."]

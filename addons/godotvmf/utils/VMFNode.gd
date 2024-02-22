@@ -113,22 +113,6 @@ class VectorSorter:
 		var normalized = v - self.center;
 		return atan2(self.normal.dot(normalized.cross(self.pp)), self.normal.dot(normalized.cross(self.qp)));
 
-
-func _collectDetails():
-	VMFLogger.log("Making all func_detail as default geometry");
-
-	if not "entity" in _structure:
-		return;
-
-	for ent in _structure.entity:
-		if ent.classname != "func_detail":
-			continue;
-
-		if ent.solid is Array:
-			_structure.world.solid.append_array(ent.solid);
-		else:
-			_structure.world.solid.append(ent.solid);
-
 ## Returns vertices_plus
 static func calculateVertices(side, brush):
 	var vertices = [];
@@ -266,7 +250,9 @@ static func createMesh(
 
 				uvs.append(Vector2(u, v));
 				
-				var normal = side.plane.value.normal;
+				var ab = side.plane.points[0] - side.plane.points[1];
+				var ac = side.plane.points[2] - side.plane.points[1];
+				var normal = ab.cross(ac).normalized();
 				normals.append(normal);
 				
 				# TODO Here should be a logic for smoothing groups
@@ -446,13 +432,14 @@ func _importEntities(_reimport = false):
 	add_child(_entitiesNode);
 	_entitiesNode.set_owner(_owner);
 
-	if not "entitiesFolder" in projectConfig:
-		VMFLogger.error('"entitiesFolder" in not found in vmf.config.json. Entities import skipped');
-		return;
+	var isEntitiesFolderDefined = "entitiesFolder" in projectConfig;
+	var isEntitiesFolderValid = projectConfig.entitiesFolder.begins_with("res://");
 
-	if not projectConfig.entitiesFolder.begins_with("res://"):
+	if not isEntitiesFolderDefined:
+		VMFLogger.error('"entitiesFolder" in not found in vmf.config.json. Entities import skipped');
+
+	if not isEntitiesFolderValid:
 		VMFLogger.error('"entitiesFolder" should start from "res://" Entities import skipped');
-		return;
 
 	if not "entity" in _structure:
 		return;
@@ -460,10 +447,17 @@ func _importEntities(_reimport = false):
 	for ent in _structure.entity:
 		ent = ent.duplicate(true);
 
-		var resPath = (projectConfig.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
+		var resPath = "";
 
-		if not ResourceLoader.exists(resPath):
-			continue;
+		if isEntitiesFolderDefined and isEntitiesFolderValid:
+			resPath = (projectConfig.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
+
+		# NOTE: In case when custom entity wasn't found - use plugin's entities list
+		if resPath == "" or not ResourceLoader.exists(resPath):
+			resPath = 'res://addons/godotvmf/entities/' + ent.classname + '.tscn';
+
+			if not ResourceLoader.exists(resPath):
+				continue;
 
 		var tscn = load(resPath);
 		var node = tscn.instantiate();
@@ -520,9 +514,6 @@ func applySettingsFrom(vmfNode):
 	overrideModels = vmfNode.overrideModels;
 	generateCollision = vmfNode.generateCollision;
 
-func _importInstances():
-	VMFInstanceManager.importInstances(vmf, self);
-
 func importMap():
 	VMFConfig.checkProjectConfig();
 	applyConfig(VMFConfig.getConfig().nodeConfig);
@@ -543,5 +534,4 @@ func importMap():
 	_importMaterials();
 	_importGeometry();
 	_importModels();
-	_importInstances();
 	_importEntities();

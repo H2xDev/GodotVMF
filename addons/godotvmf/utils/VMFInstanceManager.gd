@@ -47,6 +47,3 @@ static func importInstance(file, vmfNode):
 		DirAccess.make_dir_recursive_absolute(dir);
 
 	ResourceSaver.save(scn, path);
-
-static func importInstances(a, b):
-	pass;

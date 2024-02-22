@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://r54wpasxmb1q"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/utils/VMFNode.gd" id="1_yehfv"]
+
+[node name="rail_256_instance" type="Node3D"]
+script = ExtResource("1_yehfv")
+vmf = "D:/Projects/brutalist/Levels/instances/rail_256.vmf"
+
+[node name="Entities" type="Node3D" parent="."]

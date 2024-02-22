@@ -72,13 +72,13 @@ static func preloadMaterial(materialPath: String, modelMaterial = false):
 		return true;
 
 	var pngPath = targetFile + '.png';
-	var tex = getTextureInfo(materialPath);
+	var textureInfo = getTextureInfo(materialPath);
 
-	if not tex:
+	if not textureInfo:
 		return false;
 
 	if not FileAccess.file_exists(ProjectSettings.globalize_path(pngPath)):
-		var isSuccess = copyTexture(tex.baseTexturePath);
+		var isSuccess = copyTexture(textureInfo.baseTexturePath);
 
 		if not isSuccess:
 			return false;
