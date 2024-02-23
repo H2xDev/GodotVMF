@@ -44,7 +44,10 @@ func _apply_entity(e, c):
 	var node = res.instantiate();
 	node.name = basename + '_instance';
 
-	add_child(node);
+	node.position = position;
+	get_parent().add_child(node);
 	node.set_owner(get_owner());
 	node.rotation_order = 3;
 	node.rotation = convert_direction(e.angles);
+
+	queue_free();

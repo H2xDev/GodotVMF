@@ -95,11 +95,12 @@ static func parse(filePath):
 			return {
 				"value": Plane(plane[0], plane[1], plane[2]),
 				"points": plane,
+				"vecsum": plane[0] + plane[1] + plane[2],
 			}
-		else: if valueString.is_valid_float():
-			return float(valueString);
 		else: if valueString.is_valid_int():
 			return int(valueString);
+		else: if valueString.is_valid_float():
+			return float(valueString);
 		else:
 			return valueString;
 

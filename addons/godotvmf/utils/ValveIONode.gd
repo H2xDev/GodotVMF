@@ -14,7 +14,9 @@ static func define_alias(name: String, value: Node):
 @export var enabled = true;
 @export var flags: int = 0;
 
-var importConfig = null;
+var config:
+	get:
+		return VMFConfig.getConfig().nodeConfig;
 
 static var aliases: Dictionary = {};
 
@@ -57,7 +59,6 @@ func _ready():
 
 func _apply_entity(ent, config):
 	self.entity = ent;
-	self.importConfig = config;
 	self.global_position = ent.origin if "origin" in ent else Vector3(0, 0, 0);
 	self.flags = ent.spawnflags if "spawnflags" in ent else 0;
 

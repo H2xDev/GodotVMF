@@ -40,4 +40,7 @@ static func checkProjectConfig():
 
 	var file = FileAccess.open('res://vmf.config.json', FileAccess.READ);
 	config = JSON.parse_string(file.get_as_text());
+	config.nodeConfig.ignoreTextures = config.nodeConfig.ignoreTextures\
+			.map(func(i): return i.to_upper());
+
 	file.close();

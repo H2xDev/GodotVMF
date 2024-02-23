@@ -42,7 +42,18 @@ var _structure: Dictionary = {};
 var _currentMesh: MeshInstance3D = $Geometry if has_node("Geometry") else null;
 var _entitiesNode: Node3D = $Entities if has_node("Entities") else null;
 var _owner = null;
+static var vertexCache = [];
+static var intersections = {};
 
+static func getSimilarVertex(vertex):
+	vertexCache = vertexCache if vertexCache else [];
+
+	for v in vertexCache:
+		if (v - vertex).length() < 0.1:
+			return v;
+
+	vertexCache.append(vertex);
+	return vertex;
 
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
 class VectorSorter:
@@ -69,35 +80,75 @@ class VectorSorter:
 		var normalized = v - self.center;
 		return atan2(self.normal.dot(normalized.cross(self.pp)), self.normal.dot(normalized.cross(self.qp)));
 
+static func clearCaches():
+	vertexCache = [];
+	intersections = {};
+
+static func getPlanesIntersectionPoint(side, side2, side3):
+	var d = [side.id, side2.id, side3.id];
+	d.sort();
+
+	var ihash = hash(d);
+	var isIntersectionDefined = ihash in intersections;
+
+	if isIntersectionDefined:
+		return intersections[ihash];
+	else:
+		var vertex = side.plane.value.intersect_3(side2.plane.value, side3.plane.value);
+		intersections[ihash] = vertex;
+		return vertex;
+
 ## Returns vertices_plus
 static func calculateVertices(side, brush):
 	var vertices = [];
+	var cache = {};
 
-	var vectorExists = func(vectors, vector):
-		for v in vectors:
-			if v.distance_to(vector) < 0.2:
-				return true;
+	var isVerticeExists = func(vector):
+		var hash = hash(Vector3i(vector));
+		
+		if hash in cache:
+			return true;
+
+		cache[hash] = 1;
+
 		return false;
 
+	var isBrushCenterDefined = "center" in brush;
+
+	var brushCenter = brush.center if isBrushCenterDefined else Vector3.ZERO;
+
 	for side2 in brush.side:
+		if not isBrushCenterDefined:
+			brushCenter += side2.plane.vecsum / 3;
+
+		if side2 == side:
+			continue;
+
 		for side3 in brush.side:
-			var vertex = side.plane.value.intersect_3(side2.plane.value, side3.plane.value);
+			if side2 == side3 or side3 == side:
+				continue;
+
+			var vertex = getPlanesIntersectionPoint(side, side2, side3);
 
 			if vertex == null:
 				continue;
 
-			if vectorExists.call(vertices, vertex):
-				continue;
-
-			if not brush.side.all(func(side):
-				return side.plane.value.distance_to(vertex) < 0.2;
-			):
+			if isVerticeExists.call(vertex):
 				continue;
 
 			vertices.append(vertex);
 
-	var brushCenter = vertices.reduce(func(acc, vector): return acc + vector, Vector3.ZERO) / vertices.size();
-	var sideNormal = side.plane.value.normal.normalized();
+	vertices = vertices.filter(func(vertex):
+		return not brush.side.any(func(s):
+			return s.plane.value.distance_to(vertex) > 0.01;
+		)
+	);
+
+	if not isBrushCenterDefined:
+		brushCenter /= brush.side.size();
+		brush.center = brushCenter;
+
+	var sideNormal = side.plane.value.normal;
 	var vectorSorter = VectorSorter.new(sideNormal, brushCenter);
 
 	vertices.sort_custom(func(a, b):
@@ -106,8 +157,51 @@ static func calculateVertices(side, brush):
 
 	return vertices;
 
+static func calculateUVForSide(side, vertex):
+	var defaultTextureSize = VMFConfig.getConfig().nodeConfig.defaultTextureSize;
+
+	var ux = side.uaxis.x;
+	var uy = side.uaxis.y;
+	var uz = side.uaxis.z;
+	var ushift = side.uaxis.shift;
+	var uscale = side.uaxis.scale;
+
+	var vx = side.vaxis.x;
+	var vy = side.vaxis.y;
+	var vz = side.vaxis.z;
+	var vshift = side.vaxis.shift;
+	var vscale = side.vaxis.scale;
+
+	var texture = VMTManager.getTextureInfo(side.material);
+	
+	var tsx = 1;
+	var tsy = 1;
+	var tw = texture.width if texture else defaultTextureSize;
+	var th = texture.height if texture else defaultTextureSize;
+	var aspect = tw / th;
+
+	if texture and texture.transform:
+		tsx /= texture.transform.scale.x;
+		tsy /= texture.transform.scale.y;
+
+	var uv = Vector3(ux, uy, uz);
+	var vv = Vector3(vx, vy, vz);
+	var v2 = Vector3(vertex.x, vertex.y, vertex.z);
+
+	var u = (v2.dot(uv) + ushift * uscale) / tw / uscale / tsx;
+	var v = (v2.dot(vv) + vshift * vscale) / tw / vscale / tsy;
+	
+	if aspect < 1:
+		u *= aspect;
+	else:
+		v *= aspect;
+
+	return Vector2(u, v);
+
 ## Returns MeshInstance3D from parsed VMF structure
 static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> Mesh:
+	clearCaches();
+
 	var projectConfig = VMFConfig.getConfig();
 
 	var fbm = projectConfig.nodeConfig.fallbackMaterial;
@@ -127,6 +221,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 	var materialSides = {};
 	var textureCache = {};
 	var mesh = ArrayMesh.new();
+
 	## TODO Add displacement support
 	##		I'm too dumb for this logic :'C
 
@@ -139,108 +234,68 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 			if not material in materialSides:
 				materialSides[material] = [];
+
 			materialSides[material].append({
 				"side": side,
 				"brush": brush,
 			});
 
-	var index = 0;
 	for sides in materialSides.values():
-		var verts = [];
-		var uvs = [];
-		var normals = [];
-		var indices = [];
+		var surfaceTool = SurfaceTool.new();
+		surfaceTool.begin(Mesh.PRIMITIVE_TRIANGLES);
 
+		var index = 0;
 		for sideData in sides:
 			var side = sideData.side;
+			var base_index = index;
 
-			## IF classig VMF format (not Hammer++)
+			## NOTE: Generating vertices in case the VMF is from vanilla Hammer
 			if not "vertices_plus" in side:
 				side.vertices_plus = {
 					"v": calculateVertices(side, sideData.brush),
 				};
 
-			var vertex_count = side.vertices_plus.v.size()
+			var vertex_count = side.vertices_plus.v.size();
 			if vertex_count < 3:
 				continue;
 
-			var base_index = verts.size();
+			var normal = side.plane.value.normal;
+			surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
 
-			for vertex in side.vertices_plus.v:
+			for v in side.vertices_plus.v:
+				var vertex = getSimilarVertex(v);
+				var uv = calculateUVForSide(side, vertex);
+				surfaceTool.set_uv(uv);
+
 				var vt = Vector3(vertex.x * _scale, vertex.z * _scale, -vertex.y * _scale) - _offset;
-				verts.append(vt);
-
-				var ux = side.uaxis.x;
-				var uy = side.uaxis.y;
-				var uz = side.uaxis.z;
-				var ushift = side.uaxis.shift;
-				var uscale = side.uaxis.scale;
-
-				var vx = side.vaxis.x;
-				var vy = side.vaxis.y;
-				var vz = side.vaxis.z;
-				var vshift = side.vaxis.shift;
-				var vscale = side.vaxis.scale;
-
-				var texture = VMTManager.getTextureInfo(side.material);
+				var sg = -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 				
-				var tsx = 1;
-				var tsy = 1;
-				var tw = texture.width if texture else _defaultTextureSize;
-				var th = texture.height if texture else _defaultTextureSize;
-				var aspect = tw / th;
-
-				if texture and texture.transform:
-					tsx /= texture.transform.scale.x;
-					tsy /= texture.transform.scale.y;
-
-				var uv = Vector3(ux, uy, uz);
-				var vv = Vector3(vx, vy, vz);
-				var v2 = Vector3(vertex.x, vertex.y, vertex.z);
-
-				var u = (v2.dot(uv) + ushift * uscale) / tw / uscale / tsx;
-				var v = (v2.dot(vv) + vshift * vscale) / tw / vscale / tsy;
-				
-				if aspect < 1:
-					u *= aspect;
-				else:
-					v *= aspect;
-
-				uvs.append(Vector2(u, v));
-				
-				var normal = side.plane.value.normal;
-				normals.append(Vector3(normal.x, normal.z, -normal.y));
-				
-				# TODO Here should be a logic for smoothing groups
+				surfaceTool.set_smooth_group(sg);
+				surfaceTool.add_vertex(vt);
+				index += 1;
 
 			for i in range(1, vertex_count - 1):
-				indices.append(base_index)
-				indices.append(base_index + i)
-				indices.append(base_index + i + 1)
+				surfaceTool.add_index(base_index);
+				surfaceTool.add_index(base_index + i);
+				surfaceTool.add_index(base_index + i + 1);
 
-		var surface = []
-		surface.resize(Mesh.ARRAY_MAX);
-		surface[Mesh.ARRAY_VERTEX] = PackedVector3Array(verts)
-		surface[Mesh.ARRAY_TEX_UV] = PackedVector2Array(uvs)
-		surface[Mesh.ARRAY_TEX_UV2] = PackedVector2Array(uvs)
-		surface[Mesh.ARRAY_NORMAL] = PackedVector3Array(normals)
-		surface[Mesh.ARRAY_INDEX] = PackedInt32Array(indices)
-
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface)
+		var targetMaterial = sides[0].side.material;
 
 		if _textureImportMode == VMTManager.TextureImportMode.COLLATE_BY_NAME:
-			var godotMaterial = VMTManager.getMaterialFromProject(sides[0].side.material);
+			var loadedMaterial = VMTManager.getMaterialFromProject(targetMaterial);
+			var materialToSet = loadedMaterial if loadedMaterial else _fallbackMaterial;
+			surfaceTool.set_material(materialToSet);
 
-			if godotMaterial:
-				mesh.surface_set_material(index, godotMaterial);
-			else: if _fallbackMaterial:
-				mesh.surface_set_material(index, _fallbackMaterial);
-		else: if _textureImportMode == VMTManager.TextureImportMode.IMPORT_DIRECTLY:
-			var material = VMTManager.importMaterial(sides[0].side.material);
+		elif _textureImportMode == VMTManager.TextureImportMode.IMPORT_DIRECTLY:
+			var material = VMTManager.importMaterial(targetMaterial);
 			if material:
-				mesh.surface_set_material(index, material);
+				surfaceTool.set_material(material);
 
-		index += 1;
+		surfaceTool.deindex();
+		surfaceTool.generate_normals();
+		surfaceTool.generate_tangents();
+		surfaceTool.commit(mesh);
+
 	elapsedTime = Time.get_ticks_msec() - elapsedTime;
 
 	if elapsedTime > 100:
@@ -281,7 +336,6 @@ func _importGeometry(_reimport = false):
 func _importMaterials():
 	var list = [];
 	var elapsedTime = Time.get_ticks_msec();
-	var resFileSystem = EditorInterface.get_resource_filesystem();
 
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
@@ -291,9 +345,6 @@ func _importMaterials():
 
 	if "entity" in _structure:
 		for entity in _structure.entity:
-			if entity.classname == "prop_static":
-				return;
-
 			if not "solid" in entity:
 				continue;
 
@@ -312,7 +363,6 @@ func _importMaterials():
 func _importModels():
 	if not projectConfig.nodeConfig.importModels:
 		return false;
-
 	VMFLogger.log("Importing models");
 
 	if not FileAccess.file_exists(projectConfig.mdl2obj):
