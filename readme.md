@@ -29,7 +29,6 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Displacements are not supported yet
 - Extraction materials and models from VPKs is not supported
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
-- There might be some problems with materials with displacement map that requires some texture manipulation in Hammer (usually rotate texture by 90 degrees solves the problem)
 - Wasn't tested on Linux and MacOS
 - Tested only on 4.1+
 - For materials it imports only albedo texture
