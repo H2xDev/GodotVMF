@@ -3,11 +3,7 @@ class_name ValveIONode extends Node3D;
 
 static var namedEntities = {};
 
-static func define_alias(name: String, value: ValveIONode):
-	if not value is ValveIONode:
-		VMFLogger.error('The node "' + value.name + '" is not a ValveIONode node');
-		return;
-
+static func define_alias(name: String, value: Node):
 	if name == '!self' or name in aliases:
 		VMFLogger.error('The alias "' + name + '" is already defined');
 		return;
