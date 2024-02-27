@@ -16,7 +16,8 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.actor }} created an issue - 'https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}'
+          message: |
+            ${{ github.actor }} created an issue: https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}
   issue_commented:
     if: github.event_name == 'issue_comment'
     name: Commented issue
@@ -27,4 +28,5 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.actor }} left a comment - 'https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}'
+          message: |
+            ${{ github.actor }} left a comment: 'https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}'
