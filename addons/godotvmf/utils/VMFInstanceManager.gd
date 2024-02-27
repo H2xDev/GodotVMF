@@ -37,7 +37,6 @@ static func importInstance(file, vmfNode):
 	node.vmf = file;
 	node.name = filename + '_instance'
 	node._owner = node;
-	node.applySettingsFrom(vmfNode);
 	node.importMap();
 	node.set_editable_instance(node, true);
 
