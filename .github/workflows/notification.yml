@@ -8,10 +8,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: send telegram message on push
-        uses: appleboy/telegram-action@master
+      - name: notification
+        if: cancelled() == false
+        uses: xinthink/action-telegram@v1.1
         with:
-          to: ${{ secrets.TELEGRAM_CHAT }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.actor }} created an issue
+          botToken: ${{ secrets.TELEGRAM_TOKEN }}
+          chatId: ${{ secrets.TELEGRAM_CHAT }}
+          jobStatus: ${{ job.status }}
 
