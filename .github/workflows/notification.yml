@@ -13,5 +13,5 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.actor }} created an issue:
+          message: ${{ github.actor }} created an issue
 
