@@ -22,7 +22,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Material import support**
 - Instances support
 
-\* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
+\* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)
 \** - Requires 3rd party utility [VTFLib](https://nemstools.github.io/subpages/Comments/VTFLib_v1.3.2_Full.html)
 
 ## Known issues
@@ -40,6 +40,10 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
+
+## Additional things
+- Source code of MDL2OBJ: https://github.com/H2xDev/mdl2obj
+- Demo: https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Special thanks
 [@Ambiabstract](https://github.com/Ambiabstract) - for help and inspiration
