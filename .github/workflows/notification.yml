@@ -1,9 +1,7 @@
 name: Notify
 on:
   issues:
-    types:
-      - reopened
-      - opened
+    types: [reopened, opened]
 
 jobs:
   build:
