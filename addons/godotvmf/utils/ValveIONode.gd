@@ -200,12 +200,12 @@ func get_mesh() -> ArrayMesh:
 	};
 
 	var config = VMFConfig.getConfig().nodeConfig;
-	var offset = entity.origin if "origin" in entity else Vector3(0, 0, 0);
+	var offset = entity.origin if "origin" in entity else Vector3.ZERO;
 
 	var fallbackMaterial = load(config.fallbackMaterial) \
 			if config.fallbackMaterial && ResourceLoader.exists(config.fallbackMaterial) else null;
 
-	return VMFNode.createMesh(struct, offset);
+	return VMFTool.createMesh(struct, offset);
 
 func convert_vector(v):
 	return Vector3(v.x, v.z, -v.y);
@@ -234,9 +234,9 @@ func get_entity_convex_shape():
 		},
 	};
 
-	var origin = entity.origin if "origin" in entity else Vector3(0, 0, 0);
+	var origin = entity.origin if "origin" in entity else Vector3.ZERO;
 
-	var mesh = VMFNode.createMesh(struct, origin);
+	var mesh = VMFTool.createMesh(struct, origin);
 
 	return mesh.create_convex_shape();
 	
@@ -257,7 +257,9 @@ func get_entity_trimesh_shape():
 		};
 	
 		var csgmesh = CSGMesh3D.new();
-		csgmesh.mesh = VMFNode.createMesh(struct, entity.origin);
+		var origin = entity.origin if "origin" in entity else Vector3.ZERO;
+
+		csgmesh.mesh = VMFTool.createMesh(struct, origin);
 
 		combiner.add_child(csgmesh);
 		

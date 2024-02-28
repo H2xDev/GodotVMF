@@ -1,6 +1,22 @@
-[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://ctjjh0w8miscb"]
+[gd_resource type="ShaderMaterial" load_steps=4 format=3 uid="uid://cqs0n4ykogt8g"]
 
 [ext_resource type="Texture2D" uid="uid://dg770opyis1jo" path="res://examples/materials/atmus/dev/se_testgrid_512.png" id="1_kojgu"]
+[ext_resource type="Shader" path="res://examples/shaders/BlendStandardMaterial.gdshader" id="1_l1wy4"]
+[ext_resource type="Texture2D" uid="uid://788gcgu4cmlu" path="res://examples/materials/atmus/dev/se_testgrid_512_blend.png" id="3_y7ds8"]
 
 [resource]
-albedo_texture = ExtResource("1_kojgu")
+render_priority = 0
+shader = ExtResource("1_l1wy4")
+shader_parameter/albedo_color = Color(1, 1, 1, 1)
+shader_parameter/albedo_color2 = Color(1, 1, 1, 1)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 0.0
+shader_parameter/metallic = null
+shader_parameter/metallic_texture_channel = null
+shader_parameter/specular = null
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/texture_albedo = ExtResource("1_kojgu")
+shader_parameter/texture_albedo2 = ExtResource("3_y7ds8")
