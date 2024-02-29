@@ -251,7 +251,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 					surfaceTool.set_uv(uv);
 					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
 					surfaceTool.set_color(dispData.getColor(x, y));
-					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale);
+					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 
 				for i in range(0, pow(edgesCount, 2)):
