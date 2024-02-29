@@ -26,7 +26,6 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 \** - Requires 3rd party utility [VTFLib](https://nemstools.github.io/subpages/Comments/VTFLib_v1.3.2_Full.html)
 
 ## Known issues
-- Displacements are not supported yet
 - Extraction materials and models from VPKs is not supported
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
 - Wasn't tested on MacOS
