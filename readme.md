@@ -21,6 +21,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Model import support*
 - Material import support**
 - Instances support
+- Displacements (with blend materials)
 
 \* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
 \** - Requires 3rd party utility [VTFLib](https://nemstools.github.io/subpages/Comments/VTFLib_v1.3.2_Full.html)
