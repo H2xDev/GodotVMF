@@ -127,7 +127,7 @@ static func calculateUVForSide(side, vertex):
 	var vshift = side.vaxis.shift;
 	var vscale = side.vaxis.scale;
 
-	var texture = VMTManager.getTextureInfo(side.material);
+	var texture = VTFTool.getTextureInfo(side.material);
 	
 	var tsx = 1;
 	var tsy = 1;

@@ -20,9 +20,11 @@ static func parse(filePath):
 	planeRegex.compile('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)')
 
 	if not filePath:
+		VMFLogger.error('ValveFormatParser: No file path provided');
 		return null;
 
 	if not FileAccess.file_exists(filePath):
+		VMFLogger.error('ValveFormatParser: File does not exist: ' + filePath);
 		return null;
 
 	var file = FileAccess.open(filePath, FileAccess.READ);
