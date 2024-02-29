@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://crabcagch375h"]
 
 [ext_resource type="Script" path="res://addons/godotvmf/utils/VMFNode.gd" id="1_b7obr"]
-[ext_resource type="Material" uid="uid://ctjjh0w8miscb" path="res://examples/materials/atmus/dev/se_testgrid_512.tres" id="2_kv4rb"]
+[ext_resource type="Material" uid="uid://cqs0n4ykogt8g" path="res://examples/materials/atmus/dev/se_testgrid_512.tres" id="2_kv4rb"]
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_ukvgl"]
 _surfaces = [{
