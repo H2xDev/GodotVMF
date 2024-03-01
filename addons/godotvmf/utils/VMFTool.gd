@@ -192,8 +192,8 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 	for brush in brushes:
 		for side in brush.side:
-			var material = side.material
-			
+			var material = side.material.to_upper();
+
 			if _ignoreTextures.has(material):
 				continue;
 

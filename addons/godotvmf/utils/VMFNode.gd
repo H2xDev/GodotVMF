@@ -60,6 +60,7 @@ func _importGeometry(_reimport = false):
 
 func _importMaterials():
 	var list = [];
+	var ignoreList = projectConfig.nodeConfig.ignoreTextures;
 	var elapsedTime = Time.get_ticks_msec();
 
 	if projectConfig.nodeConfig.textureImportMode != VTFTool.TextureImportMode.IMPORT_DIRECTLY:
@@ -82,7 +83,7 @@ func _importMaterials():
 				if not brush is Dictionary:
 					continue;
 				for side in brush.side:
-					if not list.has(side.material):
+					if not list.has(side.material) and ignoreList.has(side.material):
 						list.append(side.material);
 
 	for material in list:
