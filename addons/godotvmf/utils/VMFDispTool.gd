@@ -41,39 +41,43 @@ func _init(side, brush):
 	offsetNormals = _parseVectors('offset_normals');
 	alphas = _parseFloats('alphas');
 
-func convertVector(x, y):
-	var nx = x;
-	var ny = y;
-
-	return Vector2i(int(nx), int(ny));
-
 func getNormal(x, y):
 	var index = y + x * vertsCount;
+	if normals.size() == 0:
+		return Vector3.ZERO;
+
 	return normals[index];
 
 func getOffset(x, y):
 	var index = y + x * vertsCount;
+	if offsets.size() == 0:
+		return Vector3.ZERO;
+		
 	return offsets[index];
 
 func getDistance(x, y):
 	var index = y + x * vertsCount;
+	if distances.size() == 0:
+		return 0;
 	return getNormal(x, y) * distances[index];
 
 func getColor(x, y):
 	var index = y + x * vertsCount;
+	if alphas.size() == 0:
+		return Color(1, 1, 1, 0);
 	return Color(1, 1, 1, 1.0 - alphas[index] / 255);
 
 func getVertices():
-	var old = true;
-
 	var vertices = VMFTool.calculateVertices(side, brush);
+	
+	if vertices.size() < 3:
+		return [];
 
 	var res = [];
-
 	var startIndex = 1;
 
 	for v in vertices:
-		if v.distance_to(startPoint) < 0.001:
+		if v.distance_to(startPoint) < 0.5:
 			break;
 
 		startIndex += 1;
@@ -88,24 +92,22 @@ func getVertices():
 		var y = i % int(vertsCount);
 
 		var rblend = 1 - x / edgesCount;
+		var cblend = y / edgesCount;
 
 		var vl = tl.lerp(bl, rblend);
 		var vr = tr.lerp(br, rblend);
-		var cblend = y / edgesCount;
 		var vert = vl.lerp(vr, cblend);
 
-		var offset = offsets[i];
-
-		vert += (
-			normals[i] * distances[i] + offset +
-			side.plane.value.normal * dispInfo.elevation
-		);
+		vert += getDistance(x, y) + getOffset(x, y) + side.plane.value.normal * dispInfo.elevation;
 
 		res.append(vert);
 	return res;
 
 func _parseVectors(key):
 	var vects = [];
+	
+	if not key in dispInfo:
+		return vects;
 
 	for row in dispInfo[key].values():
 		row = Array(row.split(" ")).map(func(x): return float(x));
@@ -121,6 +123,9 @@ func _parseVectors(key):
 func _parseFloats(key):
 	var floats = [];
 
+	if not key in dispInfo:
+		return floats;
+		
 	for row in dispInfo[key].values():
 		row = Array(row.split(" ")).map(func(x): return float(x));
 

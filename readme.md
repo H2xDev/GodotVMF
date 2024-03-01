@@ -21,16 +21,15 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Model import support*
 - Material import support**
 - Instances support
+- Displacements (with blend materials)
 
 \* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
 \** - Requires 3rd party utility [VTFLib](https://nemstools.github.io/subpages/Comments/VTFLib_v1.3.2_Full.html)
 
 ## Known issues
-- Displacements are not supported yet
 - Extraction materials and models from VPKs is not supported
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
-- Wasn't tested on Linux and MacOS
-- Tested only on 4.1+
+- Wasn't tested on MacOS
 - For materials it imports only albedo texture
 
 ## GodotVMF elsewhere

@@ -1,13 +1,14 @@
 name: Notify
 on:
   issues:
-    types:
-      - reopened
-      - opened
+    types: [reopened, opened]
+  issue_comment:
+    types: [created, deleted]
 
 jobs:
-  build:
-    name: Build
+  issue_created:
+    if: github.event_name == 'issues'
+    name: Notifying repo holder
     runs-on: ubuntu-latest
     steps:
       - name: send telegram message on push
@@ -15,5 +16,22 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{ github.actor }} created an issue:
-
+          message: |
+            ${{ github.actor }} created an issue: ${{ github.event.issue.title }}
+            See: https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}
+  issue_commented:
+    if: github.event_name == 'issue_comment'
+    name: Commented issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: send telegram message on push
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ${{ github.actor }} left a comment:
+            
+            ${{ github.event.comment.body }}
+            
+            https://github.com/H2xDev/GodotVMF/issues/${{ github.event.issue.number }}#issuecomment-${{ github.event.comment.id }}
