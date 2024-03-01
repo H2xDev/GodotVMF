@@ -70,15 +70,15 @@ static func loadModel(modelPath: String, generateCollision: bool = false, overri
 
 	var materials = getModelMaterials(modelPath);
 	var materialPath = materials[0] if materials.size() > 0 else null;
-	var material = VMTManager.importMaterial(materialPath, true) if materialPath else null;
+
+	VTFTool.importMaterial(materialPath, true);
+
+	var material = VTFTool.getMaterial(materialPath);
 
 	var processOut = [];
 	var process = OS.execute(projectConfig.mdl2obj, [input, output], processOut, false, false);
 	var mesh = ObjParse.load_obj(output);
 	DirAccess.remove_absolute(output);
-
-	if material:
-		mesh.surface_set_material(0, material);
 
 	var scene = PackedScene.new();
 	var root = Node3D.new();
@@ -89,17 +89,15 @@ static func loadModel(modelPath: String, generateCollision: bool = false, overri
 	root.add_child(model);
 	model.set_owner(root);
 
+	if material:
+		mesh.surface_set_material(0, material);
+
 	if generateCollision:
 		model.create_multiple_convex_collisions();
 
-
 	scene.pack(root);
-	print('Saving into ', resourcePath);
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(resourceFolder));
 	ResourceSaver.save(scene, resourcePath);
-
-	VMFLogger.log('MDL Imported: ' + input);
-	VMFLogger.log('MDL Log:\n' + '\n'.join(processOut));
 
 	return load(resourcePath);

@@ -12,7 +12,6 @@ static func createConfig():
 
 	var defaultConfig = {
 		"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
-		"vtflib": "C:/Steam/steamapps/sourcemods/mymod/tools/vtflib",
 		"mdl2obj": "C:/Steam/steamapps/sourcemods/mymod/tools/mdl2obj",
 		"modelsFolder": "res://Assets/Models",
 		"materialsFolder": "res://Assets/Materials",

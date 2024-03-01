@@ -13,19 +13,11 @@ var vmf: String = '';
 		importMap();
 		import = false;
 
-@export_category("Config")
-
 ## Click here to reload vmf.config.json
 @export var reloadConfig: bool = false:
 	set(value):
 		VMFConfig.checkProjectConfig();
 		reloadConfig = false;
-
-## Use it in case you updated materials in your mod's folder
-@export var resetMaterialCache: bool = false:
-	set(value):
-		VMTManager.resetCache();
-		resetMaterialCache = false;
 
 var projectConfig: Dictionary:
 	get:
@@ -70,6 +62,11 @@ func _importMaterials():
 	var list = [];
 	var elapsedTime = Time.get_ticks_msec();
 
+	if projectConfig.nodeConfig.textureImportMode != VTFTool.TextureImportMode.IMPORT_DIRECTLY:
+		return;
+
+	VTFTool.clearCache();
+
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
 			for side in brush.side:
@@ -89,7 +86,7 @@ func _importMaterials():
 						list.append(side.material);
 
 	for material in list:
-		VMTManager.preloadMaterial(material);
+		VTFTool.importMaterial(material);
 
 	VMFLogger.log("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsedTime) + "ms");
 

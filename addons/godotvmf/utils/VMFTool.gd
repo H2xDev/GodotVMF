@@ -127,17 +127,30 @@ static func calculateUVForSide(side, vertex):
 	var vshift = side.vaxis.shift;
 	var vscale = side.vaxis.scale;
 
-	var texture = VTFTool.getTextureInfo(side.material);
+	var material = VTFTool.getMaterial(side.material);
 	
+	if not material:
+		return Vector2(1, 1);
+
+	# NOTE In case if material is blend texture we use texture_albedo param
+	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
+
+	if not texture:
+		return Vector2(1, 1);
+
+	var tsize = Vector2(texture.get_width(), texture.get_height());
+	var tscale = material.get_meta("scale", Vector2(1, 1));
+
 	var tsx = 1;
 	var tsy = 1;
-	var tw = texture.width if texture else defaultTextureSize;
-	var th = texture.height if texture else defaultTextureSize;
+	var tw = tsize.x if material else defaultTextureSize;
+	var th = tsize.y if material else defaultTextureSize;
 	var aspect = tw / th;
 
-	if texture and texture.transform:
-		tsx /= texture.transform.scale.x;
-		tsy /= texture.transform.scale.y;
+
+	if material:
+		tsx /= tscale.x;
+		tsy /= tscale.y;
 
 	var uv = Vector3(ux, uy, uz);
 	var vv = Vector3(vx, vy, vz);
@@ -281,18 +294,11 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
 						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
 
-		var targetMaterial = sides[0].side.material;
+		var ignoreMaterials = VTFTool.TextureImportMode.DO_NOTHING == projectConfig.nodeConfig.textureImportMode;
+		var material = VTFTool.getMaterial(sides[0].side.material) if not ignoreMaterials else _fallbackMaterial;
+		material = material if material else _fallbackMaterial;
 
-		if _textureImportMode == VMTManager.TextureImportMode.COLLATE_BY_NAME:
-			var loadedMaterial = VMTManager.getMaterialFromProject(targetMaterial);
-			var materialToSet = loadedMaterial if loadedMaterial else _fallbackMaterial;
-			surfaceTool.set_material(materialToSet);
-
-		elif _textureImportMode == VMTManager.TextureImportMode.IMPORT_DIRECTLY:
-			var material = VMTManager.importMaterial(targetMaterial);
-			if material:
-				surfaceTool.set_material(material);
-
+		surfaceTool.set_material(material);
 		surfaceTool.generate_normals();
 		surfaceTool.generate_tangents();
 		surfaceTool.commit(mesh);

@@ -1,6 +1,6 @@
 {
 	"entitiesFolder": "res://examples/entities",
-	"gameInfoPath": "E:/Steam/steamapps/sourcemods/elena",
+	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod/",
 	"instancesFolder": "res://examples/instances",
 	"materialsFolder": "res://examples/materials",
 	"mdl2obj": "C:/Steam/steamapps/sourcemods/mymod/tools/mdl2obj",
@@ -16,7 +16,6 @@
 		"importModels": false,
 		"importScale": 0.025,
 		"overrideModels": true,
-		"textureImportMode": 2
+		"textureImportMode": 1
 	},
-	"vtflib": "C:/Steam/steamapps/sourcemods/mymod/tools/vtflib"
 }
