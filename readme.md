@@ -19,7 +19,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Entities support
 - Hammer's I/O  system support
 - Model import support*
-- Material import support**
+- Material import support
 - Instances support
 - Displacements (with blend materials)
 - Native VTF import
