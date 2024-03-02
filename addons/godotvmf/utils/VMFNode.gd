@@ -72,7 +72,7 @@ func _importMaterials():
 				if not brush is Dictionary:
 					continue;
 				for side in brush.side:
-					if not list.has(side.material) and ignoreList.has(side.material):
+					if not list.has(side.material) and not ignoreList.has(side.material):
 						list.append(side.material);
 
 	for material in list:
