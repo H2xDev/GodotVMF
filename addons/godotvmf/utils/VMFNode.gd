@@ -19,11 +19,6 @@ var vmf: String = '';
 		VMFConfig.checkProjectConfig();
 		reloadConfig = false;
 
-@export var testMaterial: bool = false:
-	set(value):
-		print(VTFTool.getMaterial('gm_construct/blend_rockrock'));
-		testMaterial = false;
-
 var _structure: Dictionary = {};
 var _owner = null;
 
