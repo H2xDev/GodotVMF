@@ -142,7 +142,7 @@ static func calculateUVForSide(side, vertex):
 	var tsy = 1;
 	var tw = tsize.x;
 	var th = tsize.y;
-	var aspect = th / th;
+	var aspect = tw / th;
 
 
 	if material:
