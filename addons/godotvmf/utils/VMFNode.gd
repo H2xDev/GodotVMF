@@ -13,39 +13,20 @@ var vmf: String = '';
 		importMap();
 		import = false;
 
-@export_category("Config")
-
 ## Click here to reload vmf.config.json
 @export var reloadConfig: bool = false:
 	set(value):
 		VMFConfig.checkProjectConfig();
 		reloadConfig = false;
 
-## Use it in case you updated materials in your mod's folder
-@export var resetMaterialCache: bool = false:
-	set(value):
-		VMTManager.resetCache();
-		resetMaterialCache = false;
-
-var projectConfig: Dictionary:
-	get:
-		return VMFConfig.getConfig();
-
 var _structure: Dictionary = {};
-var _currentMesh: MeshInstance3D = $Geometry if has_node("Geometry") else null;
-var _entitiesNode: Node3D = $Entities if has_node("Entities") else null;
 var _owner = null;
 
 func _importGeometry(_reimport = false):
-	if _reimport:
-		if not _owner:
-			_owner = get_tree().get_edited_scene_root();
-		VMFLogger.log("Reimporting geometry");
-		_readVMF();
-	else:
-		VMFLogger.log("Generating the map mesh");
+	if not _owner:
+		_owner = get_tree().get_edited_scene_root();
 
-	_currentMesh = _currentMesh if _currentMesh != null else get_node_or_null("Geometry");
+	var _currentMesh = get_node_or_null("Geometry");
 
 	if _currentMesh != null:
 		remove_child(_currentMesh);
@@ -63,12 +44,18 @@ func _importGeometry(_reimport = false):
 	add_child(_currentMesh);
 	_currentMesh.set_owner(_owner);
 
-	if projectConfig.nodeConfig.generateCollision:
+	if VMFConfig.config.import.generateCollision:
 		_currentMesh.create_trimesh_collision();
 
 func _importMaterials():
 	var list = [];
+	var ignoreList = VMFConfig.config.material.ignore;
 	var elapsedTime = Time.get_ticks_msec();
+
+	if VMFConfig.config.material.importMode != VTFTool.TextureImportMode.IMPORT_DIRECTLY:
+		return;
+
+	VTFTool.clearCache();
 
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
@@ -85,25 +72,37 @@ func _importMaterials():
 				if not brush is Dictionary:
 					continue;
 				for side in brush.side:
-					if not list.has(side.material):
+					if not list.has(side.material) and ignoreList.has(side.material):
 						list.append(side.material);
 
 	for material in list:
-		VMTManager.preloadMaterial(material);
+		VTFTool.importMaterial(material);
 
 	VMFLogger.log("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsedTime) + "ms");
 
+# TODO: Make it in separate thread
 func _importModels():
-	if not projectConfig.nodeConfig.importModels:
+	if not VMFConfig.config.models.import:
 		return false;
-	VMFLogger.log("Importing models");
-
-	if not FileAccess.file_exists(projectConfig.mdl2obj):
-		VMFLogger.warn('MDL2OBJ not found, models will not be imported');
-		return;
 
 	if not "entity" in _structure:
 		return;
+
+	if not _owner:
+		_owner = get_tree().get_edited_scene_root();
+
+	var _modelsNode = get_node_or_null("Models");
+
+	if _modelsNode:
+		remove_child(_modelsNode);
+		_modelsNode.queue_free();
+
+	MDLManager.clearCache();
+
+	_modelsNode = Node3D.new();
+	_modelsNode.name = "Models";
+	add_child(_modelsNode);
+	_modelsNode.set_owner(_owner);
 
 	for ent in _structure.entity:
 		if ent.classname != 'prop_static':
@@ -112,8 +111,8 @@ func _importModels():
 		if not "model" in ent:
 			continue;
 		
-		var resource = MDLManager.loadModel(ent.model, projectConfig.nodeConfig.generateCollisionForModel, projectConfig.nodeConfig.overrideModels);
-		var importScale = projectConfig.nodeConfig.importScale;
+		var resource = MDLManager.loadModel(ent.model, VMFConfig.config.models.generateCollision);
+		var importScale = VMFConfig.config.import.scale;
 
 		if not resource:
 			continue;
@@ -127,8 +126,9 @@ func _importModels():
 		model.rotation_order = 3;
 		model.rotation = angles;
 		model.scale = scale;
+		model.name = ent.model.get_file().split('.')[0] + '_' + str(ent.id);
 
-		add_child(model);
+		_modelsNode.add_child(model);
 		model.set_owner(_owner);
 
 func _clearStructure():
@@ -153,13 +153,15 @@ func _readVMF():
 
 func _importEntities(_reimport = false):
 	var elapsedTime = Time.get_ticks_msec();
-	var importScale = projectConfig.nodeConfig.importScale;
+	var importScale = VMFConfig.config.import.scale;
 
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
 
 	if _reimport:
 		_readVMF();
+
+	var _entitiesNode = get_node_or_null("Entities");
 
 	if _entitiesNode:
 		remove_child(_entitiesNode);
@@ -170,28 +172,16 @@ func _importEntities(_reimport = false):
 	add_child(_entitiesNode);
 	_entitiesNode.set_owner(_owner);
 
-	var isEntitiesFolderDefined = "entitiesFolder" in projectConfig;
-	var isEntitiesFolderValid = projectConfig.entitiesFolder.begins_with("res://");
-
-	if not isEntitiesFolderDefined:
-		VMFLogger.error('"entitiesFolder" in not found in vmf.config.json. Entities import skipped');
-
-	if not isEntitiesFolderValid:
-		VMFLogger.error('"entitiesFolder" should start from "res://" Entities import skipped');
-
 	if not "entity" in _structure:
 		return;
 
 	for ent in _structure.entity:
 		ent = ent.duplicate(true);
 
-		var resPath = "";
-
-		if isEntitiesFolderDefined and isEntitiesFolderValid:
-			resPath = (projectConfig.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
+		var resPath = (VMFConfig.config.import.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
 
 		# NOTE: In case when custom entity wasn't found - use plugin's entities list
-		if resPath == "" or not ResourceLoader.exists(resPath):
+		if not ResourceLoader.exists(resPath):
 			resPath = 'res://addons/godotvmf/entities/' + ent.classname + '.tscn';
 
 			if not ResourceLoader.exists(resPath):
@@ -216,13 +206,16 @@ func _importEntities(_reimport = false):
 	VMFLogger.log("Imported entities in " + str(time) + "ms");
 
 func importGeometryOnly():
+	if not VMFConfig.config:
+		return;
+
 	_readVMF();
 	_importMaterials();
 	_importGeometry(true);
 
 func importMap():
-	VMFConfig.checkProjectConfig();
-	VMFLogger.log('Gameinfo path: ' + projectConfig.gameInfoPath);
+	if not VMFConfig.config:
+		return;
 
 	if not Engine.is_editor_hint():
 		return;
@@ -232,6 +225,8 @@ func importMap():
 
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
+
+	VTFTool.clearCache();
 
 	_clearStructure();
 	_readVMF();

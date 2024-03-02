@@ -16,7 +16,7 @@ static func define_alias(name: String, value: Node):
 
 var config:
 	get:
-		return VMFConfig.getConfig().nodeConfig;
+		return VMFConfig.config;
 
 static var aliases: Dictionary = {};
 
@@ -24,7 +24,7 @@ func Toggle(_param = null):
 	enabled = !enabled;
 
 func Enable(_param = null):
-	enabled = true;
+	enabled = true; 
 
 func Disable(_param = null):
 	enabled = false;
@@ -199,11 +199,7 @@ func get_mesh() -> ArrayMesh:
 		},
 	};
 
-	var config = VMFConfig.getConfig().nodeConfig;
 	var offset = entity.origin if "origin" in entity else Vector3.ZERO;
-
-	var fallbackMaterial = load(config.fallbackMaterial) \
-			if config.fallbackMaterial && ResourceLoader.exists(config.fallbackMaterial) else null;
 
 	return VMFTool.createMesh(struct, offset);
 

@@ -101,7 +101,7 @@ static func calculateVertices(side, brush):
 
 	vertices = vertices.filter(func(vertex):
 		return not brush.side.any(func(s):
-			return s.plane.value.distance_to(vertex) > 0.5;
+			return s.plane.value.distance_to(vertex) > 0.2;
 		)
 	);
 
@@ -113,7 +113,7 @@ static func calculateVertices(side, brush):
 	return vertices;
 
 static func calculateUVForSide(side, vertex):
-	var defaultTextureSize = VMFConfig.getConfig().nodeConfig.defaultTextureSize;
+	var defaultTextureSize = VMFConfig.config.material.defaultTextureSize;
 
 	var ux = side.uaxis.x;
 	var uy = side.uaxis.y;
@@ -127,17 +127,30 @@ static func calculateUVForSide(side, vertex):
 	var vshift = side.vaxis.shift;
 	var vscale = side.vaxis.scale;
 
-	var texture = VMTManager.getTextureInfo(side.material);
+	var material = VTFTool.getMaterial(side.material);
 	
+	if not material:
+		return Vector2(1, 1);
+
+	# NOTE In case if material is blend texture we use texture_albedo param
+	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
+
+	if not texture:
+		return Vector2(1, 1);
+
+	var tsize = Vector2(texture.get_width(), texture.get_height());
+	var tscale = material.get_meta("scale", Vector2(1, 1));
+
 	var tsx = 1;
 	var tsy = 1;
-	var tw = texture.width if texture else defaultTextureSize;
-	var th = texture.height if texture else defaultTextureSize;
+	var tw = tsize.x if material else defaultTextureSize;
+	var th = tsize.y if material else defaultTextureSize;
 	var aspect = tw / th;
 
-	if texture and texture.transform:
-		tsx /= texture.transform.scale.x;
-		tsy /= texture.transform.scale.y;
+
+	if material:
+		tsx /= tscale.x;
+		tsy /= tscale.y;
 
 	var uv = Vector3(ux, uy, uz);
 	var vv = Vector3(vx, vy, vz);
@@ -157,15 +170,10 @@ static func calculateUVForSide(side, vertex):
 static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> Mesh:
 	clearCaches();
 
-	var projectConfig = VMFConfig.getConfig();
-
-	var fbm = projectConfig.nodeConfig.fallbackMaterial;
-
-	var _scale = projectConfig.nodeConfig.importScale;
-	var _defaultTextureSize = projectConfig.nodeConfig.defaultTextureSize;
-	var _ignoreTextures = projectConfig.nodeConfig.ignoreTextures;
-	var _fallbackMaterial = load(fbm) if fbm && ResourceLoader.exists(fbm) else null;
-	var _textureImportMode = projectConfig.nodeConfig.textureImportMode;
+	var _scale = VMFConfig.config.import.scale;
+	var _defaultTextureSize = VMFConfig.config.material.defaultTextureSize;
+	var _ignoreTextures = VMFConfig.config.material.ignore;
+	var _textureImportMode = VMFConfig.config.material.importMode;
 
 	var elapsedTime = Time.get_ticks_msec();
 
@@ -179,8 +187,8 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 	for brush in brushes:
 		for side in brush.side:
-			var material = side.material
-			
+			var material = side.material.to_upper();
+
 			if _ignoreTextures.has(material):
 				continue;
 
@@ -216,7 +224,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 				
 			if vertices.size() < 3:
 				VMFLogger.error("Side corrupted: " + str(side.id));
-				return;
+				continue;
 
 			if not isDisplacement:
 				var normal = side.plane.value.normal;
@@ -254,7 +262,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 					surfaceTool.set_uv(uv);
 					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
-					surfaceTool.set_color(dispData.getColor(x, y));
+					# surfaceTool.set_color(dispData.getColor(x, y));
 					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 
@@ -281,15 +289,11 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
 						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
 
-		var targetMaterial = sides[0].side.material;
+		var ignoreMaterials = VTFTool.TextureImportMode.DO_NOTHING == VMFConfig.config.material.importMode;
 
-		if _textureImportMode == VMTManager.TextureImportMode.COLLATE_BY_NAME:
-			var loadedMaterial = VMTManager.getMaterialFromProject(targetMaterial);
-			var materialToSet = loadedMaterial if loadedMaterial else _fallbackMaterial;
-			surfaceTool.set_material(materialToSet);
+		if not ignoreMaterials:
+			var material = VTFTool.getMaterial(sides[0].side.material);
 
-		elif _textureImportMode == VMTManager.TextureImportMode.IMPORT_DIRECTLY:
-			var material = VMTManager.importMaterial(targetMaterial);
 			if material:
 				surfaceTool.set_material(material);
 

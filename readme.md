@@ -19,18 +19,18 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Entities support
 - Hammer's I/O  system support
 - Model import support*
-- Material import support**
+- Material import support
 - Instances support
 - Displacements (with blend materials)
+- Native VTF import
+  - Supported VTF formats: DXT1, DXT3, DXT5
 
 \* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
-\** - Requires 3rd party utility [VTFLib](https://nemstools.github.io/subpages/Comments/VTFLib_v1.3.2_Full.html)
 
 ## Known issues
 - Extraction materials and models from VPKs is not supported
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
 - Wasn't tested on MacOS
-- For materials it imports only albedo texture
 
 ## GodotVMF elsewhere
 * [Reddit](https://www.reddit.com/r/godot/comments/1ax4b7h/godotvmf_use_valve_hammer_editor_for_level/)

@@ -3,8 +3,8 @@ class_name VMFInstanceManager;
 static func correctInstancePath(e, mainVmfPath):
 	var instancePath = e.file.get_file().get_basename() + '.vmf'
 	var mapBaseFolder = mainVmfPath.get_base_dir();
-	var mapsFolder = (VMFConfig.getConfig().gameInfoPath + '/maps').replace('//', '/');
-	var mapsrcFolder = (VMFConfig.getConfig().gameInfoPath + '/mapsrc').replace('//', '/');
+	var mapsFolder = (VMFConfig.config.gameInfoPath + '/maps').replace('//', '/');
+	var mapsrcFolder = (VMFConfig.config.gameInfoPath + '/mapsrc').replace('//', '/');
 
 	var instancePaths = [
 		(mapBaseFolder + '/instances/' + instancePath).replace('//', '/'),
@@ -22,8 +22,7 @@ static func correctInstancePath(e, mainVmfPath):
 	return null;
 
 static func importInstance(file, vmfNode):
-	var config = VMFConfig.getConfig();
-	var instancesFolder = config.instancesFolder;
+	var instancesFolder = VMFConfig.config.instancesFolder;
 
 	var filename = file.get_file().get_basename();
 	var dir = ProjectSettings.globalize_path(instancesFolder);
@@ -46,3 +45,6 @@ static func importInstance(file, vmfNode):
 		DirAccess.make_dir_recursive_absolute(dir);
 
 	ResourceSaver.save(scn, path);
+
+	node.queue_free();
+	scn.free();

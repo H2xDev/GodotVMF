@@ -1,6 +1,6 @@
 class_name ValveFormatParser;
 
-static func parse(filePath):
+static func parse(filePath, keysToLower = false):
 	var out = {};
 	var parseTime = Time.get_ticks_msec();
 
@@ -20,9 +20,11 @@ static func parse(filePath):
 	planeRegex.compile('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)')
 
 	if not filePath:
+		VMFLogger.error('ValveFormatParser: No file path provided');
 		return null;
 
 	if not FileAccess.file_exists(filePath):
+		VMFLogger.error('ValveFormatParser: File does not exist: ' + filePath);
 		return null;
 
 	var file = FileAccess.open(filePath, FileAccess.READ);
@@ -34,6 +36,10 @@ static func parse(filePath):
 
 	var defineStructure = func(p):
 		var _name = p.strip_edges().replace('{', '').replace('"', '');
+
+		if keysToLower:
+			_name = _name.to_lower();
+
 		var newStruct = {};
 		var current = hierarchy[-1];
 
@@ -92,8 +98,14 @@ static func parse(filePath):
 
 				plane.append(vector);
 
+			var v = Plane(plane[0], plane[1], plane[2]);
+
+			if not v:
+				VMFLogger.error('ValveFormatParser: Failed to create plane from: ' + valueString);
+				return null;
+
 			return {
-				"value": Plane(plane[0], plane[1], plane[2]),
+				"value": v,
 				"points": plane,
 				"vecsum": plane[0] + plane[1] + plane[2],
 			}
@@ -109,6 +121,9 @@ static func parse(filePath):
 
 		var propName = m.get_string(1);
 		var propValue = parseValue.call(m.get_string(2));
+
+		if keysToLower:
+			propName = propName.to_lower();
 		
 		if propName in hierarchy[-1]:
 			if hierarchy[-1][propName] is Array:
