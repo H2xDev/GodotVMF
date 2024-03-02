@@ -105,29 +105,28 @@ static var formatLabels:
 			"NONE",
 		]
 
-static var formatMap:
-	get:
-		return {
-			"13": Image.Format.FORMAT_DXT1,
-			"14": Image.Format.FORMAT_DXT3,
-			"15": Image.Format.FORMAT_DXT5,
-		}
 
 static var cache = {};
 static var logged = {};
 
-static func _static_init():
-	VTFTool.cache = {};
-
 class VTF:
-	static var cache = {};
+	static var formatMap:
+		get:
+			return {
+				"13": Image.Format.FORMAT_DXT1,
+				"14": Image.Format.FORMAT_DXT3,
+				"15": Image.Format.FORMAT_DXT5,
+			};
 
-	static var config:
-		get: 
-			return VMFConfig.getConfig().nodeConfig;
+	static var supportedFormats:
+		get:
+			return [
+				ImageFormat.IMAGE_FORMAT_DXT1,
+				ImageFormat.IMAGE_FORMAT_DXT3,
+				ImageFormat.IMAGE_FORMAT_DXT5,
+			];
 
 	var file = null;
-
 	var signature:
 		get:
 			file.seek(0);
@@ -148,14 +147,14 @@ class VTF:
 			file.seek(16);
 			var width = file.get_16();
 
-			return width if width > 0 else config.defaultTextureSize;
+			return width if width > 0 else VMFConfig.config.defaultTextureSize;
 
 	var height:
 		get:
 			file.seek(18);
 
 			var height = file.get_16();
-			return height if height > 0 else config.defaultTextureSize;
+			return height if height > 0 else VMFConfig.config.defaultTextureSize;
 
 	var flags:
 		get:
@@ -223,68 +222,104 @@ class VTF:
 			file.seek(75);
 			return file.get_32();
 
-	var transform = {
-		"scale": Vector2(1, 1),
-	};
+	var frameDuration = 0;
+	var path = '';
 
-	static func create(fullPath):
+	static func create(path, duration = 0):
+		path = path.to_lower().replace('\\', '/').replace('//', '/');
+		var fullPath = "{0}/materials/{1}.vtf".format([VMFConfig.config.gameInfoPath, path]).replace('\\', '/').replace('//', '/');
+
 		if not FileAccess.file_exists(fullPath):
 			VMFLogger.error("File {0} is not exist".format([fullPath]));
 			return null;
 
-		VTF.cache = {} if not VTF.cache else VTF.cache;
+		if not VMFConfig.config:
+			return null;
 
-		var h = hash(fullPath);
+		var vtf = VTF.new(path, duration);
 
-		if h in cache:
-			return cache[h];
+		if not supportedFormats.has(vtf.hiresImageFormat):
+			VMFLogger.warn("Texture format {0} in not supported ({1})".format([VTFTool.formatLabels[vtf.hiresImageFormat], fullPath.get_file()]));
+			vtf.done();
+			return null;
 
-		var instance = VTF.new(fullPath);
-		cache[h] = instance;
-
-		return instance;
+		return vtf;
 
 	func done():
 		file.close();
 
-	func compileTexture():
+	func _readFrame(frame):
+		var data = PackedByteArray();
+		var byteRead = 0;
 		var isDXT1 = hiresImageFormat == ImageFormat.IMAGE_FORMAT_DXT1;
-		var isDXT3 = hiresImageFormat == ImageFormat.IMAGE_FORMAT_DXT3;
-		var isDXT5 = hiresImageFormat == ImageFormat.IMAGE_FORMAT_DXT5;
+		var format = formatMap[str(hiresImageFormat)];
 
-		if not isDXT1 and not isDXT3 and not isDXT5:
-			VMFLogger.error("Unsupported texture format: {0} for texture: {1}".format([VTFTool.formatLabels[hiresImageFormat], file.get_path()]));
+		frame = frames - 1 - frame;
+
+		for i in range(mipmapCount):
+			var mipWidth = max(1, width >> i);
+			var mipHeight = max(1, height >> i);
+
+			var multiplier = 8 if isDXT1 else 16;
+			var mipSize = max(1, mipWidth / 4) * max(1, mipHeight / 4) * multiplier;
+
+			file.seek(file.get_length() - byteRead - mipSize - mipSize * frame);
+			data += file.get_buffer(mipSize);
+
+			byteRead += mipSize + mipSize * (frames - 1);
+
+		var img = Image.create_from_data(width, height, true, format, data);
+
+		if not img:
+			VMFLogger.error("Corrupted file: {0}".format([file.get_path()]));
 			return null;
 
+		return ImageTexture.create_from_image(img);
+
+	func compileTexture():
 		if width == 0 or height == 0:
 			VMFLogger.error("Corrupted file: {0}".format([file.get_path()]));
 			return null;
 
-		var divider = 2 if isDXT1 else 1;
-		var bytesCount = (width * height) / divider;
+		var pathToSave = "{0}/{1}.texture.tres".format([VMFConfig.config.material.targetFolder, path]).replace('//', '/').replace('res:/', 'res://');
 
-		file.seek(file.get_length() - bytesCount);
+		var tex;
 
-		var data = file.get_buffer(bytesCount);
-		var format = VTFTool.formatMap[str(hiresImageFormat)];
+		if frames > 1:
+			tex = AnimatedTexture.new();
+			tex.frames = frames;
 
-		var image = Image.new();
-		image.set_data(width, height, false, format, data);
+			for frame in range(0, frames):
+				tex.set_frame_texture(frame, _readFrame(frame));
+				tex.set_frame_duration(frame, frameDuration);
 
-		return ImageTexture.create_from_image(image);
+		else:
+			tex = _readFrame(0);
 
-	func _init(fullPath):
-		VTF.cache = {} if not VTF.cache else VTF.cache;
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(pathToSave.get_base_dir()));
+		ResourceSaver.save(tex, pathToSave);
+		tex.take_over_path(pathToSave);
+
+		return tex;
+
+	func _init(path, duration):
+		path = path.to_lower().replace('\\', '/').replace('//', '/');
+		self.path = path;
+		self.frameDuration = duration
+
+		var fullPath = "{0}/materials/{1}.vtf".format([VMFConfig.config.gameInfoPath, path]);
 		file = FileAccess.open(fullPath, FileAccess.READ);
 
 class VMT:
-	static var fileProps = null; 
-	static var mappings = null;;
-	static var cache = {};
+	static var mappings:
+		get:
+			return {
+			"$basetexture": "albedo_texture",
+			"$bumpmap": "normal_texture",
+			"$detail": "detail_mask",
+		};
 
-	static var config:
-		get: 
-			return VMFConfig.getConfig();
+	static var cache = {};
 
 	static var featureMappings:
 		get:
@@ -295,9 +330,12 @@ class VMT:
 			};
 
 	static func create(materialPath):
+		if not VMFConfig.config:
+			return null;
+
 		materialPath = materialPath.to_lower().replace('\\', '/');
 
-		var path = "{0}/materials/{1}.vmt".format([config.gameInfoPath, materialPath]).replace('\\', '/').replace('//', '/');
+		var path = "{0}/materials/{1}.vmt".format([VMFConfig.config.gameInfoPath, materialPath]).replace('\\', '/').replace('//', '/');
 
 		var h = hash(materialPath);
 
@@ -323,15 +361,7 @@ class VMT:
 		return key in structure;
 
 	func get(key):
-		var value = structure[key] if key in structure else null;
-
-		if value == null:
-			return null;
-
-		if VMT.fileProps.has(key):
-			return "{0}/materials/{1}.vtf".format([config.gameInfoPath, value]).replace('\\', '/').replace('//', '/').to_lower();
-
-		return value;
+		return structure[key] if key in structure else null;
 
 	func _loadTextures():
 		for key in mappings.keys():
@@ -339,9 +369,11 @@ class VMT:
 				continue;
 
 			var path = structure[key].to_lower().replace('\\', '/').replace('//', '/');
-			var fullPath = "{0}/materials/{1}.vtf".format([config.gameInfoPath, path]).replace('\\', '/').replace('//', '/');
+			var duration = float(structure.proxies.animatedtexture.animatedtextureframerate if "proxies" in structure and "animatedtexture" in structure.proxies else 1);
 
-			var vtf = VTF.create(fullPath);
+			duration = 1 / duration if duration > 0 else 1;
+
+			var vtf = VTF.create(path, duration);
 
 			if not vtf:
 				continue;
@@ -350,12 +382,14 @@ class VMT:
 
 			var feature = featureMappings[key] if key in featureMappings else null;
 
-			if vtf.flags & Flags.TEXTUREFLAGS_ONEBITALPHA or vtf.flags & Flags.TEXTUREFLAGS_EIGHTBITALPHA:
-				material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
+			# if vtf.flags & Flags.TEXTUREFLAGS_ONEBITALPHA or vtf.flags & Flags.TEXTUREFLAGS_EIGHTBITALPHA:
+			# 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
 
 			if feature:
 				material.set_feature(feature, true);
 			material[mappings[key]] = vtf.compileTexture();
+
+			vtf.done();
 
 	func _parseTransform():
 		if not "$basetexturetransform" in structure:
@@ -379,84 +413,59 @@ class VMT:
 		material.set_meta("rotate", rotate);
 		material.set_meta("translate", translate);
 
-	func _initStatic():
-		VMT.fileProps = [
-			"$basetexture",
-			"$basetexture2",
-			"$bumpmap",
-			"$bumpmap2",
-			"$normalmap",
-			"$normalmap2",
-			"$detail",
-			"$detail2",
-		];
-
-		VMT.mappings = {
-			"$basetexture": "albedo_texture",
-			"$bumpmap": "normal_texture",
-			"$detail": "detail_texture",
-		}
-
 	func _init(materialPath):
-		_initStatic();
 		materialPath = materialPath.to_lower().replace('\\', '/');
 
-		var path = "{0}/materials/{1}.vmt".format([config.gameInfoPath, materialPath]).replace('\\', '/').replace('//', '/');
+		var path = "{0}/materials/{1}.vmt".format([VMFConfig.config.gameInfoPath, materialPath]).replace('\\', '/').replace('//', '/');
 
-		structure = ValveFormatParser.parse(path);
+		structure = ValveFormatParser.parse(path, true);
 		shader = structure.keys()[0];
 		structure = structure[shader];
 		material = StandardMaterial3D.new();
-
-		for key in structure.keys():
-			var needToTransform = key.to_lower() != key;
-			if not needToTransform:
-				continue;
-			structure[key.to_lower()] = structure[key];
-			structure.erase(key);
 
 		_loadTextures();
 		_parseTransform();
 
 static func clearCache():
+	VTFTool.logged = {};
 	VTFTool.cache = {};
 	VMT.cache = {};
-	VTF.cache = {};
 
 static func getMaterial(materialPath):
-	var config = VMFConfig.getConfig();
 	materialPath = materialPath.to_lower().replace('\\', '/');
-	materialPath = "{0}/{1}.tres".format([config.materialsFolder, materialPath]).replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
+	materialPath = "{0}/{1}.tres".format([VMFConfig.config.material.targetFolder, materialPath]).replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
 	var h = hash(materialPath);
 
-	VTFTool.cache = {} if not VTFTool.cache else VTFTool.cache;
 	VTFTool.logged = {} if not VTFTool.logged else VTFTool.logged;
+	VTFTool.cache = {} if not VTFTool.cache else VTFTool.cache;
 
-	if h in cache:
-		return cache[h];
+	if h in VTFTool.cache:
+		return VTFTool.cache[h];
 
 	if ResourceLoader.exists(materialPath):
-		var material = ResourceLoader.load(materialPath);
-		cache[h] = material;
+		var mat = ResourceLoader.load(materialPath);
 
-		return material;
+		if mat:
+			VTFTool.cache[h] = mat;
+			return mat;
+		
+		return null;
 
 	if not h in logged:
 		VMFLogger.warn("Material not found: {0}".format([materialPath]));
 		logged[h] = true;
 
+	return VMFConfig.config.material.fallbackMaterial;
+
 static func importMaterial(materialPath, isModel = false):
-	var h = hash(materialPath);
-	var config = VMFConfig.getConfig();
-
-	VTFTool.cache = {} if not VTFTool.cache else VTFTool.cache;
-
-	if h in cache:
-		return;
-
 	materialPath = materialPath.to_lower().replace('\\', '/');
-	var savePath = "{0}/{1}.tres".format([config.materialsFolder, materialPath]).replace('//', '/').replace('res:/', 'res://');
+	var savePath = "{0}/{1}.tres".format([VMFConfig.config.material.targetFolder, materialPath]).replace('//', '/').replace('res:/', 'res://');
+
+	var ignore = VMFConfig.config.material.ignore;
+
+	if ignore.has(materialPath.to_upper()):
+		return;
 
 	if ResourceLoader.exists(savePath):
 		return;
@@ -468,8 +477,6 @@ static func importMaterial(materialPath, isModel = false):
 
 	if isModel:
 		vmt.material.uv1_scale.y = -1;
-
-	cache[h] = vmt.material;
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(savePath.get_base_dir()));
 	ResourceSaver.save(vmt.material, savePath);

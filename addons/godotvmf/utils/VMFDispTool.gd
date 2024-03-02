@@ -63,8 +63,10 @@ func getDistance(x, y):
 
 func getColor(x, y):
 	var index = y + x * vertsCount;
+
 	if alphas.size() == 0:
-		return Color(1, 1, 1, 0);
+		return Color(1, 1, 1, 1.0);
+
 	return Color(1, 1, 1, 1.0 - alphas[index] / 255);
 
 func getVertices():

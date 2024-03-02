@@ -46,6 +46,7 @@ func ReimportGeometry():
 	var nodes = GetExistingVMFNodes();
 
 	for node in nodes:
+		# node.testMaterial = true;
 		node.importGeometryOnly();
 
 func _exit_tree():

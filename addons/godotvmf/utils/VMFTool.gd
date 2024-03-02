@@ -113,7 +113,7 @@ static func calculateVertices(side, brush):
 	return vertices;
 
 static func calculateUVForSide(side, vertex):
-	var defaultTextureSize = VMFConfig.getConfig().nodeConfig.defaultTextureSize;
+	var defaultTextureSize = VMFConfig.config.material.defaultTextureSize;
 
 	var ux = side.uaxis.x;
 	var uy = side.uaxis.y;
@@ -170,15 +170,10 @@ static func calculateUVForSide(side, vertex):
 static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> Mesh:
 	clearCaches();
 
-	var projectConfig = VMFConfig.getConfig();
-
-	var fbm = projectConfig.nodeConfig.fallbackMaterial;
-
-	var _scale = projectConfig.nodeConfig.importScale;
-	var _defaultTextureSize = projectConfig.nodeConfig.defaultTextureSize;
-	var _ignoreTextures = projectConfig.nodeConfig.ignoreTextures;
-	var _fallbackMaterial = load(fbm) if fbm && ResourceLoader.exists(fbm) else null;
-	var _textureImportMode = projectConfig.nodeConfig.textureImportMode;
+	var _scale = VMFConfig.config.import.scale;
+	var _defaultTextureSize = VMFConfig.config.material.defaultTextureSize;
+	var _ignoreTextures = VMFConfig.config.material.ignore;
+	var _textureImportMode = VMFConfig.config.material.importMode;
 
 	var elapsedTime = Time.get_ticks_msec();
 
@@ -267,7 +262,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 					surfaceTool.set_uv(uv);
 					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
-					surfaceTool.set_color(dispData.getColor(x, y));
+					# surfaceTool.set_color(dispData.getColor(x, y));
 					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 
@@ -294,11 +289,14 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
 						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
 
-		var ignoreMaterials = VTFTool.TextureImportMode.DO_NOTHING == projectConfig.nodeConfig.textureImportMode;
-		var material = VTFTool.getMaterial(sides[0].side.material) if not ignoreMaterials else _fallbackMaterial;
-		material = material if material else _fallbackMaterial;
+		var ignoreMaterials = VTFTool.TextureImportMode.DO_NOTHING == VMFConfig.config.material.importMode;
 
-		surfaceTool.set_material(material);
+		if not ignoreMaterials:
+			var material = VTFTool.getMaterial(sides[0].side.material);
+
+			if material:
+				surfaceTool.set_material(material);
+
 		surfaceTool.generate_normals();
 		surfaceTool.generate_tangents();
 		surfaceTool.commit(mesh);

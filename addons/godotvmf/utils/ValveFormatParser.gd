@@ -1,6 +1,6 @@
 class_name ValveFormatParser;
 
-static func parse(filePath):
+static func parse(filePath, keysToLower = false):
 	var out = {};
 	var parseTime = Time.get_ticks_msec();
 
@@ -36,6 +36,10 @@ static func parse(filePath):
 
 	var defineStructure = func(p):
 		var _name = p.strip_edges().replace('{', '').replace('"', '');
+
+		if keysToLower:
+			_name = _name.to_lower();
+
 		var newStruct = {};
 		var current = hierarchy[-1];
 
@@ -111,6 +115,9 @@ static func parse(filePath):
 
 		var propName = m.get_string(1);
 		var propValue = parseValue.call(m.get_string(2));
+
+		if keysToLower:
+			propName = propName.to_lower();
 		
 		if propName in hierarchy[-1]:
 			if hierarchy[-1][propName] is Array:
