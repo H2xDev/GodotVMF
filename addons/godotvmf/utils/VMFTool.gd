@@ -135,17 +135,17 @@ static func calculateUVForSide(side, vertex):
 	# NOTE In case if material is blend texture we use texture_albedo param
 	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
 
-	if not texture:
-		return Vector2(1, 1);
-
-	var tsize = Vector2(texture.get_width(), texture.get_height());
+	var tsize = texture.get_size() if texture else Vector2(defaultTextureSize, defaultTextureSize);
 	var tscale = material.get_meta("scale", Vector2(1, 1));
+	
+	if side.material == 'wood/wooddoor002a':
+		print(tsize);
 
 	var tsx = 1;
 	var tsy = 1;
-	var tw = tsize.x if material else defaultTextureSize;
-	var th = tsize.y if material else defaultTextureSize;
-	var aspect = tw / th;
+	var tw = tsize.x;
+	var th = tsize.y;
+	var aspect = th / th;
 
 
 	if material:
@@ -157,7 +157,7 @@ static func calculateUVForSide(side, vertex):
 	var v2 = Vector3(vertex.x, vertex.y, vertex.z);
 
 	var u = (v2.dot(uv) + ushift * uscale) / tw / uscale / tsx;
-	var v = (v2.dot(vv) + vshift * vscale) / tw / vscale / tsy;
+	var v = (v2.dot(vv) + vshift * vscale) / th / vscale / tsy;
 	
 	if aspect < 1:
 		u *= aspect;
@@ -262,7 +262,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 
 					surfaceTool.set_uv(uv);
 					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
-					# surfaceTool.set_color(dispData.getColor(x, y));
+					surfaceTool.set_color(dispData.getColor(x, y));
 					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 
