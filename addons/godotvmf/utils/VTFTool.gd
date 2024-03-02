@@ -379,11 +379,17 @@ class VMT:
 				continue;
 
 			var texture = vtf.compileTexture();
-
 			var feature = featureMappings[key] if key in featureMappings else null;
 
-			# if vtf.flags & Flags.TEXTUREFLAGS_ONEBITALPHA or vtf.flags & Flags.TEXTUREFLAGS_EIGHTBITALPHA:
-			# 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
+			var transparency = BaseMaterial3D.TRANSPARENCY_DISABLED;
+
+			if get("$alphatest") == 1:
+				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
+			elif get("$translucent") == 1:
+				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
+
+			material.transparency = transparency;
+
 
 			if feature:
 				material.set_feature(feature, true);
