@@ -316,7 +316,7 @@ class VMT:
 			return {
 			"$basetexture": "albedo_texture",
 			"$bumpmap": "normal_texture",
-			"$detail": "detail_mask",
+			"$detail": "detail_albedo",
 		};
 
 	static var cache = {};
@@ -428,6 +428,7 @@ class VMT:
 		shader = structure.keys()[0];
 		structure = structure[shader];
 		material = StandardMaterial3D.new();
+		material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL;
 
 		_loadTextures();
 		_parseTransform();

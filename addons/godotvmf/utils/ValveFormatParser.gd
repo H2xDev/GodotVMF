@@ -98,8 +98,14 @@ static func parse(filePath, keysToLower = false):
 
 				plane.append(vector);
 
+			var v = Plane(plane[0], plane[1], plane[2]);
+
+			if not v:
+				VMFLogger.error('ValveFormatParser: Failed to create plane from: ' + valueString);
+				return null;
+
 			return {
-				"value": Plane(plane[0], plane[1], plane[2]),
+				"value": v,
 				"points": plane,
 				"vecsum": plane[0] + plane[1] + plane[2],
 			}

@@ -101,7 +101,7 @@ static func calculateVertices(side, brush):
 
 	vertices = vertices.filter(func(vertex):
 		return not brush.side.any(func(s):
-			return s.plane.value.distance_to(vertex) > 0.5;
+			return s.plane.value.distance_to(vertex) > 0.2;
 		)
 	);
 
@@ -224,7 +224,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 				
 			if vertices.size() < 3:
 				VMFLogger.error("Side corrupted: " + str(side.id));
-				return;
+				continue;
 
 			if not isDisplacement:
 				var normal = side.plane.value.normal;
