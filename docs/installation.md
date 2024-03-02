@@ -7,7 +7,7 @@ Before work with the plugin create in the root of the project a file `vmf.config
 Default config:  
 ```json
 {
-	"gameInfoPath": "D:/Projects/godotvmf_testscase/Surf_Mesa_d",
+	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
 	"mdl2obj": "res://mdl2obj/mdl2obj.exe",
 
 	"import": {
