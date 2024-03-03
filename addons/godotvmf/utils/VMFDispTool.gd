@@ -27,8 +27,7 @@ func _init(side, brush):
 	self.side = side;
 	self.brush = brush;
 
-	var startNumbers = Array(dispInfo.startposition.split(" ")).map(func(x):
-		return float(x.replace('[', '').replace(']', '')));
+	var startNumbers = Array(dispInfo.startposition.trim_suffix(']').trim_prefix('[').split(" ")).map(func(x):return float(x));
 
 	startPoint = Vector3(startNumbers[0], startNumbers[1], startNumbers[2]);
 
@@ -58,16 +57,17 @@ func getOffset(x, y):
 func getDistance(x, y):
 	var index = y + x * vertsCount;
 	if distances.size() == 0:
-		return 0;
+		return Vector3.ZERO;
+
 	return getNormal(x, y) * distances[index];
 
 func getColor(x, y):
 	var index = y + x * vertsCount;
 
 	if alphas.size() == 0:
-		return Color(1, 1, 1, 1.0);
+		return Color8(255, 0, 0);
 
-	return Color(1, 1, 1, 1.0 - alphas[index] / 255);
+	return Color8(int(255 - alphas[index]), 0, 0);
 
 func getVertices():
 	var vertices = VMFTool.calculateVertices(side, brush);
@@ -79,7 +79,7 @@ func getVertices():
 	var startIndex = 1;
 
 	for v in vertices:
-		if v.distance_to(startPoint) < 0.5:
+		if v.distance_to(startPoint) < 0.2:
 			break;
 
 		startIndex += 1;
@@ -112,7 +112,7 @@ func _parseVectors(key):
 		return vects;
 
 	for row in dispInfo[key].values():
-		row = Array(row.split(" ")).map(func(x): return float(x));
+		row = Array(row.trim_suffix(' ').trim_prefix(' ').split(" ")).map(func(x): return float(x));
 		var vecset = [];
 
 		for i in range(0, row.size() / 3):
@@ -129,7 +129,7 @@ func _parseFloats(key):
 		return floats;
 		
 	for row in dispInfo[key].values():
-		row = Array(row.split(" ")).map(func(x): return float(x));
+		row = Array(row.trim_suffix(' ').trim_prefix(' ').split(" ")).map(func(x): return float(x));
 
 		floats.append_array(row);
 

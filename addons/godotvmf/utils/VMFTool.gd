@@ -230,6 +230,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 					var sg = -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 					
 					surfaceTool.set_smooth_group(sg);
+					surfaceTool.set_color(Color8(255, 0, 0));
 					surfaceTool.add_vertex(vt);
 					index += 1;
 
@@ -252,8 +253,8 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 					var uv = calculateUVForSide(side, v - dist - offset);
 
 					surfaceTool.set_uv(uv);
-					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
 					surfaceTool.set_color(dispData.getColor(x, y));
+					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
 					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 

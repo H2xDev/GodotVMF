@@ -316,7 +316,7 @@ class VMT:
 			return {
 			"$basetexture": "albedo_texture",
 			"$bumpmap": "normal_texture",
-			"$detail": "detail_albedo",
+			"$detail": ["detail_albedo", "detail_mask"],
 		};
 
 	static var cache = {};
@@ -355,7 +355,7 @@ class VMT:
 
 	var structure = {};
 	var shader = "";
-	var material = null;
+	var material: StandardMaterial3D = null;
 
 	func has(key):
 		return key in structure;
@@ -387,12 +387,21 @@ class VMT:
 				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
 			elif getVal("$translucent") == 1:
 				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
+				
+			if transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				material.cull_mode = BaseMaterial3D.CULL_DISABLED;
 
 			material.set_transparency(transparency);
 
 			if feature:
 				material.set_feature(feature, true);
-			material[mappings[key]] = vtf.compileTexture();
+				
+			var tex = vtf.compileTexture();
+			if mappings[key] is Array:
+				for skey in mappings[key]:
+					material[skey] = tex;
+			else:
+				material[mappings[key]] = tex;
 
 			vtf.done();
 
@@ -405,9 +414,10 @@ class VMT:
 			return;
 
 		var transformRegex = RegEx.new();
-		transformRegex.compile('^"?center ([0-9-.]+) ([0-9-.]+) scale ([0-9-.]+) ([0-9-.]+) rotate ([0-9-.]+) translate ([0-9-.]+) ([0-9-.]+)"?$')
+		transformRegex.compile('^"?center\\s+([0-9-.]+)\\s+([0-9-.]+)\\s+scale\\s+([0-9-.]+)\\s+([0-9-.]+)\\s+rotate\\s+([0-9-.]+)\\s+translate\\s+([0-9-.]+)\\s+([0-9-.]+)"?$')
 
 		var transformParams = transformRegex.search(structure['$basetexturetransform']);
+		
 		var center = Vector2(float(transformParams.get_string(1)), float(transformParams.get_string(2)));
 		var scale = Vector2(float(transformParams.get_string(3)), float(transformParams.get_string(4)));
 		var rotate = float(transformParams.get_string(5));

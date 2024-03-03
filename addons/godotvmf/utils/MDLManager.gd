@@ -55,13 +55,10 @@ static func getModelMaterials(modelPath: String):
 			currentByte = file.get_8();
 		
 		var name = bytes.get_string_from_ascii();
-		print(name);
 		
 		for path in dirs:
 			materials.append(path + name);
 			
-	print(materials);
-
 	file.close();
 
 	return materials;
@@ -113,10 +110,9 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 
 	root.name = modelPath.get_file().get_basename();
 	model.name = modelPath.get_file().get_basename() + '_mesh';
-
 	model.set_mesh(mesh);
-
 	root.add_child(model);
+	
 	model.set_owner(root);
 
 	var matIndex = 0;

@@ -68,6 +68,8 @@ func _importMaterials():
 			if not "solid" in entity:
 				continue;
 
+			entity.solid = [entity.solid] if entity.solid is Dictionary else entity.solid;
+
 			for brush in entity.solid:
 				if not brush is Dictionary:
 					continue;
@@ -110,20 +112,19 @@ func _importModels():
 
 		if not "model" in ent:
 			continue;
-		
+
 		var resource = MDLManager.loadModel(ent.model, VMFConfig.config.models.generateCollision);
 		var importScale = VMFConfig.config.import.scale;
 
 		if not resource:
 			continue;
-
+			
 		var model = resource.instantiate();
 		var origin = Vector3(ent.origin.x * importScale, ent.origin.z * importScale, -ent.origin.y * importScale);
-		var angles = Vector3(deg_to_rad(ent.angles.z) - PI / 2, deg_to_rad(ent.angles.y), deg_to_rad(-ent.angles.x));
-		var scale = Vector3(importScale, importScale, importScale);
+		var angles = Vector3(ent.angles.z, ent.angles.y, -ent.angles.x) / 180.0 * PI;
+		var scale = Vector3(importScale, importScale, importScale)
 
 		model.transform.origin = origin;
-		model.rotation_order = 3;
 		model.rotation = angles;
 		model.scale = scale;
 		model.name = ent.model.get_file().split('.')[0] + '_' + str(ent.id);

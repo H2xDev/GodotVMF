@@ -15,6 +15,8 @@ const debug: bool = false
 #
 # MIT License
 # https://github.com/Ezcha/gd-obj/blob/master/LICENSE
+#
+# Modified by H2xDev for GodotVMF
 
 # Create mesh from obj and mtl paths
 static func load_obj(obj_path: String, mtl_path: String = "") -> Mesh:
@@ -162,11 +164,11 @@ static func _create_obj(obj: String, mats: Dictionary) -> Mesh:
 				pass
 			"v":
 				# Vertice
-				var n_v: Vector3 = Vector3(parts[1].to_float(), parts[2].to_float(), parts[3].to_float())
+				var n_v: Vector3 = Vector3(parts[1].to_float(), parts[3].to_float(), -parts[2].to_float())
 				vertices.append(n_v)
 			"vn":
 				# Normal
-				var n_vn: Vector3 = Vector3(parts[1].to_float(), parts[2].to_float(), parts[3].to_float())
+				var n_vn: Vector3 = Vector3(parts[1].to_float(), parts[3].to_float(), -parts[2].to_float())
 				normals.append(n_vn)
 			"vt":
 				# UV

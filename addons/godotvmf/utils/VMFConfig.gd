@@ -64,7 +64,6 @@ static func _validateConfig():
 
 	checkKeys = [
 		"importMode",
-		"generateMipmaps",
 		"ignore",
 		"fallbackMaterial",
 		"defaultTextureSize",
