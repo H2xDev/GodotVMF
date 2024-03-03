@@ -360,7 +360,7 @@ class VMT:
 	func has(key):
 		return key in structure;
 
-	func get(key):
+	func getVal(key):
 		return structure[key] if key in structure else null;
 
 	func _loadTextures():
@@ -383,13 +383,12 @@ class VMT:
 
 			var transparency = BaseMaterial3D.TRANSPARENCY_DISABLED;
 
-			if get("$alphatest") == 1:
+			if getVal("$alphatest") == 1:
 				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
-			elif get("$translucent") == 1:
+			elif getVal("$translucent") == 1:
 				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
 
-			material.transparency = transparency;
-
+			material.set_transparency(transparency);
 
 			if feature:
 				material.set_feature(feature, true);

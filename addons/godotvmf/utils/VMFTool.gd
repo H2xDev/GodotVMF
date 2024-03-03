@@ -96,12 +96,11 @@ static func calculateVertices(side, brush):
 			if isVerticeExists.call(vertex):
 				continue;
 
-			vertex = side.plane.value.project(vertex);
 			vertices.append(vertex);
 
 	vertices = vertices.filter(func(vertex):
 		return not brush.side.any(func(s):
-			return s.plane.value.distance_to(vertex) > 0.2;
+			return s.plane.value.distance_to(vertex) > 0.5;
 		)
 	);
 

@@ -41,13 +41,26 @@ static func getModelMaterials(modelPath: String):
 	file.seek(textureOffset);
 
 	for i in range(textureCount):
-		var nameOffset = textureOffset + 64 * i + file.get_32();
+		var mstudiotextureOffset = textureOffset + 64 * i;
+		file.seek(mstudiotextureOffset);
 		
-		file.seek(nameOffset);
-		var name = file.get_buffer(64).get_string_from_ascii();
+		var nameOffset = file.get_32();
+		file.seek(mstudiotextureOffset + nameOffset);
+		
+		var bytes = PackedByteArray();
+		var currentByte = file.get_8();
+
+		while (currentByte != 0):
+			bytes.append(currentByte);
+			currentByte = file.get_8();
+		
+		var name = bytes.get_string_from_ascii();
+		print(name);
 		
 		for path in dirs:
 			materials.append(path + name);
+			
+	print(materials);
 
 	file.close();
 
@@ -80,12 +93,13 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 		MDLManager.cache[h] = res;
 		return res;
 
-	var materials = getModelMaterials(modelPath);
-	var materialPath = materials[0] if materials.size() > 0 else null;
-
-	VTFTool.importMaterial(materialPath, true);
-
-	var material = VTFTool.getMaterial(materialPath);
+	var materials = getModelMaterials(modelPath)\
+	.map(
+		func (materialPath):
+			VTFTool.importMaterial(materialPath, true);
+			return VTFTool.getMaterial(materialPath);
+	)\
+	.filter(func(material): return material != null);
 
 	var processOut = [];
 	var executable = ProjectSettings.globalize_path(VMFConfig.config.mdl2obj) if VMFConfig.config.mdl2obj.begins_with("res:") else VMFConfig.config.mdl2obj;
@@ -105,8 +119,10 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 	root.add_child(model);
 	model.set_owner(root);
 
-	if material:
-		mesh.surface_set_material(0, material);
+	var matIndex = 0;
+	for material in materials:
+		mesh.surface_set_material(matIndex, material);
+		matIndex += 1;
 
 	if generateCollision:
 		model.create_multiple_convex_collisions();
