@@ -100,7 +100,7 @@ static func calculateVertices(side, brush):
 
 	vertices = vertices.filter(func(vertex):
 		return not brush.side.any(func(s):
-			return s.plane.value.distance_to(vertex) > 0.5;
+			return s.plane.value.distance_to(vertex) > 0.2;
 		)
 	);
 
@@ -179,8 +179,9 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 	for brush in brushes:
 		for side in brush.side:
 			var material = side.material.to_upper();
+			var isIgnored = _ignoreTextures.any(func(rx): return material.match(rx));
 
-			if _ignoreTextures.has(material):
+			if isIgnored:
 				continue;
 
 			if not material in materialSides:

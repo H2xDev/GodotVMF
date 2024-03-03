@@ -13,12 +13,6 @@ var vmf: String = '';
 		importMap();
 		import = false;
 
-## Click here to reload vmf.config.json
-@export var reloadConfig: bool = false:
-	set(value):
-		VMFConfig.checkProjectConfig();
-		reloadConfig = false;
-
 var _structure: Dictionary = {};
 var _owner = null;
 
@@ -60,6 +54,9 @@ func _importMaterials():
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
 			for side in brush.side:
+				var isIgnored = ignoreList.any(func(rx): return side.material.match(rx));
+				if isIgnored: continue;
+
 				if not list.has(side.material):
 					list.append(side.material);
 
@@ -71,10 +68,13 @@ func _importMaterials():
 			entity.solid = [entity.solid] if entity.solid is Dictionary else entity.solid;
 
 			for brush in entity.solid:
-				if not brush is Dictionary:
-					continue;
+				if not brush is Dictionary: continue;
+
 				for side in brush.side:
-					if not list.has(side.material) and not ignoreList.has(side.material):
+					var isIgnored = ignoreList.any(func(rx): return side.material.match(rx));
+					if isIgnored: continue;
+
+					if not list.has(side.material):
 						list.append(side.material);
 
 	for material in list:
@@ -173,8 +173,7 @@ func _importEntities(_reimport = false):
 	add_child(_entitiesNode);
 	_entitiesNode.set_owner(_owner);
 
-	if not "entity" in _structure:
-		return;
+	if not "entity" in _structure: return;
 
 	for ent in _structure.entity:
 		ent = ent.duplicate(true);
@@ -207,22 +206,21 @@ func _importEntities(_reimport = false):
 	VMFLogger.log("Imported entities in " + str(time) + "ms");
 
 func importGeometryOnly():
-	if not VMFConfig.config:
-		return;
+	VMFConfig.checkProjectConfig();
+	
+	if not VMFConfig.validateConfig(): return;
+	if not VMFConfig.config: return;
 
 	_readVMF();
 	_importMaterials();
 	_importGeometry(true);
 
 func importMap():
-	if not VMFConfig.config:
-		return;
-
-	if not Engine.is_editor_hint():
-		return;
-
-	if not vmf:
-		return;
+	VMFConfig.checkProjectConfig();
+	if not VMFConfig.validateConfig(): return;
+	if not VMFConfig.config: return;
+	if not Engine.is_editor_hint(): return;
+	if not vmf: return;
 
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();

@@ -30,7 +30,7 @@ static func _validateKeys(keyset, dict, resFolders = [], section = ''):
 	return true;
 
 
-static func _validateConfig():
+static func validateConfig():
 	var checkKeys = [
 		"import",
 		"material",
@@ -91,7 +91,7 @@ static func checkProjectConfig():
 	var file = FileAccess.open('res://vmf.config.json', FileAccess.READ);
 	_config = JSON.parse_string(file.get_as_text());
 
-	if not _validateConfig():
+	if not validateConfig():
 		_config = null;
 		return;
 

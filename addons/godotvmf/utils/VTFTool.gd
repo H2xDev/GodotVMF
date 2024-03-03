@@ -438,6 +438,10 @@ class VMT:
 		structure = structure[shader];
 		material = StandardMaterial3D.new();
 		material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL;
+		
+		# NOTE: L4D2 Case
+		if "insert" in structure:
+			structure = structure.insert;
 
 		_loadTextures();
 		_parseTransform();
@@ -477,11 +481,6 @@ static func getMaterial(materialPath):
 static func importMaterial(materialPath, isModel = false):
 	materialPath = materialPath.to_lower().replace('\\', '/');
 	var savePath = "{0}/{1}.tres".format([VMFConfig.config.material.targetFolder, materialPath]).replace('//', '/').replace('res:/', 'res://');
-
-	var ignore = VMFConfig.config.material.ignore;
-
-	if ignore.has(materialPath.to_upper()):
-		return;
 
 	if ResourceLoader.exists(savePath):
 		return;
