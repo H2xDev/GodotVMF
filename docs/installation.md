@@ -26,9 +26,9 @@ Default config:
 	"material": {
 		"importMode": 1,
 		"ignore": [
-			"TOOLS/TOOLSNODRAW",
-			"TOOLS/TOOLSSKYBOX",
-			"TOOLS/TOOLSINVISIBLE"
+			"TOOLS/*",
+			"light/white",
+            "*/water_*"
 		],
 		"fallbackMaterial": null,
 		"defaultTextureSize": 512,
