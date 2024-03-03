@@ -1,4 +1,5 @@
 # GodotVMF
+![Hero](assets/hero.jpg)
 **THIS PROJECT STILL IN ACTIVE DEVELOPMENT THERE MIGHT BE BUGS**  
   
 An importer of VMF files into Godot.  
