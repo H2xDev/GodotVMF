@@ -28,7 +28,7 @@ Default config:
 		"ignore": [
 			"TOOLS/*",
 			"light/white",
-            "*/water_*"
+            		"*/water_*"
 		],
 		"fallbackMaterial": null,
 		"defaultTextureSize": 512,
