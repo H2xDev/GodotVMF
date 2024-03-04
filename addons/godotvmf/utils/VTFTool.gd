@@ -295,6 +295,9 @@ class VTF:
 
 		else:
 			tex = _readFrame(0);
+			
+		if not tex:
+			return null;
 
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(pathToSave.get_base_dir()));
 		ResourceSaver.save(tex, pathToSave);

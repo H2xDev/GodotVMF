@@ -84,8 +84,10 @@ func _importMaterials():
 
 # TODO: Make it in separate thread
 func _importModels():
+	if not "models" in VMFConfig.config:
+		return;
 	if not VMFConfig.config.models.import:
-		return false;
+		return;
 
 	if not "entity" in _structure:
 		return;

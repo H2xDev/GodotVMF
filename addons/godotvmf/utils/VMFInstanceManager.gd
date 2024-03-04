@@ -22,7 +22,7 @@ static func correctInstancePath(e, mainVmfPath):
 	return null;
 
 static func importInstance(file, vmfNode):
-	var instancesFolder = VMFConfig.config.instancesFolder;
+	var instancesFolder = VMFConfig.config.import.instancesFolder;
 
 	var filename = file.get_file().get_basename();
 	var dir = ProjectSettings.globalize_path(instancesFolder);
