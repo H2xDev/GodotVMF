@@ -2,7 +2,7 @@
 Move the `addons/godotvmf` folder into the same folder of your project and activate it in your project settings.
 
 ## Config file
-Before work with the plugin create in the root of the project a file `vmf.config.json`. If during work you change the config file, you need to click `Reload config` inside the VMFNode inspector to apply changes.  
+Before work with the plugin create in the root of the project a file `vmf.config.json`.
 
 Default config:  
 ```json
