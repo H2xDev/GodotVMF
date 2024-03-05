@@ -45,7 +45,9 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 - Demo: https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Special thanks
-[@Ambiabstract](https://github.com/Ambiabstract) - for help and inspiration
+[@Ambiabstract](https://github.com/Ambiabstract) - help and inspiration
+[@Lachrymogenic](https://github.com/Lachrymogenic) - test on linux and performance test
+[@SharkPetro](https://github.com/SharkPetro) - materials test
 
 ## License
 MIT
