@@ -87,6 +87,9 @@ Reference:
 * [convert_vector](#convert_vectorv-vector3---vector3)
 * [convert_direction](#convert_directionv-vector3---vector3)
 * [define_alias (static)](#define_aliasname-string-value-valveionode-static)
+* [get_target](#get_targettargetname-string---valveionode)
+* [get_all_targets](#get_all_targetstargetname-string---valveionode)
+* [get_movement_vector](#get_movement_vectorvec-vector3---vector3)
 
 ### _entity_ready()
 Means that all outputs and reparents are ready to use. Use this method instead of `_ready`.
@@ -157,7 +160,6 @@ Converts Vector3 of rotation from Z-up to Y-up.
 
 ### define_alias(name: string, value: ValveIONode) [static]
 Defines global alias to node for using in I/O. 
-
 #### Example
 ```gdscript
 # player.gd
@@ -165,3 +167,12 @@ Defines global alias to node for using in I/O.
 func _entity_ready():
     ValveIONode.define_alias('!player', self);
 ```
+
+### get_target(targetName: string) -> ValveIONode
+Returns first node by target name assigned in entity.
+
+### get_all_targets(targetName: string) -> ValveIONode[]
+Returns all nodes by target name assigned in entities.
+
+### get_movement_vector(vec: Vector3) -> Vector3
+Returns directional vector from specified vector. If an entity has movement direction property (i.e. func_door, func_button) use this function to convert the direction.

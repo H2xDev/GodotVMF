@@ -19,14 +19,13 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Import geometry (Also with smoothing groups)
 - Entities support
 - Hammer's I/O  system support
-- Model import support*
+- Model import support
+  - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
 - Material import support
 - Instances support
 - Displacements (with blend materials)
 - Native VTF import
   - Supported VTF formats: DXT1, DXT3, DXT5
-
-\* - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
 
 ## Known issues
 - Extraction materials and models from VPKs is not supported
@@ -46,7 +45,9 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 - Demo: https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Special thanks
-[@Ambiabstract](https://github.com/Ambiabstract) - for help and inspiration
+[@Ambiabstract](https://github.com/Ambiabstract) - help and inspiration  
+[@Lachrymogenic](https://github.com/Lachrymogenic) - test on linux and performance test  
+[@SharkPetro](https://github.com/SharkPetro) - materials test  
 
 ## License
 MIT
