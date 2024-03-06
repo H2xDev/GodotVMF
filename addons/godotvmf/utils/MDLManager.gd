@@ -32,11 +32,17 @@ static func getModelMaterials(modelPath: String):
 	var dirs = [];
 	
 	file.seek(textureDirOffset);
+	file.seek(file.get_32());
 	for i in range(textureDirCount):
-		var offset = file.get_32();
-		file.seek(offset);
-		var dir = file.get_buffer(64).get_string_from_ascii().replace('\\', '/');
-		dirs.append(dir);
+		var bytes = PackedByteArray();
+		var currentByte = file.get_8();
+
+		while (currentByte != 0):
+			bytes.append(currentByte);
+			currentByte = file.get_8();
+		
+		var dir = bytes.get_string_from_ascii();
+		if dir: dirs.append(dir);
 
 	file.seek(textureOffset);
 

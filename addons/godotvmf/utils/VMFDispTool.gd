@@ -67,7 +67,7 @@ func getColor(x, y):
 	if alphas.size() == 0:
 		return Color8(255, 0, 0);
 
-	return Color8(int(255 - alphas[index]), 0, 0);
+	return Color8(int(alphas[index]), 0, 0);
 
 func getVertices():
 	var vertices = VMFTool.calculateVertices(side, brush);

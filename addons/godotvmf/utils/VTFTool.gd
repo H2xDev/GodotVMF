@@ -318,7 +318,9 @@ class VMT:
 		get:
 			return {
 			"$basetexture": "albedo_texture",
+			"$basetexture2": "albedo_texture2",
 			"$bumpmap": "normal_texture",
+			"$bumpmap2": "normal_texture2",
 			"$detail": ["detail_albedo", "detail_mask"],
 		};
 
@@ -331,6 +333,12 @@ class VMT:
 				"$normalmap": BaseMaterial3D.FEATURE_NORMAL_MAPPING,
 				"$detail": BaseMaterial3D.FEATURE_DETAIL,
 			};
+
+	static var materialMap:
+		get:
+			return {
+				"worldvertextransition": WorldVertexTransitionMaterial,
+			}
 
 	static func create(materialPath):
 		if not VMFConfig.config:
@@ -358,7 +366,7 @@ class VMT:
 
 	var structure = {};
 	var shader = "";
-	var material: StandardMaterial3D = null;
+	var material: Material = null;
 
 	func has(key):
 		return key in structure;
@@ -371,7 +379,7 @@ class VMT:
 			if not key in structure:
 				continue;
 
-			var path = structure[key].to_lower().replace('\\', '/').replace('//', '/');
+			var path = structure[key].to_lower().replace('\\', '/').replace('//', '/').replace('.vtf', '');
 			var duration = float(structure.proxies.animatedtexture.animatedtextureframerate if "proxies" in structure and "animatedtexture" in structure.proxies else 1);
 
 			duration = 1 / duration if duration > 0 else 1;
@@ -384,22 +392,24 @@ class VMT:
 			var texture = vtf.compileTexture();
 			var feature = featureMappings[key] if key in featureMappings else null;
 
-			var transparency = BaseMaterial3D.TRANSPARENCY_DISABLED;
+			if material is StandardMaterial3D:
+				var transparency = BaseMaterial3D.TRANSPARENCY_DISABLED;
 
-			if getVal("$alphatest") == 1:
-				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
-			elif getVal("$translucent") == 1:
-				transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
-				
-			if transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
-				material.cull_mode = BaseMaterial3D.CULL_DISABLED;
+				if getVal("$alphatest") == 1:
+					transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
+				elif getVal("$translucent") == 1:
+					transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
+					
+				if transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+					material.cull_mode = BaseMaterial3D.CULL_DISABLED;
 
-			material.set_transparency(transparency);
+				material.set_transparency(transparency);
 
-			if feature:
-				material.set_feature(feature, true);
+				if feature:
+					material.set_feature(feature, true);
 				
 			var tex = vtf.compileTexture();
+
 			if mappings[key] is Array:
 				for skey in mappings[key]:
 					material[skey] = tex;
@@ -439,8 +449,10 @@ class VMT:
 		structure = ValveFormatParser.parse(path, true);
 		shader = structure.keys()[0];
 		structure = structure[shader];
-		material = StandardMaterial3D.new();
-		material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL;
+		material = materialMap[shader].new() if shader in materialMap else StandardMaterial3D.new();
+
+		if material is StandardMaterial3D:
+			material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL;
 		
 		# NOTE: L4D2 Case
 		if "insert" in structure:

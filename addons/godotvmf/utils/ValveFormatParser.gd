@@ -18,6 +18,9 @@ static func parse(filePath, keysToLower = false):
 
 	var planeRegex = RegEx.new();
 	planeRegex.compile('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)')
+	
+	var commentRegex = RegEx.new();
+	commentRegex.compile('\\s+?\\/\\/.+');
 
 	if not filePath:
 		VMFLogger.error('ValveFormatParser: No file path provided');
@@ -137,7 +140,7 @@ static func parse(filePath, keysToLower = false):
 	var previousLine = line;
 
 	for l in lines:
-		line = l.strip_edges();
+		line = commentRegex.sub(l.strip_edges(), '');
 
 		if line.begins_with('//'):
 			line = file.get_line();

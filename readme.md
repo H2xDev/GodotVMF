@@ -24,6 +24,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Material import support
 - Instances support
 - Displacements with vertex alpha
+    - WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Native VTF import
   - Supported VTF formats: DXT1, DXT3, DXT5
 
@@ -31,6 +32,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Extraction materials and models from VPKs is not supported
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
 - Wasn't tested on MacOS
+- Some of imported models may have wrong orientation
 
 ## GodotVMF elsewhere
 * [Reddit](https://www.reddit.com/r/godot/comments/1ax4b7h/godotvmf_use_valve_hammer_editor_for_level/)
