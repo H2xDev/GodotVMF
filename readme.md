@@ -23,7 +23,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
   - Requires 3rd party utility [MDL2OBJ](/mdl2obj) (included in the repository)  
 - Material import support
 - Instances support
-- Displacements (with blend materials)
+- Displacements with vertex alpha
 - Native VTF import
   - Supported VTF formats: DXT1, DXT3, DXT5
 
