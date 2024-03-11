@@ -322,6 +322,7 @@ class VMT:
 			"$bumpmap": "normal_texture",
 			"$bumpmap2": "normal_texture2",
 			"$detail": ["detail_albedo", "detail_mask"],
+			"$mraotexture": ["metallic_texture", "roughness_texture", "ao_texture"]
 		};
 
 	static var cache = {};
@@ -332,6 +333,7 @@ class VMT:
 				"$bumpmap": BaseMaterial3D.FEATURE_NORMAL_MAPPING,
 				"$normalmap": BaseMaterial3D.FEATURE_NORMAL_MAPPING,
 				"$detail": BaseMaterial3D.FEATURE_DETAIL,
+				"$mraotexture": BaseMaterial3D.FEATURE_AMBIENT_OCCLUSION
 			};
 
 	static var materialMap:
@@ -453,6 +455,9 @@ class VMT:
 
 		if material is StandardMaterial3D:
 			material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL;
+			material.metallic_texture_channel = 0
+			material.roughness_texture_channel = 1
+			material.ao_texture_channel = 2
 		
 		# NOTE: L4D2 Case
 		if "insert" in structure:

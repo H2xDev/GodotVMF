@@ -1,5 +1,5 @@
 {
-	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
+	"gameInfoPath": "E:/Program Files (x86)/Steam/steamapps/sourcemods/godot",
 	"mdl2obj": "res://mdl2obj/mdl2obj.exe",
 
 	"import": {
@@ -16,7 +16,7 @@
 	},
 
 	"material": {
-		"importMode": 1,
+		"importMode": 2,
 		"generateMipmaps": true,
 		"ignore": [
 			"TOOLS/TOOLSNODRAW",
