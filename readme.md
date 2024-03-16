@@ -37,7 +37,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 ## GodotVMF elsewhere
 * [Reddit](https://www.reddit.com/r/godot/comments/1ax4b7h/godotvmf_use_valve_hammer_editor_for_level/)
 * [Asset Library](https://godotengine.org/asset-library/asset/2605)
-* [Discord](https://discord.gg/VTmDjUuP)
+* [Discord](https://discord.gg/zpytJVvuHm)
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
