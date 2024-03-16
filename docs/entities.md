@@ -31,6 +31,7 @@ var lockedSound = null;
 func _entity_ready():
 	isLocked = have_flag(FLAG_STARTS_LOCKED);
 
+	# Once we trigger this signal we triggering the entity's outputs.
 	interact.connect(func ():
 		if isLocked:
 			if lockedSound:
@@ -51,11 +52,15 @@ func _entity_ready():
 	if "locked_sound" in entity:
 		lockedSound = load("res://Assets/Sounds/" + entity.locked_sound);
 
+# This method will be called during import
 func _apply_entity(entityInfo: Dictionary, vmfNode: VMFNode):
 	super._apply_entity(entityInfo, vmfNode);
 
+	# Getting entity's brush geometry and assigning it
 	var mesh = get_mesh();
 	$MeshInstance3D.set_mesh(mesh);
+
+	# Generating collision for the assigned mesh.
 	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = mesh.create_convex_shape();
 
 ## INPUTS
