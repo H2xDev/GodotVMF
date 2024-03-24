@@ -90,12 +90,12 @@ Reference:
 * [get_entity_convex_shape](#get_entity_convex_shape---shape)
 * [get_entity_trimesh_shape](#get_entity_trimesh_shape---shape)
 * [get_entity_basis](#get_entity_basisentity-dictionary---basis-static)
-* [convert_vector](#convert_vectorv-vector3---vector3)
-* [convert_direction](#convert_directionv-vector3---vector3)
+* [get_movement_vector](#get_movement_vectorvec-vector3---vector3-static)
+* [convert_vector](#convert_vectorv-vector3---vector3-static)
+* [convert_direction](#convert_directionv-vector3---vector3-static)
 * [define_alias (static)](#define_aliasname-string-value-valveionode-static)
 * [get_target](#get_targettargetname-string---valveionode)
 * [get_all_targets](#get_all_targetstargetname-string---valveionode)
-* [get_movement_vector](#get_movement_vectorvec-vector3---vector3)
 
 ### _entity_ready()
 Means that all outputs and reparents are ready to use. Use this method instead of `_ready`.
