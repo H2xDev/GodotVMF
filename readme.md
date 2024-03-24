@@ -1,7 +1,17 @@
 # GodotVMF
+
+<p align="center">
+<a href="https://discord.gg/wtSK94fPxd" target="_blank">
+<img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+
+<a href="https://www.reddit.com/r/godot/comments/1ax4b7h/godotvmf_use_valve_hammer_editor_for_level/" target="_blank">
+<img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Reddit"></a>
+
+<a href="https://godotengine.org/asset-library/asset/2605" target="_blank">
+<img src="https://img.shields.io/badge/asset_library-%23FFFFFF.svg?style=for-the-badge&logo=godot-engine" alt="Godot Asset Library"></a>
+</p>
+
 ![Hero](assets/hero.jpg)
-**THIS PROJECT STILL IN ACTIVE DEVELOPMENT THERE MIGHT BE BUGS**  
-  
 An importer of VMF files into Godot.  
 Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.  
   
@@ -24,7 +34,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Material import support
 - Instances support
 - Displacements with vertex alpha
-    - WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
+	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Native VTF import
   - Supported VTF formats: DXT1, DXT3, DXT5
 
@@ -33,11 +43,6 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 - Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
 - Wasn't tested on MacOS
 - Some of imported models may have wrong orientation
-
-## GodotVMF elsewhere
-* [Reddit](https://www.reddit.com/r/godot/comments/1ax4b7h/godotvmf_use_valve_hammer_editor_for_level/)
-* [Asset Library](https://godotengine.org/asset-library/asset/2605)
-* [Discord](https://discord.gg/VTmDjUuP)
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
