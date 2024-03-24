@@ -124,10 +124,9 @@ func _importModels():
 		var model = resource.instantiate();
 		var origin = Vector3(ent.origin.x * importScale, ent.origin.z * importScale, -ent.origin.y * importScale);
 		var scale = Vector3(importScale, importScale, importScale);
-		var modbasis = ValveIONode.get_entity_basis(ent);
 
 		model.transform.origin = origin;
-		model.basis = modbasis;
+		model.basis = ValveIONode.get_entity_basis(ent);
 		model.scale = scale;
 		model.name = ent.model.get_file().split('.')[0] + '_' + str(ent.id);
 
