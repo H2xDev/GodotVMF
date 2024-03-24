@@ -161,10 +161,13 @@ Returns optimized trimesh shape for the entity's brushes
 ### get_entity_basis(entity: Dictionary) -> Basis [static]
 Returns rotation state for specified entity.
 
-### convert_vector(v: Vector3) -> Vector3
+### get_movement_vector(vec: Vector3) -> Vector3 [static]
+Returns directional vector from specified vector. If an entity has movement direction property (i.e. func_door, func_button) use this function to convert the direction.
+
+### convert_vector(v: Vector3) -> Vector3 [static]
 Converts Vector3 of position from Z-up to Y-up.
 
-### convert_direction(v: Vector3) -> Vector3
+### convert_direction(v: Vector3) -> Vector3 [static]
 Converts Vector3 of rotation from Z-up to Y-up.
 
 ### define_alias(name: string, value: ValveIONode) [static]
@@ -182,6 +185,3 @@ Returns first node by target name assigned in entity.
 
 ### get_all_targets(targetName: string) -> ValveIONode[]
 Returns all nodes by target name assigned in entities.
-
-### get_movement_vector(vec: Vector3) -> Vector3
-Returns directional vector from specified vector. If an entity has movement direction property (i.e. func_door, func_button) use this function to convert the direction.
