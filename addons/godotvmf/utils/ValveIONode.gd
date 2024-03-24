@@ -62,12 +62,13 @@ func _ready():
 
 func _apply_entity(ent, config):
 	self.entity = ent;
-	self.global_position = ent.origin if "origin" in ent else Vector3(0, 0, 0);
-	self.flags = ent.spawnflags if "spawnflags" in ent else 0;
+	self.flags = ent.get("spawnflags", 0);
+	self.basis = get_entity_basis(ent);
+	self.global_position = ent.get("origin", Vector3.ZERO);
 
 	assign_name();
 
-func assign_name(i = 0):
+func assign_name(i = 0) -> void:
 	if not "targetname" in entity:
 		self.name = entity.classname + '_' + str(entity.id);
 		return;
@@ -79,7 +80,7 @@ func assign_name(i = 0):
 	else:
 		return assign_name(i + 1);
 
-func call_target_input(target, input, param, delay):
+func call_target_input(target, input, param, delay) -> void:
 	if not enabled:
 		return;
 
@@ -109,7 +110,7 @@ func call_target_input(target, input, param, delay):
 		else:
 			node.call(input, param);
 
-func get_target(n):
+func get_target(n) -> Node3D:
 	if n in ValveIONode.aliases:
 		return ValveIONode.aliases[n];
 
@@ -118,7 +119,7 @@ func get_target(n):
 
 	return ValveIONode.namedEntities[n];
 
-func get_all_targets(name, i = -1, targets = []):
+func get_all_targets(name, i = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
 	var cname = name + str(i) if i > -1 else name;
 	var node = get_target(cname);
 
@@ -128,7 +129,7 @@ func get_all_targets(name, i = -1, targets = []):
 	targets.append(node);
 	return get_all_targets(name, i + 1, targets);
 
-func set_timeout(callable, delay):
+func set_timeout(callable, delay) -> void:
 	var _timer = Timer.new();
 	add_child(_timer);
 
@@ -139,9 +140,8 @@ func set_timeout(callable, delay):
 	_timer.connect("timeout", func():
 		_timer.queue_free());
 
-func parse_connections():
-	if not validateEntity():
-		return;
+func parse_connections() -> void:
+	if not validate_entity(): return;
 
 	if not "connections" in entity:
 		return;
@@ -166,7 +166,7 @@ func parse_connections():
 			self.connect(output, func():
 				call_target_input(target, input, param, delay));
 
-func validateEntity():
+func validate_entity() -> bool:
 	if entity.keys().size() == 0:
 		VMFLogger.error('Looks like you forgot to call "super._apply_instance" inside the entity - ' + name);
 		return false;
@@ -174,7 +174,7 @@ func validateEntity():
 	return true;
 
 # PUBLICS
-func have_flag(flag: int):
+func has_flag(flag: int) -> bool:
 	if not "spawnflags" in entity:
 		return false;
 
@@ -183,7 +183,7 @@ func have_flag(flag: int):
 
 	return (entity.spawnflags & flag) != 0;
 
-func trigger_output(output):
+func trigger_output(output) -> void:
 	if not enabled:
 		return;
 
@@ -191,7 +191,7 @@ func trigger_output(output):
 		emit_signal(output);
 
 func get_mesh() -> ArrayMesh:
-	if not validateEntity():
+	if not validate_entity():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
@@ -207,13 +207,19 @@ func get_mesh() -> ArrayMesh:
 
 	return VMFTool.createMesh(struct, offset);
 
-func convert_vector(v):
+static func convert_vector(v) -> Vector3:
 	return Vector3(v.x, v.z, -v.y);
 
-func convert_direction(v):
-	return Vector3(v.z, v.y, -v.x) / 180.0 * PI;
+static func convert_direction(v) -> Vector3:
+	return get_entity_basis({ "angles": v }).get_euler();
+	
+static func get_entity_basis(ent) -> Basis:
+	var angles = ent.get("angles", Vector3.ZERO) / 180 * PI;
+	angles = Vector3(angles.z, angles.y, -angles.x);
+	
+	return Basis.from_euler(angles, 3);
 
-func get_movement_vector(v):
+static func get_movement_vector(v):
 	var _basis = Basis.from_euler(Vector3(v.x, -v.y, -v.z) / 180.0 * PI);
 	var movement = _basis.z;
 
@@ -232,7 +238,7 @@ func get_entity_shape():
 		return get_entity_trimesh_shape();
 
 func get_entity_convex_shape():
-	if not validateEntity():
+	if not validate_entity():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
@@ -251,7 +257,7 @@ func get_entity_convex_shape():
 	
 ## Creates optimised trimesh shape of the entity by using CSGCombiner3D
 func get_entity_trimesh_shape():
-	if not validateEntity():
+	if not validate_entity():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];

@@ -39,9 +39,8 @@ func _apply_entity(e, c):
 	node.name = basename + '_instance';
 
 	node.position = position;
+	node.rotation = rotation;
 	get_parent().add_child(node);
 	node.set_owner(get_owner());
-	node.rotation_order = 3;
-	node.rotation = convert_direction(e.angles);
 
 	queue_free();

@@ -231,7 +231,7 @@ static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0
 					var sg = -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 					
 					surfaceTool.set_smooth_group(sg);
-					surfaceTool.set_color(Color8(255, 0, 0));
+					surfaceTool.set_color(Color8(0, 0, 0));
 					surfaceTool.add_vertex(vt);
 					index += 1;
 
