@@ -89,6 +89,7 @@ Reference:
 * [get_entity_shape](#get_entity_shape---shape)
 * [get_entity_convex_shape](#get_entity_convex_shape---shape)
 * [get_entity_trimesh_shape](#get_entity_trimesh_shape---shape)
+* [get_entity_basis](#get_entity_basisentity-dictionary---basis-static)
 * [convert_vector](#convert_vectorv-vector3---vector3)
 * [convert_direction](#convert_directionv-vector3---vector3)
 * [define_alias (static)](#define_aliasname-string-value-valveionode-static)
