@@ -120,14 +120,13 @@ func _importModels():
 
 		if not resource:
 			continue;
-			
+		ent = ent.duplicate();
 		var model = resource.instantiate();
 		var origin = Vector3(ent.origin.x * importScale, ent.origin.z * importScale, -ent.origin.y * importScale);
-		var angles = Vector3(ent.angles.z, ent.angles.y, -ent.angles.x) / 180.0 * PI;
-		var scale = Vector3(importScale, importScale, importScale)
+		var scale = Vector3(importScale, importScale, importScale);
 
 		model.transform.origin = origin;
-		model.rotation = angles;
+		model.basis = ValveIONode.get_entity_basis(ent);
 		model.scale = scale;
 		model.name = ent.model.get_file().split('.')[0] + '_' + str(ent.id);
 

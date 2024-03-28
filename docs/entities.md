@@ -29,15 +29,16 @@ var lockedSound = null;
 
 ## Use this instead _ready
 func _entity_ready():
-	isLocked = have_flag(FLAG_STARTS_LOCKED);
+	isLocked = has_flag(FLAG_STARTS_LOCKED);
 
+	# Once we trigger this signal we triggering the entity's outputs.
 	interact.connect(func ():
 		if isLocked:
 			if lockedSound:
 				SoundManager.PlaySound(global_position, lockedSound, 0.05);
 			trigger_output("OnUseLocked")
 		else:
-			if have_flag(FLAG_ONCE) and isUsed:
+			if has_flag(FLAG_ONCE) and isUsed:
 				return;
 
 			if sound:
@@ -51,11 +52,15 @@ func _entity_ready():
 	if "locked_sound" in entity:
 		lockedSound = load("res://Assets/Sounds/" + entity.locked_sound);
 
+# This method will be called during import
 func _apply_entity(entityInfo: Dictionary, vmfNode: VMFNode):
 	super._apply_entity(entityInfo, vmfNode);
 
+	# Getting entity's brush geometry and assigning it
 	var mesh = get_mesh();
 	$MeshInstance3D.set_mesh(mesh);
+
+	# Generating collision for the assigned mesh.
 	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = mesh.create_convex_shape();
 
 ## INPUTS
@@ -78,18 +83,19 @@ All entities extends from this node will always have these inputs so you don't n
 Reference:
 * [_entity_ready](#_entity_ready)
 * [_apply_entity](#_apply_entity)
-* [have_flag](#have_flagflag-int---bool)
+* [has_flag](#has_flagflag-int---bool)
 * [trigger_output](#trigger_outputoutputname-string)
 * [get_mesh](#get_mesh---arraymesh)
 * [get_entity_shape](#get_entity_shape---shape)
 * [get_entity_convex_shape](#get_entity_convex_shape---shape)
 * [get_entity_trimesh_shape](#get_entity_trimesh_shape---shape)
-* [convert_vector](#convert_vectorv-vector3---vector3)
-* [convert_direction](#convert_directionv-vector3---vector3)
+* [get_entity_basis](#get_entity_basisentity-dictionary---basis-static)
+* [get_movement_vector](#get_movement_vectorvec-vector3---vector3-static)
+* [convert_vector](#convert_vectorv-vector3---vector3-static)
+* [convert_direction](#convert_directionv-vector3---vector3-static)
 * [define_alias (static)](#define_aliasname-string-value-valveionode-static)
 * [get_target](#get_targettargetname-string---valveionode)
 * [get_all_targets](#get_all_targetstargetname-string---valveionode)
-* [get_movement_vector](#get_movement_vectorvec-vector3---vector3)
 
 ### _entity_ready()
 Means that all outputs and reparents are ready to use. Use this method instead of `_ready`.
@@ -105,16 +111,16 @@ Don't forget to call `super._apply_entity` before making any changes in the node
 func _apply_entity(entityInfo: Dictionary, vmfNode: VMFNode):
 	super._apply_entity(entityInfo, vmfNode);
 
-    # Getting a mesh from the solid data of the entity and assigning
+	# Getting a mesh from the solid data of the entity and assigning
 	var mesh = get_mesh();
 	$MeshInstance3D.set_mesh(mesh);
 
-    # Generating a collision shape for the mesh
+	# Generating a collision shape for the mesh
 	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = mesh.create_convex_shape();
 
 ```
 
-### have_flag(flag: int) -> bool
+### has_flag(flag: int) -> bool
 Checks the `spawnflags` field of the entity.
 
 #### Example
@@ -123,8 +129,8 @@ const FLAG_STARTS_LOCKED = 2048;
 var isLocked = false;
 
 func _entity_ready():
-    if have_flag(FLAG_STARTS_LOCKED):
-        isLocked = true;
+	if has_flag(FLAG_STARTS_LOCKED):
+		isLocked = true;
 ```
 
 ### trigger_output(outputName: string):
@@ -133,10 +139,10 @@ Triggers outputs that defined in the entity.
 #### Example
 ```gdscript
 interact.connect(func():
-    if isLocked:
-	    trigger_output("OnUseLocked");
-    else:
-        trigger_output("OnPressed"));
+	if isLocked:
+		trigger_output("OnUseLocked");
+	else:
+		trigger_output("OnPressed"));
 ```
 
 ### get_mesh() -> ArrayMesh
@@ -152,10 +158,16 @@ Returns a convex shape for the entity's brushes
 ### get_entity_trimesh_shape() -> Shape
 Returns optimized trimesh shape for the entity's brushes
 
-### convert_vector(v: Vector3) -> Vector3
+### get_entity_basis(entity: Dictionary) -> Basis [static]
+Returns rotation state for specified entity.
+
+### get_movement_vector(vec: Vector3) -> Vector3 [static]
+Returns directional vector from specified vector. If an entity has movement direction property (i.e. func_door, func_button) use this function to convert the direction.
+
+### convert_vector(v: Vector3) -> Vector3 [static]
 Converts Vector3 of position from Z-up to Y-up.
 
-### convert_direction(v: Vector3) -> Vector3
+### convert_direction(v: Vector3) -> Vector3 [static]
 Converts Vector3 of rotation from Z-up to Y-up.
 
 ### define_alias(name: string, value: ValveIONode) [static]
@@ -165,7 +177,7 @@ Defines global alias to node for using in I/O.
 # player.gd
 
 func _entity_ready():
-    ValveIONode.define_alias('!player', self);
+	ValveIONode.define_alias('!player', self);
 ```
 
 ### get_target(targetName: string) -> ValveIONode
@@ -173,6 +185,3 @@ Returns first node by target name assigned in entity.
 
 ### get_all_targets(targetName: string) -> ValveIONode[]
 Returns all nodes by target name assigned in entities.
-
-### get_movement_vector(vec: Vector3) -> Vector3
-Returns directional vector from specified vector. If an entity has movement direction property (i.e. func_door, func_button) use this function to convert the direction.
