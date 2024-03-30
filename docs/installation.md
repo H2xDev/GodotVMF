@@ -40,6 +40,8 @@ Default config:
 - `gameInfoPath` - The source mod path where resources placed to work with hammer.
 > One advice for game development by using Hammer. Create a blank mod for Source, place all resources you need (basically it will be models and materials) for your game and setup Hammer. Yea, you will need to convert all textures into VTF format to get it visible inside Hammer.
 
+The blank mod folder you can download here: [Google Drive](https://drive.google.com/drive/folders/1Vitm-praILoZvS5oDnv6yxtsW7pLSBtq)
+
 - `mdl2obj` - Path to [MDL2OBJ](/mdl2obj) utility. Used in case you need to move models from the mod's folder. Required in case of `models.import` is `true`.
 
 - `import'
