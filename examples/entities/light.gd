@@ -63,9 +63,12 @@ func _apply_entity(ent, c):
 		var radius = (1 / config.import.scale) * sqrt(light.light_energy);
 		var attenuation = 1.44;
 
-		if "_fifty_percent_distance" in ent:
-			var dist50 = min(ent._fifty_percent_distance, ent.get("_fifty_percent_distance", 0.0)) * config.import.scale;
-			var dist0 = max(ent.get("_zero_percent_distance", 0.0), ent._fifty_percent_distance) * config.import.scale;
+		var fiftyPercentDistance = ent.get("_fifty_percent_distance", 0.0);
+		var zeroPercentDistance = ent.get("_zero_percent_distance", 0.0);
+
+		if fiftyPercentDistance > 0.0 or zeroPercentDistance > 0.0:
+			var dist50 = min(fiftyPercentDistance, zeroPercentDistance) * config.import.scale;
+			var dist0 = max(fiftyPercentDistance, zeroPercentDistance) * config.import.scale;
 
 			attenuation = 1 / ((dist0 - dist50) / dist0);
 
