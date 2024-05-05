@@ -50,6 +50,9 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 ## Additional things
 - Source code of MDL2OBJ: https://github.com/H2xDev/mdl2obj
 - Demo: https://www.youtube.com/watch?v=5XYfvbIAlJU
+- The project I work using this tool: https://github.com/h2xdev/sixside
+	- There're lots of examples of implementation of entities in there.
+	- The code base is not polished well so don't judge me :'C
 
 ## Special thanks
 [@Ambiabstract](https://github.com/Ambiabstract) - help and inspiration  
