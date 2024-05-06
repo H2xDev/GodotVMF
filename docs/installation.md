@@ -55,7 +55,7 @@ Default config:
 
 - `mdl2obj` - Path to [MDL2OBJ](/mdl2obj) utility. Used in case you need to move models from the mod's folder. Required in case of `models.import` is `true`.
 
-- `import'
+- `import`
     - `scale` - In case you need to convert Valve's metrics to yours.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry (except brush entities) by using trimesh shape.
     - `instancesFolder` - Path inside the project where imported instances be placed.
