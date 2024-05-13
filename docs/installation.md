@@ -10,7 +10,7 @@ Move the `addons/godotvmf` folder into the same folder of your project and activ
 
 4. Launch Hammer++ and configure it (Tools -> Options) as on the picture below
 
-![Hammer configuration](https://media.discordapp.net/attachments/1237066300279492608/1237066348992004247/image.png?ex=663a4b51&is=6638f9d1&hm=07a2a0b4e42bbd5589dcda2ab666d1a0ad23de79d957599334835b05f2a2bf35&=&format=webp&quality=lossless&width=366&height=543)
+![Hammer configuration](hammer-configuration.png)
 
 5. You're all set!
 
