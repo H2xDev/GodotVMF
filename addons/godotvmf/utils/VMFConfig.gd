@@ -39,6 +39,13 @@ static func validateConfig():
 	var modelsDefined = "models" in config and config.models.import;
 	var materialsDefined = "materials" in config and config.materials.importMode == 2;
 
+	if config.material.importMode == 3:
+		checkKeys.append("vtfcmd");
+
+		if not FileAccess.file_exists(_config.vtfcmd):
+			VMFLogger.error('VTFCmd.exe not found at {0}. Material scan disabled'.format([_config.vtfcmd]));
+			config.material.importMode = 1;
+
 	if modelsDefined or materialsDefined:
 		checkKeys.append("gameInfoPath");
 

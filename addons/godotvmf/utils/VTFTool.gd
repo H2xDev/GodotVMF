@@ -9,6 +9,9 @@ enum TextureImportMode {
 
 	## Import materials directly from the game folder to the project
 	IMPORT_DIRECTLY,
+
+	## Automatically imports the project's materials into the mod folder by conversion textures to VTF
+	SYNC,
 }
 
 enum ImageFormat {
