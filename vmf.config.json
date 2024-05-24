@@ -8,7 +8,8 @@
 		"generateLightmapUV2": true,
 		"lightmapTexelSize": 0.4,
 		"instancesFolder": "res://examples/instances",
-		"entitiesFolder": "res://examples/entities"
+		"entitiesFolder": "res://examples/entities",
+		"geometryFolder": "res://examples/geometry"
 	},
 
 	"models": {

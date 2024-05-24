@@ -1,4 +1,4 @@
-class_name VTFTool
+class_name VTFTool extends RefCounted
 
 enum TextureImportMode {
 	## Disable import materials
@@ -344,11 +344,11 @@ class VMT:
 			if shader == 'unlitgeneric' or shader == 'unlittwotexture':
 				material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED;
 
-			var emissionTint = Array(structure.get('$selfillummasktint', '[1 1 1]')\
+			var emissionTint: Array[float]
+			emissionTint.assign(structure.get('$selfillummasktint', '[1 1 1]')\
 				.trim_suffix(']')\
 				.trim_prefix('[')\
-				.split(' '))\
-				.map(func(v): return float(v));
+				.split_floats(' '))
 
 			material.emission = Color(emissionTint[0], emissionTint[1], emissionTint[2]);
 			

@@ -7,8 +7,12 @@ func _apply_entity(e, c):
 	super._apply_entity(e, c);
 
 	var file = VMFInstanceManager.correctInstancePath(e, c.vmf);
-	var basename = file.get_file().get_basename();
-	var path = (VMFConfig.config.import.instancesFolder + "/" + basename + ".tscn").replace("//", "/").replace("res:/", "res://");
+	if !file:
+		VMFLogger.error('Could not retrieve correct instance path');
+		return;
+	
+	var basename := file.get_file().get_basename();
+	var path := str(VMFConfig.config.import.instancesFolder + "/" + basename + ".tscn").replace("//", "/").replace("res:/", "res://");
 
 	if not ResourceLoader.exists(path):
 		var struct = ValveFormatParser.parse(file);
@@ -21,12 +25,11 @@ func _apply_entity(e, c):
 					continue;
 
 				var subfile = VMFInstanceManager.correctInstancePath(ent, c.vmf);
-
 				VMFInstanceManager.importInstance(subfile, c);
+				
 		VMFInstanceManager.importInstance(file, c);
 
-
-	var res = cached[basename] if basename in FuncInstance.cached else load(path);
+	var res: Resource = cached[basename] if basename in FuncInstance.cached else load(path);
 
 	if not basename in FuncInstance.cached and res:
 		cached[basename] = res;

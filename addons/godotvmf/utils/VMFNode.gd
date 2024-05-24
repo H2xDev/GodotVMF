@@ -2,9 +2,19 @@
 @icon("res://addons/godotvmf/icon.svg")
 class_name VMFNode extends Node3D;
 
-@export_global_file("*.vmf")
+@export_category("VMF File")
+
+## Allow the file picker to select an external file
+@export var useExternalFile: bool = false:
+	set(val):
+		useExternalFile = val;
+		notify_property_list_changed();
+
+## Path to the VMF file
+@export_file("*.vmf")
 var vmf: String = '';
 
+@export_category("Import")
 ## Full import of VMF with specified options
 @export var import: bool = false:
 	set(value):
@@ -13,21 +23,28 @@ var vmf: String = '';
 		importMap();
 		import = false;
 
-var _structure: Dictionary = {};
-var _owner = null;
+@export_category("Resource Generation")
+## Save the resulting geometry mesh as a resource (saves to the geometryFolder in vmf.config.json)
+@export var saveGeometry: bool = true;
 
-func _importGeometry(_reimport = false):
+## Save the resulting collision shape as a resource (saves to the geometryFolder in vmf.config.json)
+@export var saveCollision: bool = true;
+
+var _structure: Dictionary = {};
+var _owner: Node = null;
+
+func _validate_property(property: Dictionary) -> void:
+	if property.name == "vmf":
+		property.hint = PROPERTY_HINT_GLOBAL_FILE if useExternalFile else PROPERTY_HINT_FILE
+
+func _ready() -> void:
+	add_to_group(&"vmfnode_group");
+
+func _importGeometry(_reimport := false) -> void:
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
-
-	var _currentMesh = get_node_or_null("Geometry");
-
-	if _currentMesh != null:
-		remove_child(_currentMesh);
-		_currentMesh.queue_free();
-
-	var mesh = VMFTool.createMesh(_structure);
-
+	
+	var mesh: Mesh = VMFTool.createMesh(_structure);
 	if not mesh:
 		return;
 		
@@ -37,20 +54,59 @@ func _importGeometry(_reimport = false):
 			VMFConfig.config.import.lightmapTexelSize
 			);
 
-	_currentMesh = MeshInstance3D.new();
+	var _currentMesh := MeshInstance3D.new()
 	_currentMesh.name = "Geometry";
-	_currentMesh.set_mesh(mesh);
 
+	if saveGeometry:
+		var resourcePath: String = "%s/%s_import.mesh" % [VMFConfig.config.import.geometryFolder, _vmfIdentifier()];
+		
+		if not DirAccess.dir_exists_absolute(resourcePath.get_base_dir()):
+			DirAccess.make_dir_recursive_absolute(resourcePath.get_base_dir());
+		
+		var err := ResourceSaver.save(mesh, resourcePath, ResourceSaver.FLAG_COMPRESS);
+		if err:
+			VMFLogger.error("Failed to save resource: %s" % err);
+			return;
+		
+		mesh.take_over_path(resourcePath);
+		_currentMesh.mesh = load(resourcePath);
+	else:
+		_currentMesh.mesh = mesh;
+	
 	add_child(_currentMesh);
 	_currentMesh.set_owner(_owner);
-
+	
 	if VMFConfig.config.import.generateCollision:
 		_currentMesh.create_trimesh_collision();
+		
+		if saveCollision:
+			_saveCollision.call_deferred()
 
-func _importMaterials():
-	var list = [];
-	var ignoreList = VMFConfig.config.material.ignore;
-	var elapsedTime = Time.get_ticks_msec();
+func _saveCollision() -> void:
+	var newCollisionShape: CollisionShape3D = $Geometry/Geometry_col/CollisionShape3D;
+	if not newCollisionShape:
+		VMFLogger.warn("Could not save find collision shape in " + name);
+		return;
+	
+	var collisionResourcePath := "%s/%s_collision_import.res" % [VMFConfig.config.import.geometryFolder, _vmfIdentifier()];
+	var shape: = newCollisionShape.shape;
+	var err := ResourceSaver.save(shape, collisionResourcePath, ResourceSaver.FLAG_COMPRESS);
+	if err:
+		VMFLogger.error("Failed to save resource: %s" % err);
+		return;
+		
+	shape.take_over_path(collisionResourcePath);
+	newCollisionShape.shape = load(collisionResourcePath);
+
+func _vmfIdentifier() -> String:
+	return vmf.split('/')[-1].replace('.', '_');
+
+func _importMaterials() -> void:
+	var list: Array[String] = [];
+	var ignoreList: Array[String];
+	ignoreList.assign(VMFConfig.config.material.ignore);
+	
+	var elapsedTime := Time.get_ticks_msec();
 
 	if VMFConfig.config.material.importMode != VTFTool.TextureImportMode.IMPORT_DIRECTLY:
 		return;
@@ -61,7 +117,7 @@ func _importMaterials():
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
 			for side in brush.side:
-				var isIgnored = ignoreList.any(func(rx): return side.material.match(rx));
+				var isIgnored = ignoreList.any(func(rx: String) -> bool: return side.material.match(rx));
 				if isIgnored: continue;
 
 				if not list.has(side.material):
@@ -90,7 +146,7 @@ func _importMaterials():
 	VMFLogger.log("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsedTime) + "ms");
 
 # TODO: Make it in separate thread
-func _importModels():
+func _importModels() -> void:
 	if not "models" in VMFConfig.config:
 		return;
 	if not VMFConfig.config.models.import:
@@ -102,7 +158,7 @@ func _importModels():
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
 
-	var _modelsNode = get_node_or_null("Models");
+	var _modelsNode: Node3D = get_node_or_null("Models");
 
 	if _modelsNode:
 		remove_child(_modelsNode);
@@ -129,14 +185,15 @@ func _importModels():
 			VMFLogger.log('prop_static (%s) overrides lightmapTexelSize to \'%f\'' % [ent.id, lightmapTexelSize])
 
 		var resource = MDLManager.loadModel(ent.model, VMFConfig.config.models.generateCollision, VMFConfig.config.import.generateLightmapUV2, lightmapTexelSize);
-		var importScale = VMFConfig.config.import.scale;
+		var importScale: float = VMFConfig.config.import.scale;
 
 		if not resource:
 			continue;
+		
 		ent = ent.duplicate();
 		var model = resource.instantiate();
-		var origin = Vector3(ent.origin.x * importScale, ent.origin.z * importScale, -ent.origin.y * importScale);
-		var scale = Vector3(importScale, importScale, importScale);
+		var origin := Vector3(ent.origin.x * importScale, ent.origin.z * importScale, -ent.origin.y * importScale);
+		var scale := Vector3(importScale, importScale, importScale);
 
 		model.transform.origin = origin;
 		model.basis = ValveIONode.get_entity_basis(ent);
@@ -146,14 +203,14 @@ func _importModels():
 		_modelsNode.add_child(model);
 		model.set_owner(_owner);
 
-func _clearStructure():
+func _clearStructure() -> void:
 	_structure = {};
 
 	for n in get_children():
 		remove_child(n);
 		n.queue_free();
 
-func _readVMF():
+func _readVMF() -> void:
 	VMFLogger.log("Read vmf structure");
 	_structure = ValveFormatParser.parse(vmf);
 
@@ -166,9 +223,9 @@ func _readVMF():
 	if "solid" in _structure.world:
 		_structure.world.solid = [_structure.world.solid] if not _structure.world.solid is Array else _structure.world.solid;
 
-func _importEntities(_reimport = false):
-	var elapsedTime = Time.get_ticks_msec();
-	var importScale = VMFConfig.config.import.scale;
+func _importEntities(_reimport := false) -> void:
+	var elapsedTime := Time.get_ticks_msec();
+	var importScale: float = VMFConfig.config.import.scale;
 
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
@@ -176,7 +233,7 @@ func _importEntities(_reimport = false):
 	if _reimport:
 		_readVMF();
 
-	var _entitiesNode = get_node_or_null("Entities");
+	var _entitiesNode: Node3D = get_node_or_null("Entities");
 
 	if _entitiesNode:
 		remove_child(_entitiesNode);
@@ -189,10 +246,10 @@ func _importEntities(_reimport = false):
 
 	if not "entity" in _structure: return;
 
-	for ent in _structure.entity:
+	for ent: Dictionary in _structure.entity:
 		ent = ent.duplicate(true);
 
-		var resPath = (VMFConfig.config.import.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
+		var resPath: String = (VMFConfig.config.import.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
 
 		# NOTE: In case when custom entity wasn't found - use plugin's entities list
 		if not ResourceLoader.exists(resPath):
@@ -216,10 +273,10 @@ func _importEntities(_reimport = false):
 		if "_apply_entity" in node:
 			node._apply_entity(ent, self);
 
-	var time = Time.get_ticks_msec() - elapsedTime;
+	var time := Time.get_ticks_msec() - elapsedTime;
 	VMFLogger.log("Imported entities in " + str(time) + "ms");
 
-func importGeometryOnly():
+func importGeometryOnly() -> void:
 	VMFConfig.checkProjectConfig();
 	
 	if not VMFConfig.validateConfig(): return;
@@ -229,7 +286,7 @@ func importGeometryOnly():
 	_importMaterials();
 	_importGeometry(true);
 
-func importMap():
+func importMap() -> void:
 	VMFConfig.checkProjectConfig();
 	if not VMFConfig.validateConfig(): return;
 	if not VMFConfig.config: return;
@@ -237,10 +294,13 @@ func importMap():
 	if not vmf: return;
 
 	if not _owner:
+		if !get_tree():
+			self.queue_free()
+		
 		_owner = get_tree().get_edited_scene_root();
 
 	VTFTool.clearCache();
-
+	
 	_clearStructure();
 	_readVMF();
 	_importMaterials();

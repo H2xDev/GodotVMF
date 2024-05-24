@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://o4lost2k1as0"]
 
 [ext_resource type="Script" path="res://addons/godotvmf/entities/func_instance.gd" id="1_3vr6e"]
 
