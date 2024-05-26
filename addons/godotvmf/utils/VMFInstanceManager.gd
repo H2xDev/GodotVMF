@@ -3,18 +3,18 @@ class_name VMFInstanceManager extends RefCounted;
 static func correctInstancePath(e, mainVmfPath: String) -> String:
 	var instancePath = e.file.get_file().get_basename() + '.vmf'
 	var mapBaseFolder := mainVmfPath.get_base_dir();
-	var mapsFolder := str(VMFConfig.config.gameInfoPath + '/maps').replace('//', '/');
-	var mapsrcFolder := str(VMFConfig.config.gameInfoPath + '/mapsrc').replace('//', '/');
-
+	var mapsFolder := str(VMFConfig.config.gameInfoPath).path_join('maps');
+	var mapsrcFolder := str(VMFConfig.config.gameInfoPath).path_join('mapsrc');
+	
 	var instancePaths := [
-		(mapBaseFolder + '/instances/' + instancePath).replace('//', '/'),
-		(mapBaseFolder + '/' + instancePath).replace('//', '/'),
-		(mapsFolder + '/instances/' + instancePath).replace('//', '/'),
-		(mapsFolder + '/' + instancePath).replace('//', '/'),
-		(mapsrcFolder + '/instances/' + instancePath).replace('//', '/'),
-		(mapsrcFolder + '/' + instancePath).replace('//', '/'),
+		mapBaseFolder.path_join('instances').path_join(instancePath),
+		mapBaseFolder.path_join(instancePath),
+		mapsFolder.path_join('instances').path_join(instancePath),
+		mapsFolder.path_join(instancePath),
+		mapsrcFolder.path_join('instances').path_join(instancePath),
+		mapsrcFolder.path_join(instancePath)
 	];
-
+	
 	for path: String in instancePaths:
 		if FileAccess.file_exists(path):
 			return path;
