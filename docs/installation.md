@@ -22,6 +22,7 @@ Default config:
 {
 	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
 	"mdl2obj": "res://mdl2obj/mdl2obj.exe",
+	"vtfcmd": "res://vtfcmf/vtfcmd.exe",
 
 	"import": {
 		"scale": 0.025,
@@ -54,6 +55,7 @@ Default config:
 > One advice for game development by using Hammer. Create a blank mod for Source, place all resources you need (basically it will be models and materials) for your game and setup Hammer. Yea, you will need to convert all textures into VTF format to get it visible inside Hammer.
 
 - `mdl2obj` - Path to [MDL2OBJ](/mdl2obj) utility. Used in case you need to move models from the mod's folder. Required in case of `models.import` is `true`.
+- `vtfcmd` - Path to [VTFCmd](https://nemstools.github.io/files/vtflib132-bin.zip) utility. Used in case you need to sync the mod folder materials with the project's materials. Required in case of `material.importMode` is `3`.
 
 - `import`
     - `scale` - In case you need to convert Valve's metrics to yours.
@@ -69,6 +71,8 @@ Default config:
         - 0 - Do nothing
         - 1 - Collate by name - Use materials that already exists in the project. Otherwise the fallback material will be used.
         - 2 - Import directly from mod folder. Already imported materials will be ignored.
+        - 3 - Sync mod folder materials with the project. It will create new materials and update existing ones in the mod folder.
+            - Requires VTFCmd utility to be defined in the config.
     - `ignore` - List of materials that should be ignored during import.
     - `fallbackMaterial` - Path to the material *.tres that will be used as a fallback for ignored materials.
     - `defaultTextureSize` - The size of the texture that will be used in case of missing texture.

@@ -50,6 +50,7 @@ func _importMaterials():
 		return;
 
 	VTFTool.clearCache();
+	
 
 	if "solid" in _structure.world:
 		for brush in _structure.world.solid:
