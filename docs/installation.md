@@ -1,6 +1,19 @@
 # Installation
 Move the `addons/godotvmf` folder into the same folder of your project and activate it in your project settings.
 
+## Hammer configuration
+1. Download Source SDK Base 2013 Singleplayer
+
+2. Download [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) and put all files into `SteamFolder/steamapps/common/Source SDK Base 2013 Singleplayer/hl2/bin`
+
+3. Download [the blank mod folder](https://drive.google.com/drive/folders/1Vitm-praILoZvS5oDnv6yxtsW7pLSBtq) and put it inside `SteamFolder/steamapps/sourcemods/<ProjectName>`
+
+4. Launch Hammer++ and configure it (Tools -> Options) as on the picture below
+
+![Hammer configuration](hammer-configuration.png)
+
+5. You're all set!
+
 ## Config file
 Before work with the plugin create in the root of the project a file `vmf.config.json`.
 
@@ -29,7 +42,7 @@ Default config:
 		"ignore": [
 			"TOOLS/*",
 			"light/white",
-            "*/water_*"
+            		"*/water_*"
 		],
 		"fallbackMaterial": null,
 		"defaultTextureSize": 512,
@@ -41,12 +54,10 @@ Default config:
 - `gameInfoPath` - The source mod path where resources placed to work with hammer.
 > One advice for game development by using Hammer. Create a blank mod for Source, place all resources you need (basically it will be models and materials) for your game and setup Hammer. Yea, you will need to convert all textures into VTF format to get it visible inside Hammer.
 
-The blank mod folder you can download here: [Google Drive](https://drive.google.com/drive/folders/1Vitm-praILoZvS5oDnv6yxtsW7pLSBtq)
-
 - `mdl2obj` - Path to [MDL2OBJ](/mdl2obj) utility. Used in case you need to move models from the mod's folder. Required in case of `models.import` is `true`.
 - `vtfcmd` - Path to [VTFCmd](https://nemstools.github.io/files/vtflib132-bin.zip) utility. Used in case you need to sync the mod folder materials with the project's materials. Required in case of `material.importMode` is `3`.
 
-- `import'
+- `import`
     - `scale` - In case you need to convert Valve's metrics to yours.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry (except brush entities) by using trimesh shape.
     - `instancesFolder` - Path inside the project where imported instances be placed.
