@@ -6,9 +6,9 @@ class_name VMFNode extends Node3D;
 var vmf: String = '';
 
 @export()
-var generate_lightmap_uv2 : bool = false
+var generate_lightmap_uv2 : bool = false;
 @export()
-var lightmap_texel_size : float = 0.4
+var lightmap_texel_size : float = 0.4;
 
 ## Full import of VMF with specified options
 @export var import: bool = false:
@@ -37,7 +37,7 @@ func _importGeometry(_reimport = false):
 		return;
 		
 	if generate_lightmap_uv2:
-		mesh.lightmap_unwrap(global_transform, lightmap_texel_size)
+		mesh.lightmap_unwrap(global_transform, lightmap_texel_size);
 
 	_currentMesh = MeshInstance3D.new();
 	_currentMesh.name = "Geometry";
