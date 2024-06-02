@@ -46,6 +46,15 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
+- If you've added a new feature please add the relevant documentation.
+- Follow the common godot codestyle (yea-yea i'll fix the existing code in upcoming updates)
+
+### How to test
+1. Install any of Source Engine Games (L4D, HL2, TF2)
+2. Unpack all textures and models from VPKs
+3. Decompile most complex maps
+4. Try to import decompiled maps in Godot.
+5. Check for errors if they appear.
 
 ## Additional things
 - Source code of MDL2OBJ: https://github.com/H2xDev/mdl2obj
