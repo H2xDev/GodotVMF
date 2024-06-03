@@ -30,6 +30,12 @@ func _importGeometry(_reimport = false):
 
 	if not mesh:
 		return;
+		
+	if VMFConfig.config.import.generateLightmapUV2:
+		mesh.lightmap_unwrap(
+			global_transform, 
+			VMFConfig.config.import.lightmapTexelSize
+			);
 
 	_currentMesh = MeshInstance3D.new();
 	_currentMesh.name = "Geometry";
@@ -116,7 +122,13 @@ func _importModels():
 		if not "model" in ent:
 			continue;
 
-		var resource = MDLManager.loadModel(ent.model, VMFConfig.config.models.generateCollision);
+		var lightmapTexelSize = VMFConfig.config.models.lightmapTexelSize
+
+		if VMFConfig.config.import.generateLightmapUV2 and "lightmapTexelSize" in ent:
+			lightmapTexelSize = float(ent.lightmapTexelSize)
+			VMFLogger.log('prop_static (%s) overrides lightmapTexelSize to \'%f\'' % [ent.id, lightmapTexelSize])
+
+		var resource = MDLManager.loadModel(ent.model, VMFConfig.config.models.generateCollision, VMFConfig.config.import.generateLightmapUV2, lightmapTexelSize);
 		var importScale = VMFConfig.config.import.scale;
 
 		if not resource:

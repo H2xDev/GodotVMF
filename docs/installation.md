@@ -27,6 +27,8 @@ Default config:
 	"import": {
 		"scale": 0.025,
 		"generateCollision": true,
+		"generateLightmapUV2": true,
+		"lightmapTexelSize": 0.4,
 		"instancesFolder": "res://examples/instances",
 		"entitiesFolder": "res://examples/entities"
 	},
@@ -34,6 +36,7 @@ Default config:
 	"models": {
 		"import": true,
 		"generateCollision": true,
+		"lightmapTexelSize": 0.4,
 		"targetFolder": "res://examples/models"
 	},
 
@@ -60,11 +63,14 @@ Default config:
 - `import`
     - `scale` - In case you need to convert Valve's metrics to yours.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry (except brush entities) by using trimesh shape.
+	- `generateLightmapUV2` - If `true` then generates UV2 to enable light baking.
+	- `lightmapTexelSize` - Size of each texel in the lightmap for more precise light baking (use with caution, very low values can cause crash).
     - `instancesFolder` - Path inside the project where imported instances be placed.
     - `entitiesFolder` - Path inside the project where importer will grab entities during import.
 - `models (optional)`
     - `import` - If `true` then importer will try to import models from the mod's folder.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry.
+    - `lightmapTexelSize` - If `true` then generates UV2 for static props for light baking (global default value, can be overridden by eponymous keyvalue in `prop_static` entity, which can be manually added using `Add` button in object properties).
     - `targetFolder` - Path inside the project where imported models be placed.
 - `material`
     - `importMode` - The mode of importing materials

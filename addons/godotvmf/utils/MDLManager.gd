@@ -70,7 +70,7 @@ static func getModelMaterials(modelPath: String):
 	return materials;
 
 
-static func loadModel(modelPath: String, generateCollision: bool = false):
+static func loadModel(modelPath: String, generateCollision: bool = false, generateLightmapUV2: bool = false, lightmapTexelSize: float = 0.4):
 	var input = (VMFConfig.config.gameInfoPath + '/' + modelPath).replace('//', '/');
 	var resourcePath = (VMFConfig.config.models.targetFolder + '/' + input.split('models/')[-1]).replace('.mdl', '.tscn');
 
@@ -93,8 +93,22 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 
 	if ResourceLoader.exists(resourcePath):
 		var res = load(resourcePath);
-		MDLManager.cache[h] = res;
-		return res;
+		
+		if generateLightmapUV2:
+			## Issue: PackedScene metadata is not saved #76366
+			## We're doing it to store texel size and rebuild tscn on texel size change
+			var file = FileAccess.open(resourcePath.replace('.tscn', '.tscn_meta'), FileAccess.READ)
+
+			if file:
+				var meta = JSON.parse_string(file.get_line())
+				
+				if meta and 'lightmapTexelSize' in meta and meta['lightmapTexelSize'] == lightmapTexelSize:
+					MDLManager.cache[h] = res;
+					return res;
+		else:
+			MDLManager.cache[h] = res;
+			return res;
+
 
 	var materials = getModelMaterials(modelPath)\
 	.map(
@@ -116,6 +130,17 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 
 	root.name = modelPath.get_file().get_basename();
 	model.name = modelPath.get_file().get_basename() + '_mesh';
+	
+	if generateLightmapUV2:
+		mesh.lightmap_unwrap(model.global_transform, lightmapTexelSize);
+		## Issue: PackedScene metadata is not saved #76366
+		## We're doing it to store texel size and rebuild tscn on texel size change
+		var tmp = { 'lightmapTexelSize': lightmapTexelSize }
+		var file = FileAccess.open(resourcePath.replace('.tscn', '.tscn_meta'), FileAccess.WRITE)
+
+		if file:
+			file.store_line(JSON.stringify(tmp))
+	
 	model.set_mesh(mesh);
 	root.add_child(model);
 	
