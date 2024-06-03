@@ -55,6 +55,7 @@ static func validateConfig():
 	checkKeys = [
 		"scale",
 		"generateCollision",
+		"generateLightmapUV2",
 		"lightmapTexelSize",
 		"entitiesFolder",
 		"instancesFolder",

@@ -70,7 +70,7 @@ static func getModelMaterials(modelPath: String):
 	return materials;
 
 
-static func loadModel(modelPath: String, generateCollision: bool = false):
+static func loadModel(modelPath: String, generateCollision: bool = false, generateLightmapUV2: bool = false, lightmapTexelSize: float = 0.4):
 	var input = (VMFConfig.config.gameInfoPath + '/' + modelPath).replace('//', '/');
 	var resourcePath = (VMFConfig.config.models.targetFolder + '/' + input.split('models/')[-1]).replace('.mdl', '.tscn');
 
@@ -116,6 +116,10 @@ static func loadModel(modelPath: String, generateCollision: bool = false):
 
 	root.name = modelPath.get_file().get_basename();
 	model.name = modelPath.get_file().get_basename() + '_mesh';
+	
+	if generateLightmapUV2:
+		mesh.lightmap_unwrap(model.global_transform, lightmapTexelSize);
+	
 	model.set_mesh(mesh);
 	root.add_child(model);
 	
