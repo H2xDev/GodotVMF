@@ -57,7 +57,7 @@ The blank mod folder you can download here: [Google Drive](https://drive.google.
 - `models (optional)`
     - `import` - If `true` then importer will try to import models from the mod's folder.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry.
-    - `lightmapTexelSize` - If `true` then generates UV2 for static props for light baking (global default value, can be overridden by `lightmapTexelSize` keyvalue in `prop_static` entity, which can be manually added using `Add` button in object properties).
+    - `lightmapTexelSize` - If `true` then generates UV2 for static props for light baking (global default value, can be overridden by eponymous keyvalue in `prop_static` entity, which can be manually added using `Add` button in object properties).
     - `targetFolder` - Path inside the project where imported models be placed.
 - `material`
     - `importMode` - The mode of importing materials
