@@ -7,7 +7,6 @@ func _enter_tree():
 		var childs = get_tree().get_scene_edited_root().get_children()
 		
 		for child in childs:
-			print(child.name);
 			if not child is VMFNode:
 				continue;
 

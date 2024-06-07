@@ -30,7 +30,8 @@ Default config:
 		"generateLightmapUV2": true,
 		"lightmapTexelSize": 0.4,
 		"instancesFolder": "res://examples/instances",
-		"entitiesFolder": "res://examples/entities"
+		"entitiesFolder": "res://examples/entities",
+		"geometryFolder": "res://examlpes/geometry"
 	},
 
 	"models": {
@@ -45,7 +46,7 @@ Default config:
 		"ignore": [
 			"TOOLS/*",
 			"light/white",
-            		"*/water_*"
+			"*/water_*"
 		],
 		"fallbackMaterial": null,
 		"defaultTextureSize": 512,
@@ -67,6 +68,7 @@ Default config:
 	- `lightmapTexelSize` - Size of each texel in the lightmap for more precise light baking (use with caution, very low values can cause crash).
     - `instancesFolder` - Path inside the project where imported instances be placed.
     - `entitiesFolder` - Path inside the project where importer will grab entities during import.
+	- `geometryFolder` - Path where the importer will store any mesh or collision resource that is generated.
 - `models (optional)`
     - `import` - If `true` then importer will try to import models from the mod's folder.
     - `generateCollision` - If `true` then generates `CollisionShape3D` for imported geometry.
@@ -83,5 +85,3 @@ Default config:
     - `fallbackMaterial` - Path to the material *.tres that will be used as a fallback for ignored materials.
     - `defaultTextureSize` - The size of the texture that will be used in case of missing texture.
     - `targetFolder` - Path inside the project where imported materials be placed.
-
-

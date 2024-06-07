@@ -10,8 +10,8 @@ static func define_alias(name: String, value: Node):
 
 	aliases[name] = value;
 
-@export var entity = {};
-@export var enabled = true;
+@export var entity := {};
+@export var enabled := true;
 @export var flags: int = 0;
 
 var config:
@@ -51,7 +51,6 @@ func _ready():
 
 	parse_connections();
 	
-
 	ValveIONode.namedEntities[name] = self;
 
 	if "StartDisabled" in entity and entity.StartDisabled == 1:
@@ -65,7 +64,7 @@ func _apply_entity(ent, config):
 	self.flags = ent.get("spawnflags", 0);
 	self.basis = get_entity_basis(ent);
 	self.global_position = ent.get("origin", Vector3.ZERO);
-
+	
 	assign_name();
 
 func assign_name(i = 0) -> void:
@@ -84,7 +83,7 @@ func call_target_input(target, input, param, delay) -> void:
 	if not enabled:
 		return;
 
-	var targetNode = null;
+	var targetNode: Node = null;
 
 	if target in aliases:
 		targetNode = aliases[target];
@@ -101,12 +100,13 @@ func call_target_input(target, input, param, delay) -> void:
 	if not input in targetNode:
 		return;
 
-	var targets = get_all_targets(targetNode.name) if not target.begins_with("!") else [targetNode];
+	var targets := get_all_targets(targetNode.name) if not target.begins_with("!") else [targetNode];
 
 	for node in targets:
 		if delay > 0.0:
-			set_timeout(func():
-				node.call(input, param), delay);
+			get_tree().create_timer(delay).timeout.connect(func():
+				node.call(input, param)
+			);
 		else:
 			node.call(input, param);
 
@@ -119,26 +119,15 @@ func get_target(n) -> Node3D:
 
 	return ValveIONode.namedEntities[n];
 
-func get_all_targets(name, i = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
-	var cname = name + str(i) if i > -1 else name;
-	var node = get_target(cname);
+func get_all_targets(targetName: String, i: int = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
+	var cname := targetName + str(i) if i > -1 else targetName;
+	var node := get_target(cname);
 
 	if not node:
 		return targets;
 
 	targets.append(node);
-	return get_all_targets(name, i + 1, targets);
-
-func set_timeout(callable, delay) -> void:
-	var _timer = Timer.new();
-	add_child(_timer);
-
-	_timer.connect("timeout", callable);
-	_timer.set_wait_time(delay);
-	_timer.start();
-
-	_timer.connect("timeout", func():
-		_timer.queue_free());
+	return get_all_targets(targetName, i + 1, targets);
 
 func parse_connections() -> void:
 	if not validate_entity(): return;
@@ -196,15 +185,13 @@ func get_mesh() -> ArrayMesh:
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 
-	var struct = {
+	var struct := {
 		'world': {
 			'solid': solids,
 		},
 	};
-	var offset = entity.origin if "origin" in entity else Vector3.ZERO;
-
-	var fallbackMaterial = config.material.fallbackMaterial;
-
+	var offset: Vector3 = entity.origin if "origin" in entity else Vector3.ZERO;
+	
 	return VMFTool.createMesh(struct, offset);
 
 static func convert_vector(v) -> Vector3:
@@ -243,7 +230,7 @@ func get_entity_convex_shape():
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 
-	var struct = {
+	var struct := {
 		'world': {
 			'solid': solids,
 		},
@@ -251,7 +238,7 @@ func get_entity_convex_shape():
 
 	var origin = entity.origin if "origin" in entity else Vector3.ZERO;
 
-	var mesh = VMFTool.createMesh(struct, origin);
+	var mesh := VMFTool.createMesh(struct, origin);
 
 	return mesh.create_convex_shape();
 	
@@ -284,5 +271,3 @@ func get_entity_trimesh_shape():
 	combiner.queue_free();
 	
 	return shape;
-
-

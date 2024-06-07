@@ -1,26 +1,17 @@
-class_name ValveFormatParser;
+@tool
+@static_unload
+class_name ValveFormatParser extends RefCounted;
 
-static func parse(filePath, keysToLower = false):
-	var out = {};
-	var parseTime = Time.get_ticks_msec();
+static var _propRegex := RegEx.create_from_string('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$|(\\s\\[.+\\]))$');
+static var _vectorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
+static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
+static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');;
+static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)');
+static var _commentRegex := RegEx.create_from_string('\\s+?\\/\\/.+');
 
-	var propRegex = RegEx.new();
-	propRegex.compile('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$|(\\s\\[.+\\]))$');
-
-	var vectorRegex = RegEx.new();
-	vectorRegex.compile('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
-
-	var colorRegex = RegEx.new();
-	colorRegex.compile('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
-
-	var uvRegex = RegEx.new();
-	uvRegex.compile('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');
-
-	var planeRegex = RegEx.new();
-	planeRegex.compile('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)')
-	
-	var commentRegex = RegEx.new();
-	commentRegex.compile('\\s+?\\/\\/.+');
+static func parse(filePath: String, keysToLower := false):
+	var out := {};
+	var parseTime := Time.get_ticks_msec();
 
 	if not filePath:
 		VMFLogger.error('ValveFormatParser: No file path provided');
@@ -30,15 +21,15 @@ static func parse(filePath, keysToLower = false):
 		VMFLogger.error('ValveFormatParser: File does not exist: ' + filePath);
 		return null;
 
-	var file = FileAccess.open(filePath, FileAccess.READ);
+	var file := FileAccess.open(filePath, FileAccess.READ);
 
-	var hierarchy = [out];
+	var hierarchy: Array = [out];
 
 	var closeStructure = func():
 		hierarchy.pop_back();
 
-	var defineStructure = func(p):
-		var _name = p.strip_edges().replace('{', '').replace('"', '');
+	var defineStructure = func(p: String):
+		var _name := p.strip_edges().replace('{', '').replace('"', '');
 
 		if keysToLower:
 			_name = _name.to_lower();
@@ -56,48 +47,46 @@ static func parse(filePath, keysToLower = false):
 
 		hierarchy.append(newStruct);
 
-	var parseValue = func(valueString):
+	var parseValue = func(valueString: String):
+		if (_vectorRegex.search(valueString)):
+			var vector := Vector3(0, 0, 0);
+			var values := valueString.split_floats(' ');
 
-		if (vectorRegex.search(valueString)):
-			var vector = Vector3(0, 0, 0);
-			var values = valueString.split(' ');
-
-			vector.x = float(values[0]);
-			vector.y = float(values[1]);
-			vector.z = float(values[2]);
+			vector.x = values[0];
+			vector.y = values[1];
+			vector.z = values[2];
 			return vector;
-
-		if (colorRegex.search(valueString)):
+		if (_colorRegex.search(valueString)):
 			var color = {};
-			var m = colorRegex.search(valueString);
+			var m := _colorRegex.search(valueString);
 
-			color.r = float(m.get_string(1)) / 255;
-			color.g = float(m.get_string(2)) / 255;
-			color.b = float(m.get_string(3)) / 255;
-			color.a = float(m.get_string(4)) / 255;
+			color.r = m.get_string(1).to_float() / 255;
+			color.g = m.get_string(2).to_float() / 255;
+			color.b = m.get_string(3).to_float() / 255;
+			color.a = m.get_string(4).to_float() / 255;
 			return color;
-		else: if (uvRegex.search(valueString)):
+		elif (_uvRegex.search(valueString)):
 			var uv = {}
-			var m = uvRegex.search(valueString);
+			var m := _uvRegex.search(valueString);
 
-			uv.x = float(m.get_string(1));
-			uv.y = float(m.get_string(2));
-			uv.z = float(m.get_string(3));
-			uv.shift = float(m.get_string(4));
-			uv.scale = float(m.get_string(5));
+			uv.x = m.get_string(1).to_float();
+			uv.y = m.get_string(2).to_float();
+			uv.z = m.get_string(3).to_float();
+			uv.shift = m.get_string(4).to_float();
+			uv.scale = m.get_string(5).to_float();
 
 			return uv;
-		else: if (planeRegex.search(valueString)):
-			var plane = [];
-			var m = planeRegex.search(valueString);
+		elif (_planeRegex.search(valueString)):
+			var plane: Array[Vector3] = [];
+			var m := _planeRegex.search(valueString);
 
-			for i in range(1, 4):
-				var vector = Vector3(0, 0, 0);
-				var values = m.get_string(i).split(' ');
+			for i: int in range(1, 4):
+				var vector := Vector3(0, 0, 0);
+				var values := m.get_string(i).split_floats(' ');
 
-				vector.x = float(values[0]);
-				vector.y = float(values[1]);
-				vector.z = float(values[2]);
+				vector.x = values[0];
+				vector.y = values[1];
+				vector.z = values[2];
 
 				plane.append(vector);
 
@@ -112,18 +101,18 @@ static func parse(filePath, keysToLower = false):
 				"points": plane,
 				"vecsum": plane[0] + plane[1] + plane[2],
 			}
-		else: if valueString.is_valid_int():
+		elif valueString.is_valid_int():
 			return int(valueString);
-		else: if valueString.is_valid_float():
+		elif valueString.is_valid_float():
 			return float(valueString);
 		else:
 			return valueString;
 
-	var defineProp = func(l):
-		var m = propRegex.search(l);
+	var defineProp = func(l: String):
+		var m := _propRegex.search(l);
 
-		var propName = m.get_string(1);
-		var propValue = parseValue.call(m.get_string(2));
+		var propName := m.get_string(1);
+		var propValue := parseValue.call(m.get_string(2));
 
 		if keysToLower:
 			propName = propName.to_lower();
@@ -135,12 +124,13 @@ static func parse(filePath, keysToLower = false):
 				hierarchy[-1][propName] = [hierarchy[-1][propName], propValue];
 		else:
 			hierarchy[-1][propName] = propValue;
-	var lines = file.get_as_text().split('\n');
-	var line = '';
-	var previousLine = line;
+			
+	var lines := file.get_as_text().split('\n');
+	var line: String = '';
+	var previousLine: String = line;
 
 	for l in lines:
-		line = commentRegex.sub(l.strip_edges(), '');
+		line = _commentRegex.sub(l.strip_edges(), '');
 
 		if line.begins_with('//'):
 			line = file.get_line();
@@ -148,20 +138,20 @@ static func parse(filePath, keysToLower = false):
 
 		if line == '': # Skip empty lines
 			line = file.get_line();
-		else: if line[0] == '{':
+		elif line[0] == '{':
 			defineStructure.call(previousLine);
-		else: if line.ends_with('{'):
+		elif line.ends_with('{'):
 			defineStructure.call(line);
-		else: if line[0] == '}' or line.ends_with('}'):
+		elif line[0] == '}' or line.ends_with('}'):
 			closeStructure.call();
-		else: if propRegex.search(line):
+		elif _propRegex.search(line):
 			defineProp.call(line);
 
 		previousLine = line;
 
 	parseTime = Time.get_ticks_msec() - parseTime;
 
-	if parseTime > 2000:
-		VMFLogger.warn('ValveFormatParser: Parsing took ' + str(parseTime) + 'ms');
+	#if parseTime > 2000:
+	VMFLogger.warn('ValveFormatParser: Parsing took ' + str(parseTime) + 'ms');
 
 	return out;

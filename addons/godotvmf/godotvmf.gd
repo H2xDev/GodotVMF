@@ -6,7 +6,7 @@ var fileChecksums = {};
 var textureChecksums = {};
 var watcher = VMFWatcher.new();
 
-func _enter_tree():
+func _enter_tree() -> void:
 	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/utils/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
 	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/utils/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
 	
@@ -20,35 +20,28 @@ func _enter_tree():
 
 	watcher._begin_watch(self);
 
-func GetExistingVMFNodes():
-	var root = get_tree().get_edited_scene_root();
-
-	if root is VMFNode:
-		return [root];
-
-	var childs = root.get_children();
-	var nodes = [];
-
-	for child in childs:
-		if child is VMFNode:
-			nodes.append(child);
-
-	return nodes;
+func GetExistingVMFNodes() -> Array[VMFNode]:
+	var nodes: Array[VMFNode] = []
+	if !get_tree():
+		return nodes;
+	
+	nodes.assign(get_tree().get_nodes_in_group(&"vmfnode_group"));
+	return nodes
 
 func ReimportVMF():
-	var nodes = GetExistingVMFNodes();
+	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
 		node.importMap();
 
 func ReimportEntities():
-	var nodes = GetExistingVMFNodes();
+	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
 		node._importEntities(true);
 
 func ReimportGeometry():
-	var nodes = GetExistingVMFNodes();
+	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
 		node.importGeometryOnly();

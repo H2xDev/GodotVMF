@@ -1,4 +1,4 @@
-class_name MDLManager;
+class_name MDLManager extends RefCounted;
 
 static var _modelCache = [];
 static var logged = {};
