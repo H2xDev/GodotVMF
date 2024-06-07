@@ -44,7 +44,7 @@ func _importGeometry(_reimport := false) -> void:
 	if not _owner:
 		_owner = get_tree().get_edited_scene_root();
 	
-	var mesh: Mesh = VMFTool.createMesh(_structure);
+	var mesh: ArrayMesh = VMFTool.createMesh(_structure);
 	if not mesh:
 		return;
 		
@@ -224,6 +224,10 @@ func _readVMF() -> void:
 		_structure.world.solid = [_structure.world.solid] if not _structure.world.solid is Array else _structure.world.solid;
 
 func _importEntities(_reimport := false) -> void:
+	if not is_inside_tree():
+		queue_free()
+		return
+	
 	var elapsedTime := Time.get_ticks_msec();
 	var importScale: float = VMFConfig.config.import.scale;
 
@@ -287,6 +291,10 @@ func importGeometryOnly() -> void:
 	_importGeometry(true);
 
 func importMap() -> void:
+	if not is_inside_tree():
+		queue_free()
+		return
+	
 	VMFConfig.checkProjectConfig();
 	if not VMFConfig.validateConfig(): return;
 	if not VMFConfig.config: return;
@@ -294,9 +302,6 @@ func importMap() -> void:
 	if not vmf: return;
 
 	if not _owner:
-		if !get_tree():
-			self.queue_free()
-		
 		_owner = get_tree().get_edited_scene_root();
 
 	VTFTool.clearCache();

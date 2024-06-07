@@ -51,7 +51,6 @@ func _ready():
 
 	parse_connections();
 	
-
 	ValveIONode.namedEntities[name] = self;
 
 	if "StartDisabled" in entity and entity.StartDisabled == 1:
@@ -65,7 +64,7 @@ func _apply_entity(ent, config):
 	self.flags = ent.get("spawnflags", 0);
 	self.basis = get_entity_basis(ent);
 	self.global_position = ent.get("origin", Vector3.ZERO);
-
+	
 	assign_name();
 
 func assign_name(i = 0) -> void:
@@ -272,5 +271,3 @@ func get_entity_trimesh_shape():
 	combiner.queue_free();
 	
 	return shape;
-
-

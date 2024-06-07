@@ -157,7 +157,7 @@ static func calculateUVForSide(side: Dictionary, vertex: Vector3) -> Vector2:
 	return Vector2(u, v);
 
 ## Returns MeshInstance3D from parsed VMF structure
-static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> Mesh:
+static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> ArrayMesh:
 	clearCaches();
 
 	var _scale: float = VMFConfig.config.import.scale;
