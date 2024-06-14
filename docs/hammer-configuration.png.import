@@ -2,17 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cyq42got8m7fw"
-path="res://.godot/imported/icon.svg-e5bd23fe6e1c42ce167fc14f659c5665.ctex"
+uid="uid://dus4pfm8a040s"
+path="res://.godot/imported/hammer-configuration.png-3649bcb051530c09a2cb5b54d8e49637.ctex"
 metadata={
-"has_editor_variant": true,
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/godotvmf/icon.svg"
-dest_files=["res://.godot/imported/icon.svg-e5bd23fe6e1c42ce167fc14f659c5665.ctex"]
+source_file="res://docs/hammer-configuration.png"
+dest_files=["res://.godot/imported/hammer-configuration.png-3649bcb051530c09a2cb5b54d8e49637.ctex"]
 
 [params]
 
@@ -33,6 +32,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=true
-editor/convert_colors_with_editor_theme=true

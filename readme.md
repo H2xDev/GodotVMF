@@ -24,6 +24,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 
 ## Usage
 - [Docs](docs/readme.md)
+- [Import Source Games Maps](https://youtu.be/uTBzx0bwizU)
 
 ## Features
 - Import geometry (Also with smoothing groups)

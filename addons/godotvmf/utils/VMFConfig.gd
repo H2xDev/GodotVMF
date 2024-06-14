@@ -8,10 +8,10 @@ static var config:
 			checkProjectConfig();
 		return _config;
 	
-static func _validateKeys(keyset, dict, resFolders = [], section = ''):
-	var missingKeys = [];
+static func _validateKeys(keyset: Array[String], dict, resFolders: Array[String] = [], section := '') -> bool:
+	var missingKeys: Array[String] = [];
 
-	for key in keyset:
+	for key: String in keyset:
 		if not key in dict:
 			missingKeys.append(key);
 
@@ -29,15 +29,21 @@ static func _validateKeys(keyset, dict, resFolders = [], section = ''):
 
 	return true;
 
-
-static func validateConfig():
-	var checkKeys = [
+static func validateConfig() -> bool:
+	var checkKeys: Array[String] = [
 		"import",
 		"material",
 	];
 
-	var modelsDefined = "models" in config and config.models.import;
-	var materialsDefined = "materials" in config and config.materials.importMode == 2;
+	var modelsDefined: bool = "models" in config and config.models.import;
+	var materialsDefined: bool = "materials" in config and config.materials.importMode == 2;
+
+	if config.material.importMode == 3:
+		checkKeys.append("vtfcmd");
+
+		if not FileAccess.file_exists(_config.vtfcmd):
+			VMFLogger.error('VTFCmd.exe not found at {0}. Material scan disabled'.format([_config.vtfcmd]));
+			config.material.importMode = 1;
 
 	if modelsDefined or materialsDefined:
 		checkKeys.append("gameInfoPath");
@@ -55,8 +61,11 @@ static func validateConfig():
 	checkKeys = [
 		"scale",
 		"generateCollision",
+		"generateLightmapUV2",
+		"lightmapTexelSize",
 		"entitiesFolder",
 		"instancesFolder",
+		"geometryFolder",
 	];
 
 	if not _validateKeys(checkKeys, config.import, ['entitiesFolder', 'instancesFolder'], 'import'):
@@ -77,6 +86,7 @@ static func validateConfig():
 		checkKeys = [
 			"generateCollision",
 			"targetFolder",
+			"lightmapTexelSize",
 		];
 
 		if not _validateKeys(checkKeys, config.models, ['targetFolder'], 'models'):
@@ -84,7 +94,7 @@ static func validateConfig():
 
 	return true;
 
-static func checkProjectConfig():
+static func checkProjectConfig() -> void:
 	if not FileAccess.file_exists('res://vmf.config.json'):
 		VMFLogger.error('vmf.config.json not found in project root');
 
@@ -96,7 +106,7 @@ static func checkProjectConfig():
 		return;
 
 	_config.material.ignore = config.material.ignore\
-			.map(func(i): return i.to_upper());
+			.map(func(i: String) -> String: return i.to_upper());
 
 	_config.material.fallbackMaterial = load(config.material.fallbackMaterial) if config.material.fallbackMaterial != null else null;
 
