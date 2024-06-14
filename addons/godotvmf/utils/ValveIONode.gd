@@ -100,7 +100,11 @@ func call_target_input(target, input, param, delay) -> void:
 	if not input in targetNode:
 		return;
 
-	var targets := get_all_targets(targetNode.name) if not target.begins_with("!") else [targetNode];
+	var targets: Array[Node3D] = [];
+	if not target.begins_with("!"):
+		targets = get_all_targets(targetNode.name);
+	else:
+		targets = [targetNode];
 
 	for node in targets:
 		if delay > 0.0:

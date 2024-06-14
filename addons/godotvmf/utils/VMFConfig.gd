@@ -86,6 +86,7 @@ static func validateConfig() -> bool:
 		checkKeys = [
 			"generateCollision",
 			"targetFolder",
+			"lightmapTexelSize",
 		];
 
 		if not _validateKeys(checkKeys, config.models, ['targetFolder'], 'models'):

@@ -17,3 +17,5 @@ mono_crash.*.json
 *.vmx
 
 test.tscn
+
+addons/texture_checksums.json
