@@ -31,7 +31,7 @@ Default config:
 		"lightmapTexelSize": 0.4,
 		"instancesFolder": "res://examples/instances",
 		"entitiesFolder": "res://examples/entities",
-		"geometryFolder": "res://examlpes/geometry"
+		"geometryFolder": "res://examples/geometry"
 	},
 
 	"models": {
