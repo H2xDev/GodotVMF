@@ -5,6 +5,7 @@ var dock;
 var fileChecksums = {};
 var textureChecksums = {};
 var watcher = VMFWatcher.new();
+var materialWatcherThread = null;
 
 func _enter_tree() -> void:
 	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/utils/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
@@ -18,12 +19,16 @@ func _enter_tree() -> void:
 	dock.get_node('ReimportEntities').pressed.connect(ReimportEntities);
 	dock.get_node('ReimportGeometry').pressed.connect(ReimportGeometry);
 
-	watcher._begin_watch(self);
+	var isWatcherRequired = VMFConfig.config.material.importMode == VTFTool.TextureImportMode.SYNC;
+
+	if (isWatcherRequired):
+		materialWatcherThread = Thread.new();
+		materialWatcherThread.start(watcher._begin_watch.bind(self));
 
 func GetExistingVMFNodes() -> Array[VMFNode]:
-	var nodes: Array[VMFNode] = []
-	if !get_tree():
-		return nodes;
+	var nodes: Array[VMFNode] = [];
+
+	if !get_tree(): return nodes;
 	
 	nodes.assign(get_tree().get_nodes_in_group(&"vmfnode_group"));
 	return nodes
@@ -52,4 +57,5 @@ func _exit_tree():
 	
 	remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, dock);
 	dock.free();
-	watcher._stop_watch(self);
+
+	materialWatcherThread.wait_to_finish();

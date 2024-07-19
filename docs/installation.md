@@ -81,6 +81,7 @@ Default config:
         - 2 - Import directly from mod folder. Already imported materials will be ignored.
         - 3 - Sync mod folder materials with the project. It will create new materials and update existing ones in the mod folder.
             - Requires VTFCmd utility to be defined in the config.
+            - Requires plugin to be reenabled. If everything is ok, you will see the message in the console that the plugin is ready to sync materials.
     - `ignore` - List of materials that should be ignored during import.
     - `fallbackMaterial` - Path to the material *.tres that will be used as a fallback for ignored materials.
     - `defaultTextureSize` - The size of the texture that will be used in case of missing texture.
