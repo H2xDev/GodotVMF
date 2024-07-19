@@ -58,4 +58,5 @@ func _exit_tree():
 	remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, dock);
 	dock.free();
 
-	materialWatcherThread.wait_to_finish();
+	if materialWatcherThread:
+		materialWatcherThread.wait_to_finish();

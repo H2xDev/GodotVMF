@@ -35,7 +35,7 @@ func _path_join(pathA: String, pathB: String):
 	return a + b;
 
 func _update_checksum_file():
-	var6file = FileAccess.open(CHECKSUM_FILE, FileAccess.WRITE);
+	var file = FileAccess.open(CHECKSUM_FILE, FileAccess.WRITE);
 	file.store_string(JSON.stringify(checksumsData, "\t"));
 	file.close();
 
