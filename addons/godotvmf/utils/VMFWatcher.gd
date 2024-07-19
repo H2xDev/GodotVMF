@@ -57,6 +57,8 @@ func _create_watcher_structure():
 	_recheck_resources();
 	_collect_texture_checksums();
 
+	VMFLogger.log("Material watcher initialized");
+
 func _begin_watch(epluginInstance: EditorPlugin):
 	eplugin = epluginInstance;
 	
