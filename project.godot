@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="GodotVMF Example"
-config/features=PackedStringArray("4.2", "Forward Plus")
+config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
 
 [debug]
@@ -21,10 +21,6 @@ gdscript/warnings/unsafe_property_access=1
 gdscript/warnings/unsafe_method_access=1
 gdscript/warnings/unsafe_cast=1
 gdscript/warnings/unsafe_call_argument=1
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/godotvmf/plugin.cfg")
 
 [rendering]
 

@@ -17,5 +17,6 @@ mono_crash.*.json
 *.vmx
 
 test.tscn
+godotvmf_mod
 
-addons/texture_checksums.json
+addons/godotvmf/texture_checksums.json
