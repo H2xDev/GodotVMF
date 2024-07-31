@@ -25,6 +25,7 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 ## Usage
 - [Docs](docs/readme.md)
 - [Import Source Games Maps](https://youtu.be/uTBzx0bwizU)
+- [Project Starter [Work in progress]](https://github.com/H2xDev/GodotVMF-Game-Template)
 
 ## Features
 - Import geometry (Also with smoothing groups)
