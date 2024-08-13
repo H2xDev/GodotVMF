@@ -53,7 +53,7 @@ func _entity_ready():
 		lockedSound = load("res://Assets/Sounds/" + entity.locked_sound);
 
 # This method will be called during import
-func _apply_entity(entityInfo: Dictionary, vmfNode: VMFNode):
+func _apply_entity(entityInfo: Dictionary):
 	super._apply_entity(entityInfo, vmfNode);
 
 	# Getting entity's brush geometry and assigning it
@@ -108,7 +108,7 @@ Don't forget to call `super._apply_entity` before making any changes in the node
 
 #### Example
 ```gdscript
-func _apply_entity(entityInfo: Dictionary, vmfNode: VMFNode):
+func _apply_entity(entityInfo: Dictionary):
 	super._apply_entity(entityInfo, vmfNode);
 
 	# Getting a mesh from the solid data of the entity and assigning

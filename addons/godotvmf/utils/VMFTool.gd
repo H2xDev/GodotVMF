@@ -1,6 +1,6 @@
 class_name VMFTool
 
-static var vertexCache: Array = [];
+static var vertex_cache: Array = [];
 static var intersections: Dictionary = {};
 
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
@@ -24,7 +24,7 @@ class VectorSorter:
 		self.pp = longer(i, longer(j, k));
 		self.qp = normal.cross(self.pp);
 
-	func getOrder(v: Vector3) -> float:
+	func get_order(v: Vector3) -> float:
 		var normalized: Vector3 = (v - self.center).normalized();
 		return atan2(
 			self.normal.dot(normalized.cross(self.pp)), 
@@ -32,23 +32,23 @@ class VectorSorter:
 		);
 
 	func sort(a: Vector3, b: Vector3) -> bool:
-		return getOrder(a) < getOrder(b);
+		return get_order(a) < get_order(b);
 
-static func getSimilarVertex(vertex: Vector3) -> Vector3:
-	vertexCache = vertexCache if vertexCache else [];
+static func get_similar_vertex(vertex: Vector3) -> Vector3:
+	vertex_cache = vertex_cache if vertex_cache else [];
 
-	for v: Vector3 in vertexCache:
+	for v: Vector3 in vertex_cache:
 		if (v - vertex).length() < 0.1:
 			return v;
 
-	vertexCache.append(vertex);
+	vertex_cache.append(vertex);
 	return vertex;
 
-static func clearCaches() -> void:
-	vertexCache = [];
+static func clear_caches() -> void:
+	vertex_cache = [];
 	intersections = {};
 
-static func getPlanesIntersectionPoint(side, side2, side3) -> Variant:
+static func get_planes_intersection_point(side, side2, side3) -> Variant:
 	var d: Array[int] = [side.id, side2.id, side3.id];
 	d.sort();
 
@@ -63,7 +63,7 @@ static func getPlanesIntersectionPoint(side, side2, side3) -> Variant:
 		return vertex;
 
 ## Returns vertices_plus
-static func calculateVertices(side, brush) -> Array[Vector3]:
+static func calculate_vertices(side, brush) -> Array[Vector3]:
 	var vertices: Array[Vector3] = [];
 	var cache = {};
 
@@ -71,13 +71,13 @@ static func calculateVertices(side, brush) -> Array[Vector3]:
 		vertices.assign(side.vertices_plus.v)
 		return vertices;
 
-	var isVerticeExists = func(vector: Vector3):
-		var hashValue: int = hash(Vector3i(vector));
+	var is_vertice_exists = func(vector: Vector3):
+		var hash_value: int = hash(Vector3i(vector));
 		
-		if hashValue in cache:
+		if hash_value in cache:
 			return true;
 
-		cache[hashValue] = 1;
+		cache[hash_value] = 1;
 
 		return false;
 
@@ -89,11 +89,11 @@ static func calculateVertices(side, brush) -> Array[Vector3]:
 			if side2 == side3 or side3 == side:
 				continue;
 
-			var vertex := getPlanesIntersectionPoint(side, side2, side3);
+			var vertex := get_planes_intersection_point(side, side2, side3);
 			if vertex == null:
 				continue;
 
-			if isVerticeExists.call(vertex):
+			if is_vertice_exists.call(vertex):
 				continue;
 
 			vertices.append(vertex as Vector3);
@@ -104,15 +104,15 @@ static func calculateVertices(side, brush) -> Array[Vector3]:
 		)
 	);
 
-	var sideNormal: Vector3 = side.plane.value.normal.normalized();
-	var vectorSorter: VectorSorter = VectorSorter.new(sideNormal, side.plane.vecsum / 3);
+	var size_normal: Vector3 = side.plane.value.normal.normalized();
+	var vectorSorter: VectorSorter = VectorSorter.new(size_normal, side.plane.vecsum / 3);
 
 	vertices.sort_custom(vectorSorter.sort);
 
 	return vertices;
 
-static func calculateUVForSide(side: Dictionary, vertex: Vector3) -> Vector2:
-	var defaultTextureSize: int = VMFConfig.config.material.defaultTextureSize;
+static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
+	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
 
 	var ux: float = side.uaxis.x;
 	var uy: float = side.uaxis.y;
@@ -126,7 +126,7 @@ static func calculateUVForSide(side: Dictionary, vertex: Vector3) -> Vector2:
 	var vshift: float = side.vaxis.shift;
 	var vscale: float = side.vaxis.scale;
 
-	var material = VTFTool.getMaterial(side.material);
+	var material = VTFTool.get_material(side.material);
 	
 	if not material:
 		return Vector2(1, 1);
@@ -134,7 +134,7 @@ static func calculateUVForSide(side: Dictionary, vertex: Vector3) -> Vector2:
 	# NOTE In case if material is blend texture we use texture_albedo param
 	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
 
-	var tsize: Vector2 = texture.get_size() if texture else Vector2(defaultTextureSize, defaultTextureSize);
+	var tsize: Vector2 = texture.get_size() if texture else Vector2(default_texture_size, default_texture_size);
 	var tscale = material.get_meta("scale", Vector2(1, 1));
 
 	var tsx: float = 1;
@@ -157,147 +157,147 @@ static func calculateUVForSide(side: Dictionary, vertex: Vector3) -> Vector2:
 	return Vector2(u, v);
 
 ## Returns MeshInstance3D from parsed VMF structure
-static func createMesh(vmfStructure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> ArrayMesh:
-	clearCaches();
+static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> ArrayMesh:
+	clear_caches();
 
 	var _scale: float = VMFConfig.config.import.scale;
-	var _defaultTextureSize: float = VMFConfig.config.material.defaultTextureSize;
-	var _ignoreTextures: Array[String];
-	_ignoreTextures.assign(VMFConfig.config.material.ignore);
-	var _textureImportMode: int = VMFConfig.config.material.importMode;
+	var _default_texture_size: float = VMFConfig.config.material.defaultTextureSize;
+	var _ignore_textures: Array[String];
+	_ignore_textures.assign(VMFConfig.config.material.ignore);
+	var _texture_import_mode: int = VMFConfig.config.material.importMode;
 
-	var elapsedTime := Time.get_ticks_msec();
+	var elapsed_time := Time.get_ticks_msec();
 
-	if not "solid" in vmfStructure.world:
+	if not "solid" in vmf_structure.world:
 		return null;
 
-	var brushes = vmfStructure.world.solid
-	var materialSides = {};
-	var textureCache = {};
+	var brushes = vmf_structure.world.solid;
+	var material_sides = {};
+	var texture_cache = {};
 	var mesh := ArrayMesh.new();
 
 	for brush in brushes:
 		for side in brush.side:
 			var material: String = side.material.to_upper();
-			var isIgnored = _ignoreTextures.any(func(rx: String) -> bool: return material.match(rx));
+			var isIgnored = _ignore_textures.any(func(rx: String) -> bool: return material.match(rx));
 
 			if isIgnored:
 				continue;
 
-			if not material in materialSides:
-				materialSides[material] = [];
+			if not material in material_sides:
+				material_sides[material] = [];
 
-			materialSides[material].append({
+			material_sides[material].append({
 				"side": side,
 				"brush": brush,
 			});
 
-	for sides in materialSides.values():
-		var surfaceTool := SurfaceTool.new();
-		surfaceTool.begin(Mesh.PRIMITIVE_TRIANGLES);
+	for sides in material_sides.values():
+		var sf := SurfaceTool.new();
+		sf.begin(Mesh.PRIMITIVE_TRIANGLES);
 
 		var index: int = 0;
-		for sideData in sides:
-			var side: Dictionary = sideData.side;
+		for side_data in sides:
+			var side: Dictionary = side_data.side;
 			var base_index := index;
 
-			var isDisplacement: bool = "dispinfo" in side;
+			var is_displacement: bool = "dispinfo" in side;
 			var vertices: Array[Vector3] = [];
-			var dispData: VMFDispTool = null;
+			var disp_data: VMFDispTool = null;
 
-			if not isDisplacement and VMFDispTool.hasDisplacement(sideData.brush):
+			if not is_displacement and VMFDispTool.has_displacement(side_data.brush):
 				continue;
 
-			if not isDisplacement:
-				vertices.assign(calculateVertices(side, sideData.brush));
+			if not is_displacement:
+				vertices.assign(calculate_vertices(side, side_data.brush));
 			else:
-				dispData = VMFDispTool.new(side, sideData.brush);
-				vertices.assign(dispData.getVertices());
+				disp_data = VMFDispTool.new(side, side_data.brush);
+				vertices.assign(disp_data.get_vertices());
 				
 			if vertices.size() < 3:
 				VMFLogger.error("Side corrupted: " + str(side.id));
 				continue;
 
-			if not isDisplacement:
+			if not is_displacement:
 				var normal = side.plane.value.normal;
-				surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
+				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
 	
 				for v: Vector3 in vertices:
-					var vertex := getSimilarVertex(v);
-					var uv: Vector2 = calculateUVForSide(side, vertex);
-					surfaceTool.set_uv(uv);
+					var vertex := get_similar_vertex(v);
+					var uv: Vector2 = calculate_uv_for_size(side, vertex);
+					sf.set_uv(uv);
 	
 					var vt := Vector3(vertex.x, vertex.z, -vertex.y) * _scale - _offset;
 					var sg := -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 					
-					surfaceTool.set_smooth_group(sg);
-					surfaceTool.set_color(Color8(0, 0, 0));
-					surfaceTool.add_vertex(vt);
+					sf.set_smooth_group(sg);
+					sf.set_color(Color8(0, 0, 0));
+					sf.add_vertex(vt);
 					index += 1;
 
 				for i: int in range(1, vertices.size() - 1):
-					surfaceTool.add_index(base_index);
-					surfaceTool.add_index(base_index + i);
-					surfaceTool.add_index(base_index + i + 1);
+					sf.add_index(base_index);
+					sf.add_index(base_index + i);
+					sf.add_index(base_index + i + 1);
 			else:
-				var edgesCount = dispData.edgesCount;
-				var vertsCount = dispData.vertsCount;
-				surfaceTool.set_smooth_group(1);
+				var edges_count = disp_data.edges_count;
+				var verts_count = disp_data.verts_count;
+				sf.set_smooth_group(1);
 
 				for i: int in range(0, vertices.size()):
-					var x := i / int(vertsCount);
-					var y := i % int(vertsCount);
+					var x := i / int(verts_count);
+					var y := i % int(verts_count);
 					var v = vertices[i];
-					var normal = dispData.getNormal(x, y);
-					var dist = dispData.getDistance(x, y);
-					var offset = dispData.getOffset(x, y);
-					var uv := calculateUVForSide(side, v - dist - offset);
+					var normal = disp_data.get_normal(x, y);
+					var dist = disp_data.get_distance(x, y);
+					var offset = disp_data.get_offset(x, y);
+					var uv := calculate_uv_for_size(side, v - dist - offset);
 
-					surfaceTool.set_uv(uv);
-					surfaceTool.set_color(dispData.getColor(x, y));
-					surfaceTool.set_normal(Vector3(normal.x, normal.z, -normal.y));
-					surfaceTool.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
+					sf.set_uv(uv);
+					sf.set_color(disp_data.get_color(x, y));
+					sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+					sf.add_vertex(Vector3(v.x, v.z, -v.y) * _scale - _offset);
 					index += 1;
 
-				for i: int in range(0, pow(edgesCount, 2)):
-					var x := i / int(edgesCount);
-					var y := i % int(edgesCount);
-					var normal = dispData.getNormal(x, y);
+				for i: int in range(0, pow(edges_count, 2)):
+					var x := i / int(edges_count);
+					var y := i % int(edges_count);
+					var normal = disp_data.get_normal(x, y);
 					var isOdd := (x + y) % 2 == 1;
 
 					if isOdd:
-						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
-						surfaceTool.add_index(base_index + x + (y + 1) * vertsCount);
-						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
+						sf.add_index(base_index + x + 1 + y * verts_count);
+						sf.add_index(base_index + x + (y + 1) * verts_count);
+						sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
 
-						surfaceTool.add_index(base_index + x + y * vertsCount);
-						surfaceTool.add_index(base_index + x + (y + 1) * vertsCount);
-						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
+						sf.add_index(base_index + x + y * verts_count);
+						sf.add_index(base_index + x + (y + 1) * verts_count);
+						sf.add_index(base_index + x + 1 + y * verts_count);
 					else:
-						surfaceTool.add_index(base_index + x + y * vertsCount);
-						surfaceTool.add_index(base_index + x + (y + 1) * vertsCount);
-						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
+						sf.add_index(base_index + x + y * verts_count);
+						sf.add_index(base_index + x + (y + 1) * verts_count);
+						sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
 
-						surfaceTool.add_index(base_index + x + y * vertsCount);
-						surfaceTool.add_index(base_index + x + 1 + (y + 1) * vertsCount);
-						surfaceTool.add_index(base_index + x + 1 + y * vertsCount);
+						sf.add_index(base_index + x + y * verts_count);
+						sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+						sf.add_index(base_index + x + 1 + y * verts_count);
 
-		var ignoreMaterials: bool = VTFTool.TextureImportMode.DO_NOTHING == VMFConfig.config.material.importMode;
+		var ignore_materials: bool = VTFTool.TextureImportMode.DO_NOTHING == VMFConfig.config.material.importMode;
 
-		if not ignoreMaterials:
-			var material = VTFTool.getMaterial(sides[0].side.material);
+		if not ignore_materials:
+			var material = VTFTool.get_material(sides[0].side.material);
 
 			if material:
-				surfaceTool.set_material(material);
+				sf.set_material(material);
 				
-		surfaceTool.optimize_indices_for_cache();
-		surfaceTool.generate_normals();
-		surfaceTool.generate_tangents();
-		surfaceTool.commit(mesh);
+		sf.optimize_indices_for_cache();
+		sf.generate_normals();
+		sf.generate_tangents();
+		sf.commit(mesh);
 
-	elapsedTime = Time.get_ticks_msec() - elapsedTime;
+	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
-	if elapsedTime > 100:
-		VMFLogger.warn("Mesh generation took " + str(elapsedTime) + "ms");
+	if elapsed_time > 100:
+		VMFLogger.warn("Mesh generation took " + str(elapsed_time) + "ms");
 
 	return mesh;

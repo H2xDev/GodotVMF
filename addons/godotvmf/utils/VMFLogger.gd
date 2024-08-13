@@ -8,4 +8,3 @@ static func error(msg: String):
 
 static func warn(msg: String):
 	push_warning('[GodotVMF] ' + msg);
-

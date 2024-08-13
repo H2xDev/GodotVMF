@@ -1,6 +1,11 @@
 # Installation
 Move the `addons/godotvmf` folder into the same folder of your project and activate it in your project settings.
 
+## Project template
+If you starting a new project you can use the [project template](https://github.com/H2xDev/GodotVMF-Project-Template) 
+that has a bunch of entities and an example map. With this template you can work on your game using Source Engine development pipeline
+as you would make a mod for Half-Life 2 for example.
+
 ## Hammer configuration
 1. Download Source SDK Base 2013 Singleplayer
 

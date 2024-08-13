@@ -109,8 +109,6 @@ func _preload_resources():
 
 	var elapsed = Time.get_ticks_msec() - time;
 
-	VMFLogger.log("Preloading resources took: " + str(elapsed) + "ms");
-
 	for file in resources:
 		var key = file.replace(config.material.targetFolder, "");
 		var data = projectMaterials.get(key, projectTextures.get(key, ResourceLoader.load(file)));
@@ -166,21 +164,20 @@ func _recheck_textures():
 			_update_checksum_file();
 			continue;
 
-		if not FileAccess.file_exists(vtfFile):
-			_update_vtf(file);
-
 		var oldcheckSum = textureChecksums.get(key, null);
 		textureChecksums[key] = FileAccess.get_md5(file);
 		_update_checksum_file();
 
-		if oldcheckSum != textureChecksums.get(key, null):
+		if not FileAccess.file_exists(vtfFile):
+			_update_vtf(file)
+		elif oldcheckSum != textureChecksums.get(key, null):
 			_update_vtf(file);
 
 func _recheck_resources(_null = null):
 	if isInProcess:
 		return;
 
-	VMFConfig.checkProjectConfig();
+	VMFConfig.reload();
 
 	if config.material.importMode != VTFTool.TextureImportMode.SYNC:
 		return;
