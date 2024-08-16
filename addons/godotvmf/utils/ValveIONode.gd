@@ -1,7 +1,7 @@
 @tool
 class_name ValveIONode extends Node3D;
 
-static var namedEntities = {};
+static var named_entities = {};
 
 static func define_alias(name: String, value: Node):
 	if name == '!self' or name in aliases:
@@ -20,7 +20,7 @@ var config:
 
 static var aliases: Dictionary = {};
 
-var isSuperCalled = false;
+var is_runtime = false;
 var activator = null;
 
 func Toggle(_param = null):
@@ -48,14 +48,15 @@ func _reparent():
 	if parentNode: reparent(parentNode, true);
 
 func _ready():
-	if entity.size(): _apply_entity(entity);
+	if is_runtime:
+		_apply_entity(entity);
 
 	if Engine.is_editor_hint():
 		return;
 
 	parse_connections();
 
-	ValveIONode.namedEntities[name] = self;
+	ValveIONode.named_entities[name] = self;
 
 	enabled = entity.get("StartDisabled", 0) == 0;
 
@@ -66,9 +67,7 @@ func _apply_entity(ent) -> void:
 	self.entity = ent;
 	self.flags = ent.get("spawnflags", 0);
 	self.basis = get_entity_basis(ent);
-	self.global_position = ent.get("origin", Vector3.ZERO);
-
-	isSuperCalled = true;
+	self.position = ent.get("origin", Vector3.ZERO);
 
 	assign_name();
 
@@ -76,7 +75,7 @@ func assign_name(i = 0) -> void:
 	self.name = str(entity.get("id", "no_name"));
 
 	if not "targetname" in entity:
-		self.name = entity.classname + '_' + str(entity.id);
+		self.name = entity.classname + '_' + str(entity.get("id", "no-id"));
 		return;
 
 	if not get_parent().get_node_or_null(entity.targetname):
@@ -127,10 +126,10 @@ func get_target(n) -> Node3D:
 	if n in ValveIONode.aliases:
 		return ValveIONode.aliases[n];
 
-	if not n in ValveIONode.namedEntities:
+	if not n in ValveIONode.named_entities:
 		return get_parent().get_node_or_null(NodePath(n));
 
-	return ValveIONode.namedEntities[n];
+	return ValveIONode.named_entities[n];
 
 func get_all_targets(targetName: String, i: int = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
 	var cname := targetName + str(i) if i > -1 else targetName;
@@ -169,7 +168,7 @@ func parse_connections() -> void:
 				call_target_input(target, input, param, delay));
 
 func validate_entity() -> bool:
-	if not isSuperCalled:
+	if entity.keys().size() == 0:
 		VMFLogger.error('Looks like you forgot to call "super._apply_entity" inside the entity - ' + name);
 		return false;
 
@@ -199,6 +198,7 @@ func get_mesh() -> ArrayMesh:
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 
 	var struct := {
+		'source': entity.classname + '_' + str(entity.id),
 		'world': {
 			'solid': solids,
 		},
@@ -230,7 +230,7 @@ func get_value(field, fallback):
 
 ## Returns the shape of the entity that depends on solids that it have
 func get_entity_shape():
-	var use_convex_shape = entity.solid.size() == 1;
+	var use_convex_shape = entity.solid is Dictionary or entity.solid.size() == 1;
 
 	if use_convex_shape:
 		return get_entity_convex_shape();

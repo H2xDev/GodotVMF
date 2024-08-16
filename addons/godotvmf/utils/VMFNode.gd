@@ -24,6 +24,8 @@ var vmf: String = '';
 			return;
 		import_map();
 		import = false;
+## If true then button "Full", "Entities" and "Geometry" won't trigger import on this Node.
+@export var ignore_global_import: bool = false;
 
 @export_category("Resource Generation")
 ## Save the resulting geometry mesh as a resource (saves to the geometryFolder in vmf.config.json)
@@ -32,6 +34,7 @@ var vmf: String = '';
 ## Save the resulting collision shape as a resource (saves to the geometryFolder in vmf.config.json)
 @export var save_collision: bool = true;
 
+var is_runtime = false;
 var _structure: Dictionary = {};
 var _owner:
 	get: 
@@ -45,13 +48,10 @@ func _validate_property(property: Dictionary) -> void:
 		property.hint = PROPERTY_HINT_GLOBAL_FILE if use_external_file else PROPERTY_HINT_FILE
 
 func _ready() -> void:
-	add_to_group(&"vmfnode_group");
+	add_to_group("vmfnode_group");
 
 func import_geometry(_reimport := false) -> void:
 	output.emit("Importing geometry...");
-	var mesh: ArrayMesh = VMFTool.create_mesh(_structure);
-	if not mesh:
-		return;
 
 	if _reimport:
 		VMFConfig.reload();
@@ -62,8 +62,22 @@ func import_geometry(_reimport := false) -> void:
 		_read_vmf();
 		_import_materials();
 
+	var mesh: ArrayMesh = VMFTool.create_mesh(_structure);
+	if not mesh:
+		return;
+
 	var _current_mesh := MeshInstance3D.new()
 	_current_mesh.name = "Geometry";
+
+	
+	add_child(_current_mesh);
+	_current_mesh.set_owner(_owner);
+
+	var transform = _current_mesh.global_transform if _current_mesh.is_inside_tree() else self.transform;
+	var texel_size = VMFConfig.config.import.lightmapTexelSize;
+
+	if VMFConfig.config.import.generateLightmapUV2 and not is_runtime:
+		mesh.lightmap_unwrap(transform, texel_size);
 
 	if save_geometry:
 		var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.config.import.geometryFolder, _vmf_identifer()];
@@ -80,16 +94,6 @@ func import_geometry(_reimport := false) -> void:
 		_current_mesh.mesh = load(resource_path);
 	else:
 		_current_mesh.mesh = mesh;
-	
-	add_child(_current_mesh);
-	_current_mesh.set_owner(_owner);
-		
-	# FIXME - is_inside_tree always false
-	var transform = _current_mesh.global_transform;
-	var texel_size = VMFConfig.config.import.lightmapTexelSize;
-
-	if VMFConfig.config.import.generateLightmapUV2:
-		_current_mesh.mesh.lightmap_unwrap(transform, texel_size);
 	
 	if VMFConfig.config.import.generateCollision:
 		_current_mesh.create_trimesh_collision();
@@ -278,15 +282,21 @@ func import_entities(_reimport := false) -> void:
 
 		var tscn = load(resPath);
 		var node = tscn.instantiate();
+		node.is_runtime = is_runtime;
 
 		if "entity" in node:
 			node.entity = ent;
-		
+
 		if "origin" in ent:
 			ent.origin = Vector3(ent.origin.x, ent.origin.z, -ent.origin.y) * import_scale;
 
 		_entities_node.add_child(node);
 		node.set_owner(_owner);
+
+		if not is_runtime:
+			node._apply_entity(ent);
+
+		set_editable_instance(node, true);
 
 	var time := Time.get_ticks_msec() - elapsed_time;
 	VMFLogger.log("Imported entities in " + str(time) + "ms");

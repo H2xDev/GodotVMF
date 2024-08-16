@@ -298,6 +298,7 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
 	if elapsed_time > 100:
+		if "source" in vmf_structure: VMFLogger.warn(vmf_structure.source);
 		VMFLogger.warn("Mesh generation took " + str(elapsed_time) + "ms");
 
 	return mesh;

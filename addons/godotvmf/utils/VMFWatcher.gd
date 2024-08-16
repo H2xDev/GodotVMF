@@ -365,4 +365,3 @@ func get_all_files(path: String, file_ext := "", files := []):
 		VMFLogger.error("An error occurred when trying to access %s." % path);
 
 	return files;
-

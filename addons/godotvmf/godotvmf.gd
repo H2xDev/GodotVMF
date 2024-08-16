@@ -31,8 +31,10 @@ func GetExistingVMFNodes() -> Array[VMFNode]:
 
 	if !get_tree(): return nodes;
 	
-	nodes.assign(get_tree().get_nodes_in_group(&"vmfnode_group"));
-	return nodes.filter(func(node): return not node.is_in_group(&"vmfnode_ignore-rebuild"));
+	nodes.assign(get_tree().get_nodes_in_group("vmfnode_group"));
+	return nodes.filter(func(node):
+		return not node.ignore_global_import;
+	);
 
 func ReimportVMF():
 	var nodes := GetExistingVMFNodes();
@@ -43,14 +45,15 @@ func ReimportVMF():
 func ReimportEntities():
 	var nodes := GetExistingVMFNodes();
 
-	for node in nodes:
+	for node in nodes: 
+		print(node.name);
 		node.import_entities(true);
 
 func ReimportGeometry():
 	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
-		node.import_geometry();
+		node.import_geometry(true);
 
 func _exit_tree():
 	remove_custom_type("VMFNode");
