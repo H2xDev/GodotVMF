@@ -23,7 +23,7 @@ Highly recommend to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Webs
 We with my friend @Ambiabstract didn't found any comfortable solution of 3D level design for Godot so we decided to create our own :)
 
 ## Usage
-- [Docs](https://github.com/H2xDev/GodotVMF/wiki)
+- [Docs](https://github.com/H2xDev/GodotVMF/wiki/Installation)
 - [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template)
 - [Import Source Games Maps](https://youtu.be/uTBzx0bwizU)
 
