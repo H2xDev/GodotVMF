@@ -1,4 +1,8 @@
-# GodotVMF
+<p align="center">
+<img src="https://github.com/user-attachments/assets/e1959708-fc5a-4245-aed4-5b7f3044aada" />
+</p>
+
+<h1 align="center"> GodotVMF </h1>
 
 <p align="center">
 <a href="https://discord.gg/wtSK94fPxd" target="_blank">
@@ -8,10 +12,9 @@
 <img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Reddit"></a>
 
 <a href="https://godotengine.org/asset-library/asset/2605" target="_blank">
-<img src="https://img.shields.io/badge/asset_library-%23FFFFFF.svg?style=for-the-badge&logo=godot-engine" alt="Godot Asset Library"></a>
+<img src="https://img.shields.io/badge/asset_library-%23EEEEEE.svg?style=for-the-badge&logo=godot-engine" alt="Godot Asset Library"></a>
 </p>
 
-![Hero](assets/hero.jpg)
 An importer of VMF files into Godot.  
 Useful instrument for people who used to work with Hammer and finds it most comfortable tool for level geometry creation.  
   
