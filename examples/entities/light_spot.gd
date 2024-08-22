@@ -1,8 +1,8 @@
 @tool
 class_name VLightSpot extends VLight
 
-func _apply_entity(e, c):
-	super._apply_entity(e, c);
+func _apply_entity(e):
+	super._apply_entity(e);
 
 	light.spot_angle = e._cone;
 	light.light_energy = e._light.a;

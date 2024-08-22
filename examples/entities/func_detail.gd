@@ -1,8 +1,8 @@
 @tool
 class_name FuncDetail extends ValveIONode
 
-func _apply_entity(entityData, vmfNode):
-	super._apply_entity(entityData, vmfNode);
+func _apply_entity(entityData):
+	super._apply_entity(entityData);
 	
 	$MeshInstance3D.cast_shadow = entityData.get("disableshadows", 0) == 0;
 	$MeshInstance3D.set_mesh(get_mesh());

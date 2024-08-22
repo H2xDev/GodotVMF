@@ -1,8 +1,8 @@
 @tool
 class_name LightEnv extends ValveIONode
 
-func _apply_entity(e, c):
-	super._apply_entity(e, c);
+func _apply_entity(e):
+	super._apply_entity(e);
 	
 	if get_parent().get_node_or_null("light_environment"):
 		queue_free();

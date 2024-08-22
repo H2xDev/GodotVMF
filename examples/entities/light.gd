@@ -40,8 +40,8 @@ func TurnOff(_param):
 func TurnOn(_param):
 	light.visible = true;
 
-func _apply_entity(ent, c):
-	super._apply_entity(ent, c);
+func _apply_entity(ent):
+	super._apply_entity(ent);
 
 	var color = ent._light;
 
