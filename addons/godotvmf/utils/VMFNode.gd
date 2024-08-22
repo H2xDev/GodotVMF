@@ -301,7 +301,7 @@ func import_entities(_reimport := false) -> void:
 	var time := Time.get_ticks_msec() - elapsed_time;
 	VMFLogger.log("Imported entities in " + str(time) + "ms");
 
-func import_map(_deprecated = null) -> void:
+func import_map() -> void:
 	VMFConfig.reload();
 	if not VMFConfig.validate_config(): return;
 	if not VMFConfig.config: return;

@@ -129,7 +129,14 @@ func get_target(n) -> Node3D:
 	if not n in ValveIONode.named_entities:
 		return get_parent().get_node_or_null(NodePath(n));
 
-	return ValveIONode.named_entities[n];
+	if n in ValveIONode.named_entities:
+		if not is_instance_valid(ValveIONode.named_entities[n]):
+			ValveIONode.named_entities.erase(n);
+			return null;
+		return ValveIONode.named_entities[n];
+
+
+	return null;
 
 func get_all_targets(targetName: String, i: int = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
 	var cname := targetName + str(i) if i > -1 else targetName;
