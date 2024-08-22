@@ -151,7 +151,7 @@ static func parse(filePath: String, keysToLower := false):
 
 	parseTime = Time.get_ticks_msec() - parseTime;
 
-	#if parseTime > 2000:
-	VMFLogger.warn('ValveFormatParser: Parsing took ' + str(parseTime) + 'ms');
+	if parseTime > 1000:
+		VMFLogger.warn('ValveFormatParser: Parsing took ' + str(parseTime) + 'ms');
 
 	return out;

@@ -4,15 +4,15 @@ static var _modelCache = [];
 static var logged = {};
 static var cache = {};
 
-static func clearCache():
+static func clear_cache():
 	MDLManager.cache = {};
 	MDLManager.logged = {};
 
-static func getModelMaterials(modelPath: String):
-	var input = (VMFConfig.config.gameInfoPath + '/' + modelPath).replace('//', '/');
+static func get_model_materials(model_path: String):
+	var input = (VMFConfig.config.gameInfoPath + '/' + model_path).replace('//', '/');
 	MDLManager.logged = {} if not MDLManager.logged else MDLManager.logged;
 
-	var h = hash(modelPath);
+	var h = hash(model_path);
 
 	if not FileAccess.file_exists(input):
 		if not h in logged:
@@ -22,43 +22,43 @@ static func getModelMaterials(modelPath: String):
 
 	var file = FileAccess.open(input, FileAccess.READ);
 	file.seek(204); ## Skip til textureCount;
-	var textureCount = file.get_32();
-	var textureOffset = file.get_32();
-	var textureDirCount = file.get_32();
-	var textureDirOffset = file.get_32();
+	var texture_count = file.get_32();
+	var texture_offset = file.get_32();
+	var texture_dir_count = file.get_32();
+	var texture_dir_offset = file.get_32();
 
 	var materials = [];
 	var dirOffsets = [];
 	var dirs = [];
 	
-	file.seek(textureDirOffset);
+	file.seek(texture_dir_offset);
 	file.seek(file.get_32());
-	for i in range(textureDirCount):
+	for i in range(texture_dir_count):
 		var bytes = PackedByteArray();
-		var currentByte = file.get_8();
+		var current_byte = file.get_8();
 
-		while (currentByte != 0):
-			bytes.append(currentByte);
-			currentByte = file.get_8();
+		while (current_byte != 0):
+			bytes.append(current_byte);
+			current_byte = file.get_8();
 		
 		var dir = bytes.get_string_from_ascii();
 		if dir: dirs.append(dir);
 
-	file.seek(textureOffset);
+	file.seek(texture_offset);
 
-	for i in range(textureCount):
-		var mstudiotextureOffset = textureOffset + 64 * i;
-		file.seek(mstudiotextureOffset);
+	for i in range(texture_count):
+		var mstudio_texture_offset = texture_offset + 64 * i;
+		file.seek(mstudio_texture_offset);
 		
-		var nameOffset = file.get_32();
-		file.seek(mstudiotextureOffset + nameOffset);
+		var name_offset = file.get_32();
+		file.seek(mstudio_texture_offset + name_offset);
 		
 		var bytes = PackedByteArray();
-		var currentByte = file.get_8();
+		var current_byte = file.get_8();
 
-		while (currentByte != 0):
-			bytes.append(currentByte);
-			currentByte = file.get_8();
+		while (current_byte != 0):
+			bytes.append(current_byte);
+			current_byte = file.get_8();
 		
 		var name = bytes.get_string_from_ascii();
 		
@@ -70,17 +70,17 @@ static func getModelMaterials(modelPath: String):
 	return materials;
 
 
-static func loadModel(modelPath: String, generateCollision: bool = false, generateLightmapUV2: bool = false, lightmapTexelSize: float = 0.4):
-	var input = (VMFConfig.config.gameInfoPath + '/' + modelPath).replace('//', '/');
-	var resourcePath = (VMFConfig.config.models.targetFolder + '/' + input.split('models/')[-1]).replace('.mdl', '.tscn');
+static func load_model(model_path: String, generate_collision: bool = false, generate_lightmap_uv2: bool = false, lightmap_texel_size: float = 0.4):
+	var input = (VMFConfig.config.gameInfoPath + '/' + model_path).replace('//', '/');
+	var resource_path = (VMFConfig.config.models.targetFolder + '/' + input.split('models/')[-1]).replace('.mdl', '.tscn');
 
 	MDLManager.logged = {} if not MDLManager.logged else MDLManager.logged;
 	MDLManager.cache = {} if not MDLManager.cache else MDLManager.cache;
 
 	var output = input.replace('.mdl', '.obj');
-	var resourceFolder = '/'.join(resourcePath.split('/').slice(0, -1));
+	var resourceFolder = '/'.join(resource_path.split('/').slice(0, -1));
 
-	var h = hash(modelPath);
+	var h = hash(model_path);
 
 	if not FileAccess.file_exists(input):
 		if not h in logged:
@@ -91,18 +91,18 @@ static func loadModel(modelPath: String, generateCollision: bool = false, genera
 	if h in MDLManager.cache:
 		return MDLManager.cache[h]
 
-	if ResourceLoader.exists(resourcePath):
-		var res = load(resourcePath);
+	if ResourceLoader.exists(resource_path):
+		var res = load(resource_path);
 		
-		if generateLightmapUV2:
-			## Issue: PackedScene metadata is not saved #76366
+		if generate_lightmap_uv2:
+			## ISSUE: PackedScene metadata is not saved #76366
 			## We're doing it to store texel size and rebuild tscn on texel size change
-			var file = FileAccess.open(resourcePath.replace('.tscn', '.tscn_meta'), FileAccess.READ)
+			var file = FileAccess.open(resource_path.replace('.tscn', '.tscn_meta'), FileAccess.READ)
 
 			if file:
 				var meta = JSON.parse_string(file.get_line())
 				
-				if meta and 'lightmapTexelSize' in meta and meta['lightmapTexelSize'] == lightmapTexelSize:
+				if meta and 'lightmap_texel_size' in meta and meta['lightmap_texel_size'] == lightmap_texel_size:
 					MDLManager.cache[h] = res;
 					return res;
 		else:
@@ -110,17 +110,17 @@ static func loadModel(modelPath: String, generateCollision: bool = false, genera
 			return res;
 
 
-	var materials = getModelMaterials(modelPath)\
+	var materials = get_model_materials(model_path) \
 	.map(
 		func (materialPath):
-			VTFTool.importMaterial(materialPath, true);
-			return VTFTool.getMaterial(materialPath);
-	)\
+			VTFTool.import_material(materialPath, true);
+			return VTFTool.get_material(materialPath);
+	) \
 	.filter(func(material): return material != null);
 
-	var processOut = [];
+	var process_out = [];
 	var executable = ProjectSettings.globalize_path(VMFConfig.config.mdl2obj) if VMFConfig.config.mdl2obj.begins_with("res:") else VMFConfig.config.mdl2obj;
-	var process = OS.execute(executable, [input, output], processOut, false, false);
+	var process = OS.execute(executable, [input, output], process_out, false, false);
 	var mesh = ObjParse.load_obj(output);
 	DirAccess.remove_absolute(output);
 
@@ -128,15 +128,15 @@ static func loadModel(modelPath: String, generateCollision: bool = false, genera
 	var root = Node3D.new();
 	var model = MeshInstance3D.new();
 
-	root.name = modelPath.get_file().get_basename();
-	model.name = modelPath.get_file().get_basename() + '_mesh';
+	root.name = model_path.get_file().get_basename();
+	model.name = model_path.get_file().get_basename() + '_mesh';
 	
-	if generateLightmapUV2:
-		mesh.lightmap_unwrap(model.global_transform, lightmapTexelSize);
+	if generate_lightmap_uv2:
+		mesh.lightmap_unwrap(model.global_transform, lightmap_texel_size);
 		## Issue: PackedScene metadata is not saved #76366
 		## We're doing it to store texel size and rebuild tscn on texel size change
-		var tmp = { 'lightmapTexelSize': lightmapTexelSize }
-		var file = FileAccess.open(resourcePath.replace('.tscn', '.tscn_meta'), FileAccess.WRITE)
+		var tmp = { 'lightmap_texel_size': lightmap_texel_size }
+		var file = FileAccess.open(resource_path.replace('.tscn', '.tscn_meta'), FileAccess.WRITE)
 
 		if file:
 			file.store_line(JSON.stringify(tmp))
@@ -151,18 +151,18 @@ static func loadModel(modelPath: String, generateCollision: bool = false, genera
 		mesh.surface_set_material(matIndex, material);
 		matIndex += 1;
 
-	if generateCollision:
+	if generate_collision:
 		model.create_multiple_convex_collisions();
 
 	scene.pack(root);
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(resourceFolder));
-	ResourceSaver.save(scene, resourcePath);
+	ResourceSaver.save(scene, resource_path);
 
 	model.queue_free();
 	root.queue_free();
 
-	scene.take_over_path(resourcePath);
+	scene.take_over_path(resource_path);
 
 	MDLManager.cache[h] = scene;
 	

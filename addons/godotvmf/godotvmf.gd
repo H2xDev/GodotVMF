@@ -19,7 +19,8 @@ func _enter_tree() -> void:
 	dock.get_node('ReimportEntities').pressed.connect(ReimportEntities);
 	dock.get_node('ReimportGeometry').pressed.connect(ReimportGeometry);
 
-	var isWatcherRequired = VMFConfig.config.material.importMode == VTFTool.TextureImportMode.SYNC;
+	var isWatcherRequired = VMFConfig.config.material.importMode == VTFTool.TextureImportMode.SYNC\
+		if VMFConfig.config else false;
 
 	if (isWatcherRequired):
 		materialWatcherThread = Thread.new();
@@ -30,26 +31,29 @@ func GetExistingVMFNodes() -> Array[VMFNode]:
 
 	if !get_tree(): return nodes;
 	
-	nodes.assign(get_tree().get_nodes_in_group(&"vmfnode_group"));
-	return nodes
+	nodes.assign(get_tree().get_nodes_in_group("vmfnode_group"));
+	return nodes.filter(func(node):
+		return not node.ignore_global_import;
+	);
 
 func ReimportVMF():
 	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
-		node.importMap();
+		node.import_map();
 
 func ReimportEntities():
 	var nodes := GetExistingVMFNodes();
 
-	for node in nodes:
-		node._importEntities(true);
+	for node in nodes: 
+		print(node.name);
+		node.import_entities(true);
 
 func ReimportGeometry():
 	var nodes := GetExistingVMFNodes();
 
 	for node in nodes:
-		node.importGeometryOnly();
+		node.import_geometry(true);
 
 func _exit_tree():
 	remove_custom_type("VMFNode");
