@@ -20,7 +20,7 @@ Useful instrument for people who used to work with Hammer and finds it most comf
   
 Highly recommend to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it support precised vertex data that allows you use concave brushes.
 
-<img src="https://github.com/user-attachments/assets/6e100e46-b4a9-4138-83d5-87a88bc8f2ad" width="100%" />
+<img src="https://github.com/user-attachments/assets/21084c3e-3530-45e5-8e05-d669d2a3ecf1" width="100%" />
 
 
 ## Why?
