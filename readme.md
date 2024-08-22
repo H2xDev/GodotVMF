@@ -45,8 +45,6 @@ We with my friend @Ambiabstract didn't found any comfortable solution of 3D leve
 
 ## Known issues
 - Extraction materials and models from VPKs is not supported
-- Entities in instances importing not completely. You'll need to open the instance scene and reimport it.
-- Wasn't tested on MacOS
 - Some of imported models may have wrong orientation
 
 ## Contribution
