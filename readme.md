@@ -68,7 +68,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 [@Ambiabstract](https://github.com/Ambiabstract) - help and inspiration  
 [@Lachrymogenic](https://github.com/Lachrymogenic) - test on linux and performance test  
 [@SharkPetro](https://github.com/SharkPetro) - materials test  
-|<img src="assets/showcase3.jpg" alt="Project Brutalist" width="100%"/>|<img src="assets/showcase1.jpg" alt="Left 4 Dead" width="100%%"/>|
 
 ## License
 MIT
