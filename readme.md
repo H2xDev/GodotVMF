@@ -20,7 +20,8 @@ Useful instrument for people who used to work with Hammer and finds it most comf
   
 Highly recommend to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it support precised vertex data that allows you use concave brushes.
 
-![Example](assets/example.jpg)
+<img src="https://github.com/user-attachments/assets/6e100e46-b4a9-4138-83d5-87a88bc8f2ad" width="100%" />
+
 
 ## Why?
 We with my friend @Ambiabstract didn't found any comfortable solution of 3D level design for Godot so we decided to create our own :)
@@ -67,10 +68,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 [@Ambiabstract](https://github.com/Ambiabstract) - help and inspiration  
 [@Lachrymogenic](https://github.com/Lachrymogenic) - test on linux and performance test  
 [@SharkPetro](https://github.com/SharkPetro) - materials test  
-
-## Showcase
-|<img src="assets/showcase4.jpg" alt="Project Brutalist" width="100%"/>|<img src="assets/showcase2.jpg" alt="Half-Life 2" width="100%"/>|
-|-|-|
 |<img src="assets/showcase3.jpg" alt="Project Brutalist" width="100%"/>|<img src="assets/showcase1.jpg" alt="Left 4 Dead" width="100%%"/>|
 
 ## License
