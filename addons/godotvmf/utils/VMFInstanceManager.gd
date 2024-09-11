@@ -92,7 +92,7 @@ static func import_instance(entity: Dictionary):
 	node.save_geometry = false;
 	node.save_collision = false;
 	node.ignore_global_import = true;
-	node.import_map(true);
+	node.import_map();
 
 	scn.pack(node);
 
