@@ -30,7 +30,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 
 ## Usage
 - [Installation instruction and other documents](https://github.com/H2xDev/GodotVMF/wiki)
-- [Example project](https://github.com/H2xDev/GodotVMF-Project-Template)
+- [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template)
 - [How to import VMF (video tutorial)](https://youtu.be/uTBzx0bwizU)
 
 ## Features
