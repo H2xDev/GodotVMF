@@ -66,11 +66,11 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Credits
-[H2xDev](https://github.com/H2xDev) - main contributor
-[Ambiabstract](https://github.com/Ambiabstract) - tech help and inspiration
-[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template)
-[Lachrymogenic](https://github.com/Lachrymogenic) - Linux test, performance test
-[SharkPetro](https://github.com/SharkPetro) - materials test
+[H2xDev](https://github.com/H2xDev) - main contributor  
+[Ambiabstract](https://github.com/Ambiabstract) - tech help and inspiration  
+[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template)  
+[Lachrymogenic](https://github.com/Lachrymogenic) - Linux test, performance test  
+[SharkPetro](https://github.com/SharkPetro) - materials test  
 
 ## License
 MIT
