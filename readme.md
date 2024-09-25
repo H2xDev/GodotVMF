@@ -30,7 +30,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 
 ## Usage
 - [Installation instruction and other documents](https://github.com/H2xDev/GodotVMF/wiki)
-- [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template)
+- [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template) (example project)
 - [How to import VMF (video tutorial)](https://youtu.be/uTBzx0bwizU)
 
 ## Features
@@ -47,6 +47,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
+- New MDLs (from CS:GO an so on) is not supported
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
@@ -65,10 +66,11 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Credits
-[Ambiabstract](https://github.com/Ambiabstract) - help and inspiration  
-[MyCbEH](https://github.com/MyCbEH) - example project level design  
-[Lachrymogenic](https://github.com/Lachrymogenic) - test on linux and performance test  
-[SharkPetro](https://github.com/SharkPetro) - materials test  
+[H2xDev](https://github.com/H2xDev) - main contributor
+[Ambiabstract](https://github.com/Ambiabstract) - tech help and inspiration
+[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template)
+[Lachrymogenic](https://github.com/Lachrymogenic) - Linux test, performance test
+[SharkPetro](https://github.com/SharkPetro) - materials test
 
 ## License
 MIT
