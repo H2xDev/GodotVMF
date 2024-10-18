@@ -16,7 +16,7 @@
 </p>
 
 ## Description
-An importer of [VMF files](https://developer.valvesoftware.com/wiki/VMF_(Valve_Map_Format)) into [Godot Engine](https://godotengine.org/).  
+An importer of [VMF files](https://developer.valvesoftware.com/wiki/VMF_(Valve_Map_Format)) into [Godot Engine](https://godotengine.org/) or [Redot Engine](https://redotengine.org/).  
 
 Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it supports precised vertex data.
 
