@@ -167,7 +167,6 @@ static func _assign_materials(mesh: ArrayMesh, mdl: MDLReader, mesh_instance: Me
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
 			var path = normalize_path(dir + "/" + tex.name);
-			print("Loading material: " + path);
 			var material = VMTImporter.load(path);
 			if not material: continue;
 

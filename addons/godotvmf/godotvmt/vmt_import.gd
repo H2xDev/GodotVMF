@@ -47,3 +47,5 @@ static func load(material: String):
 	cached_materials[material] = res;
 
 	last_cache_changed = Time.get_ticks_msec();
+
+	return res;

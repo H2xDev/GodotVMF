@@ -310,7 +310,9 @@ func import_entities(_reimport := false) -> void:
 		set_editable_instance(node, true);
 
 	var time := Time.get_ticks_msec() - elapsed_time;
-	VMFLogger.log("Imported entities in " + str(time) + "ms");
+
+	if time > 2000:
+		VMFLogger.warn("Imported entities in " + str(time) + "ms");
 
 func import_map() -> void:
 	VMFConfig.reload();

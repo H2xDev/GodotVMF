@@ -126,10 +126,12 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 		return Vector2(1, 1);
 
 	# NOTE In case if material is blend texture we use texture_albedo param
-	var texture = material.albedo_texture if material is BaseMaterial3D else material.get_shader_parameter('texture_albedo');
+	var texture = material.albedo_texture if material is BaseMaterial3D else material.get_shader_parameter('albedo_texture');
 
 	var tsize: Vector2 = texture.get_size() if texture else Vector2(default_texture_size, default_texture_size);
-	var tscale = material.uv1_scale;
+
+	# FIXME Add texture scale from VMF metadata
+	var tscale = Vector2.ONE;
 
 	var tsx: float = 1;
 	var tsy: float = 1;
@@ -239,10 +241,6 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 	for brush in brushes:
 		for side in brush.side:
 			var material: String = side.material.to_upper();
-			var isIgnored = _ignore_textures.any(func(rx: String) -> bool: return material.match(rx));
-
-			# if isIgnored:
-			# 	continue;
 
 			if not material in material_sides:
 				material_sides[material] = [];
