@@ -1,5 +1,8 @@
 class_name VMFInstanceManager extends RefCounted;
 
+static var instances_cache = {};
+static var last_cache_changed = 0;
+
 static func get_instance_path(entity: Dictionary) -> String:
 	var instance_path = entity.file.get_file().get_basename() + '.vmf';
 	var map_base_folder = entity.vmf.get_base_dir() if "vmf" in entity else "";
@@ -48,8 +51,17 @@ static func load_instance(instance_name: String):
 		VMFLogger.error("Failed to find instance file: %s" % instance_name);
 		return;
 
+	if Time.get_ticks_msec() - last_cache_changed > 10000:
+		instances_cache = {};
+
+	if instance_name in instances_cache:
+		return instances_cache[instance_name];
+
 	var path = get_imported_instance_path(instance_name);
 	var scn := ResourceLoader.load(path);
+
+	instances_cache[instance_name] = scn;
+	last_cache_changed = Time.get_ticks_msec();
 
 	if not scn:
 		VMFLogger.error("Failed to load instance resource: %s" % path);

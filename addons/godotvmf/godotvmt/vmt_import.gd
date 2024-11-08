@@ -20,11 +20,14 @@ func _import(path: String, save_path: String, _a, _b, _c):
 
 	return ResourceSaver.save(material, path_to_save, ResourceSaver.FLAG_COMPRESS);
 
+static var cached_materials = {};
+static var last_cache_changed = 0;
+
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
 static func load(material: String):
-	var material_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".tres");
+	var material_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".tres").to_lower();
 
 	if not ResourceLoader.exists(material_path):
 		material_path = material_path.replace(".tres", ".vmt");
@@ -33,4 +36,14 @@ static func load(material: String):
 		VMFLogger.warn("Material not found: " + material);
 		return null;
 
-	return ResourceLoader.load(material_path);
+	cached_materials = cached_materials if cached_materials else {};
+	if Time.get_ticks_msec() - last_cache_changed > 10000:
+		cached_materials = {};
+
+	if material in cached_materials:
+		return cached_materials[material];
+
+	var res = ResourceLoader.load(material_path);
+	cached_materials[material] = res;
+
+	last_cache_changed = Time.get_ticks_msec();

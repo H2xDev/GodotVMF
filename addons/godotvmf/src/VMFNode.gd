@@ -198,17 +198,18 @@ func import_materials() -> void:
 					if not list.has(side.material):
 						list.append(side.material);
 
-	var fs = EditorInterface.get_resource_filesystem() if Engine.is_editor_hint() else null;
+	if not is_runtime:
+		var fs = EditorInterface.get_resource_filesystem() if Engine.is_editor_hint() else null;
 
-	for material in list:
-		import_material(material);
-	
-	if fs: await fs.resources_reimported;
+		for material in list:
+			import_material(material);
+		
+		if fs: await fs.resources_reimported;
 
-	for material in list:
-		import_textures(material);
+		for material in list:
+			import_textures(material);
 
-	if fs: await fs.resources_reimported;
+		if fs: await fs.resources_reimported;
 
 	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
@@ -224,13 +225,15 @@ func import_material(material: String):
 	DirAccess.copy_absolute(vmt_path, target_path);
 
 func import_textures(material: String):
-	var target_path = normalize_path(VMFConfig.config.import.materialsFolder + "/" + material + ".vmt");
-	var details = ResourceLoader.load(target_path).get_meta("details");
+	var target_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vmt");
+	var target_material = ResourceLoader.load(target_path);
+
+	var details = target_material.get_meta("details", {});
 
 	for key in MATERIAL_KEYS_TO_IMPORT:
 		if key not in details: continue;
 		var vtf_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + details[key] + ".vtf");
-		var target_vtf_path = normalize_path(VMFConfig.config.import.materialsFolder + "/" + details[key] + ".vtf");
+		var target_vtf_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + details[key] + ".vtf");
 		DirAccess.make_dir_recursive_absolute(vtf_path.get_base_dir());
 		DirAccess.copy_absolute(vtf_path, target_vtf_path);
 

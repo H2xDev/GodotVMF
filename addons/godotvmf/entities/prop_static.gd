@@ -1,19 +1,31 @@
 @tool
 extends ValveIONode
 
+static var cached_models = {};
+static var last_cache_changed = 0;
+
 func _apply_entity(e):
 	super._apply_entity(e);
+	cached_models = cached_models if cached_models else {};
 
 	assert("models" in VMFConfig.config, "Missing 'models' in VMFConfig.config");
 
+	var cache_key = e.get('model');
 	var model_path = (VMFConfig.config.models.targetFolder + "/" + e.get('model')).replace("\\", "/").replace("//", "/").replace("res:/", "res://");
-	if not ResourceLoader.exists(model_path):
-		push_warning("[prop_static]: Model not found: {0}".format([model_path]));
-		queue_free();
-		return
 
-	var packed_scene = ResourceLoader.load(model_path);
-	var model: Node3D = packed_scene.instantiate();
+	if Time.get_ticks_msec() - last_cache_changed > 10000:
+		cached_models = {};
+
+	if cache_key not in cached_models:
+		if not ResourceLoader.exists(model_path):
+			push_warning("[prop_static]: Model not found: {0}".format([model_path]));
+			queue_free();
+			return
+
+		cached_models[cache_key] = ResourceLoader.load(model_path);
+		last_cache_changed = Time.get_ticks_msec();
+
+	var model: Node3D = cached_models[cache_key].instantiate();
 
 	add_child(model);
 	model.set_owner(get_owner());
