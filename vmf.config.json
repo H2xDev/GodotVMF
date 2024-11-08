@@ -1,27 +1,23 @@
 {
 	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
-	"mdl2obj": "res://mdl2obj/mdl2obj.exe",
 
 	"import": {
 		"scale": 0.025,
 		"generateCollision": true,
 		"generateLightmapUV2": true,
 		"lightmapTexelSize": 0.4,
-		"instancesFolder": "res://examples/instances",
-		"entitiesFolder": "res://examples/entities",
-		"geometryFolder": "res://examples/geometry"
+		"instancesFolder": "res://instances",
+		"entitiesFolder": "res://entities",
+		"geometryFolder": "res://geometry"
 	},
 
 	"models": {
-		"import": true,
-		"generateCollision": true,
 		"lightmapTexelSize": 0.4,
-		"targetFolder": "res://examples/models"
+		"targetFolder": "res://"
 	},
 
 	"material": {
-		"importMode": 1,
-		"generateMipmaps": true,
+		"importMode": 0,
 		"ignore": [
 			"TOOLS/TOOLSNODRAW",
 			"TOOLS/TOOLSSKYBOX",
@@ -29,6 +25,6 @@
 		],
 		"fallbackMaterial": null,
 		"defaultTextureSize": 512,
-		"targetFolder": "res://examples/materials"
+		"targetFolder": "res://materials"
 	}
 }

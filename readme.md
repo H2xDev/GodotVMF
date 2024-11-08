@@ -36,18 +36,17 @@ Or for those who just want to port their map from Source Engine to Godot and see
 ## Features
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
 - Instances support
-- Models import (requires 3rd party utility [MDL2OBJ](/mdl2obj), included in the repository)
-- Materials import
 - Displacements import (with vertex data)
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Entities support
 - Hammer's Input/Output  system support
-- Native VTF import (supported VTF formats: DXT1, DXT3, DXT5)
+- Native VTF support (only formats: DXT1, DXT3, DXT5)
+- Native MDL support (animations are not supported)
 
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
-- New MDLs (from CS:GO an so on) is not supported
+	- Use `Additional Rotation` property in the MDL import options
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
@@ -62,7 +61,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 5. Check for errors if they appear
 
 ## Additional things
-- Source code of MDL2OBJ: https://github.com/H2xDev/mdl2obj
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Credits
