@@ -36,17 +36,21 @@ Or for those who just want to port their map from Source Engine to Godot and see
 ## Features
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
 - Instances support
+- Native MDL support
+- Native materials support
+- Native VTF support (only DXT1, DXT3, DXT5 supported)
 - Displacements import (with vertex data)
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Entities support
 - Hammer's Input/Output  system support
-- Native VTF support (only formats: DXT1, DXT3, DXT5)
-- Native MDL support (animations are not supported)
+- Automatically generates SteamAudioGeometry in case [godot-steam-audio](https://github.com/stechyo/godot-steam-audio) plugin detected
+- Surface props support
 
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
-	- Use `Additional Rotation` property in the MDL import options
+    - Use `Additional Rotation` property in the MDL import options
+- Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issues with threaded import in the engine.
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
@@ -64,9 +68,9 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
 
 ## Credits
-[H2xDev](https://github.com/H2xDev) - main contributor  
+[H2xDev](https://github.com/H2xDev) - main contributor
 [Ambiabstract](https://github.com/Ambiabstract) - tech help and inspiration  
-[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template)  
+[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template), UAZ model  
 [Lachrymogenic](https://github.com/Lachrymogenic) - Linux test, performance test  
 [SharkPetro](https://github.com/SharkPetro) - materials test  
 
