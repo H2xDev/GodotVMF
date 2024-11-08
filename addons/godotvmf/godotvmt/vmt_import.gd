@@ -29,6 +29,9 @@ static func normalize_path(path: String) -> String:
 static func load(material: String):
 	var material_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".tres").to_lower();
 
+	if last_cache_changed == null:
+		last_cache_changed = 0;
+
 	if not ResourceLoader.exists(material_path):
 		material_path = material_path.replace(".tres", ".vmt");
 

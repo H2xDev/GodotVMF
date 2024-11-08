@@ -51,6 +51,9 @@ static func load_instance(instance_name: String):
 		VMFLogger.error("Failed to find instance file: %s" % instance_name);
 		return;
 
+	if last_cache_changed == null:
+		last_cache_changed = 0;
+
 	if Time.get_ticks_msec() - last_cache_changed > 10000:
 		instances_cache = {};
 

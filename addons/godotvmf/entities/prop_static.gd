@@ -8,6 +8,9 @@ func _apply_entity(e):
 	super._apply_entity(e);
 	cached_models = cached_models if cached_models else {};
 
+	if last_cache_changed == null:
+		last_cache_changed = 0;
+
 	assert("models" in VMFConfig.config, "Missing 'models' in VMFConfig.config");
 
 	var cache_key = e.get('model');
