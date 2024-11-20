@@ -28,10 +28,24 @@ func _apply_entity(e):
 		cached_models[cache_key] = ResourceLoader.load(model_path);
 		last_cache_changed = Time.get_ticks_msec();
 
-	var model: Node3D = cached_models[cache_key].instantiate();
+	var model: MeshInstance3D = cached_models[cache_key].instantiate();
 
 	add_child(model);
 	model.set_owner(get_owner());
 	model.scale *= e.get('modelscale', 1.0);
 	model.reparent(get_vmfnode().geometry);
+	model.name = e.get('model', 'prop_static').get_file().get_basename() + str(model.get_instance_id());
+
+	var fade_min = entity.get('fademindist', 0.0) * VMFConfig.config.import.scale;
+	var fade_max = entity.get('fademaxdist', 0.0) * VMFConfig.config.import.scale;
+	var fade_margin = fade_max - fade_min;
+
+	model.visibility_range_end = max(0.0, fade_max);
+	model.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF \
+			if e.get('screenspacefade', 0) == 1 \
+			else GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED;
+
+	if model.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED:
+		model.visibility_range_end_margin = fade_margin;
+
 	queue_free();
