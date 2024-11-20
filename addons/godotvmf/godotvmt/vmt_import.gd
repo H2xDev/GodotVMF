@@ -9,16 +9,24 @@ func _get_resource_type(): return "Material";
 func _get_preset_count(): return 0;
 func _get_import_order(): return 1;
 func _get_priority(): return 1;
-func _can_import_threaded(): return true;
+func _can_import_threaded(): return false;
 
 func _get_import_options(str, int): return [];
 func _get_option_visibility(path: String, optionName: StringName, options: Dictionary): return true;
 
 func _import(path: String, save_path: String, _a, _b, _c):
-	var path_to_save = save_path + '.' + _get_save_extension();
 	var material = VMTLoader.load(path);
+	var path_to_save = save_path + '.' + _get_save_extension();
 
-	return ResourceSaver.save(material, path_to_save, ResourceSaver.FLAG_COMPRESS);
+	if ResourceLoader.exists(path_to_save):
+		DirAccess.remove_absolute(path_to_save);
+
+	var error = ResourceSaver.save(material, path_to_save, ResourceSaver.FLAG_COMPRESS);
+
+	if (error == OK):
+		material.take_over_path(path_to_save);
+
+	return error;
 
 static var cached_materials = {};
 static var last_cache_changed = 0;

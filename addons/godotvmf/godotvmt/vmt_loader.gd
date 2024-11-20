@@ -92,27 +92,28 @@ static func load(path: String):
 
 	material.set_meta("surfaceprop", details.get("$surfaceprop", "default"));
 
-	if details.get("$translucent") == 1:
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
+	if material is BaseMaterial3D:
+		if details.get("$translucent") == 1:
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
 
-	if details.get("$alphatest") == 1:
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
-		material.alpha_scissor_threshold = details.get("$alphatestreference", 0.0);
+		if details.get("$alphatest") == 1:
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
+			material.alpha_scissor_threshold = details.get("$alphatestreference", 0.0);
 
-	if details.get("$nocull") == 1:
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED;
+		if details.get("$nocull") == 1:
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED;
 
-	if details.get(">=dx90_20b"):
-		details.merge(details['>=dx90_20b']);
+		if details.get(">=dx90_20b"):
+			details.merge(details['>=dx90_20b']);
 
-	if details.get("$basetexturetransform"):
-		var transform = _parse_transform(details);
-		material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
-		material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
+		if details.get("$basetexturetransform"):
+			var transform = _parse_transform(details);
+			material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
+			material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
 
-	if details.get("$nextpass"):
-		var shader_material = VMTShaderBasedMaterial.load("res://" + details["$nextpass"] + ".gdshader");
-		material.next_pass = shader_material;
+		if details.get("$nextpass"):
+			var shader_material = VMTShaderBasedMaterial.load("res://" + details["$nextpass"] + ".gdshader");
+			material.next_pass = shader_material;
 
 
 	for key in details.keys():

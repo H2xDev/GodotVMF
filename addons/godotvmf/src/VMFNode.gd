@@ -57,6 +57,17 @@ var _owner:
 
 		return o;
 
+var geometry: Node3D:
+	get: 
+		var node = get_node_or_null("Geometry");
+		node = get_node_or_null(NodePath("NavigationMesh/Geometry")) \
+			if node == null else node;
+
+		return node;
+
+var navmesh: NavigationRegion3D:
+	get: return get_node_or_null("NavigationMesh");
+
 func _validate_property(property: Dictionary) -> void:
 	if property.name == "vmf":
 		property.hint = PROPERTY_HINT_GLOBAL_FILE if use_external_file else PROPERTY_HINT_FILE
@@ -136,6 +147,25 @@ func import_geometry(_reimport := false) -> void:
 	# 		continue;
 
 	_save_collision();
+
+	if VMFConfig.config.import.get("useNavigationMesh", false):
+		var navmesh_preset_path = VMFConfig.config.import.get("navigationMeshPreset", "default");
+		var navmesh_preset = null;
+
+		if ResourceLoader.exists(navmesh_preset_path):
+			navmesh_preset = ResourceLoader.load(navmesh_preset_path);
+			assert(navmesh_preset is NavigationMesh, "vmf.config.json -> import.navigationMeshPreset has wrong type. Expected NavigationMesh, got %s" % navmesh_preset.get_class());
+
+		var navreg := NavigationRegion3D.new();
+		navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset.duplicate();
+		navreg.name = "NavigationMesh";
+
+		add_child(navreg);
+		navreg.set_owner(_owner);
+		_current_mesh.reparent(navreg);
+
+		navreg.bake_navigation_mesh.call_deferred();
+
 
 func _save_collision() -> void:
 	output.emit("Save collision into a file...");

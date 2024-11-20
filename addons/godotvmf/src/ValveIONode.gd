@@ -88,7 +88,7 @@ func assign_name(i = 0) -> void:
 	if not get_parent().get_node_or_null(entity.targetname):
 		self.name = entity.targetname;
 	else: if not get_parent().get_node_or_null(entity.targetname + str(i)):
-		self.name = entity.targetname + str(i);
+		self.name = entity.targetname + "_add_" + str(i);
 	else:
 		return assign_name(i + 1);
 
@@ -105,13 +105,11 @@ func call_target_input(target, input, param, delay) -> void:
 		targetNode = self;
 
 	if targetNode == null:
-			targetNode = get_target(target);
+		targetNode = get_target(target);
 
-	if not targetNode:
-		return;
+	if not targetNode: return;
 
-	if not input in targetNode:
-		return;
+	if not input in targetNode: return;
 
 	var targets: Array[Node3D] = [];
 	if not target.begins_with("!"):
@@ -128,6 +126,18 @@ func call_target_input(target, input, param, delay) -> void:
 		else:
 			activator = self;
 			node.call(input, param);
+
+## Returns the VMFNode where the entity placed
+func get_vmfnode():
+	var p = get_parent();
+
+	while p:
+		if p is VMFNode:
+			return p;
+
+		p = p.get_parent();
+
+	return null;
 
 func get_target(n) -> Node3D:
 	if n in ValveIONode.aliases:
@@ -146,7 +156,7 @@ func get_target(n) -> Node3D:
 	return null;
 
 func get_all_targets(targetName: String, i: int = -1, targets: Array[Node3D] = []) -> Array[Node3D]:
-	var cname := targetName + str(i) if i > -1 else targetName;
+	var cname := targetName + "_add_" + str(i) if i > -1 else targetName;
 	var node := get_target(cname);
 
 	if not node:

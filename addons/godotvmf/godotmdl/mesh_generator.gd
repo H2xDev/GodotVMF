@@ -5,7 +5,7 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 	var array_mesh = ArrayMesh.new();
 	var st = SurfaceTool.new();
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI);
+	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
 	var materials_root = options.get(
 		"materials_root", 
 		VMFConfig.config \
@@ -32,7 +32,7 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 				st.set_uv(vert.uv);
 				st.set_bones(vert.bone_weight.bone_bytes);
 				st.set_weights(vert.bone_weight.weight_bytes);
-				st.add_vertex(vert.position * options.scale * additional_basis);
+				st.add_vertex(vert.position * additional_basis);
 	
 			for indice in strip_group.indices:
 				st.add_index(indice);
@@ -85,7 +85,7 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 static func _generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
 
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI);
+	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
 
 	var yup_to_zup = Basis().rotated(Vector3(1, 0, 0), PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
@@ -114,6 +114,7 @@ static func _generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYRead
 				var v1 = surface.vertices[face.v1] * additional_basis;
 				var v2 = surface.vertices[face.v2] * additional_basis;
 				var v3 = surface.vertices[face.v3] * additional_basis;
+
 				vertices.append_array([v1, v2, v3]);
 
 			collision.shape.points = PackedVector3Array(vertices);

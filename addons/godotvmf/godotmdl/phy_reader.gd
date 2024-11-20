@@ -170,12 +170,12 @@ func _init(source_file: String):
 
 		for j in range(vertices_count + 1):
 			var vertex = ByteReader._read_data(file, ByteReader.Type.VECTOR3);
-			vertex = Vector3(vertex.x, vertex.z, -vertex.y);
+			var w = ByteReader._read_data(file, ByteReader.Type.FLOAT);
+
+			# NOTE: For some reason all collision solids are converted from inch to m. Converting them back to inch
+			vertex = Vector3(vertex.x, vertex.z, -vertex.y) / 0.0254;
 
 			surface_header.vertices.append(vertex);
-
-			# NOTE: w-component of Vec4
-			ByteReader._read_data(file, ByteReader.Type.FLOAT);
 
 		vertices_start = INF;
 

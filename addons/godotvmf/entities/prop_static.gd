@@ -33,5 +33,5 @@ func _apply_entity(e):
 	add_child(model);
 	model.set_owner(get_owner());
 	model.scale *= e.get('modelscale', 1.0);
-	model.reparent(get_parent());
+	model.reparent(get_vmfnode().geometry);
 	queue_free();
