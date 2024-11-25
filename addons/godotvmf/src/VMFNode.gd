@@ -174,6 +174,8 @@ func _save_collision() -> void:
 
 	for body in collisions:
 		var collision := body.get_node('collision');
+		if not collision: continue;
+
 		var shape = collision.shape;
 		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.config.import.geometryFolder, _vmf_identifer(), body.name];
 		var error := ResourceSaver.save(collision.shape, save_path, ResourceSaver.FLAG_COMPRESS);
