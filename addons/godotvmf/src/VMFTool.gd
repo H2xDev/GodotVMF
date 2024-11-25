@@ -103,7 +103,7 @@ static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
 static func get_material(material: String):
-	return VMTImporter.load(material);
+	return VMTLoader.get_material(material);
 
 static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
