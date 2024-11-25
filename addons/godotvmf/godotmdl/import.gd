@@ -59,19 +59,10 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 		return false;
 
 	var path_to_save = save_path + '.' + _get_save_extension();
-	var mesh_path = path_to_save + ".mesh.tres";
 
 	var scn = PackedScene.new();
 	var model = MDLMeshGenerator.generate_mesh(mdl, vtx, vvd, phy, options);
 	model.set_name(model_name);
-
-	if ResourceLoader.exists(mesh_path):
-		DirAccess.remove_absolute(mesh_path);
-
-	var mesh = model.mesh;
-	var mesh_error = ResourceSaver.save(mesh, mesh_path, ResourceSaver.FLAG_COMPRESS);
-	mesh.take_over_path(mesh_path);
-	model.mesh = mesh;
 
 	scn.pack(model);
 

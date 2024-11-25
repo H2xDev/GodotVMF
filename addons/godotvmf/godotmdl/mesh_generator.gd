@@ -64,7 +64,7 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 	
 	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, 0.2);
 
-	var skeleton = _generate_skeleton(mdl, options)
+	var skeleton = generate_skeleton(mdl, options)
 	var skin = skeleton.create_skin_from_rest_transforms();
 
 	skeleton.name = "skeleton";
@@ -77,12 +77,31 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 	mesh_instance.set_mesh(array_mesh);
 	skeleton.set_owner(mesh_instance);
 
-	_generate_collision(mesh_instance, skeleton, phy, options);
-	_assign_materials(array_mesh, mdl, mesh_instance, materials_root);
+	generate_collision(mesh_instance, skeleton, phy, options);
+	assign_materials(array_mesh, mdl, mesh_instance, materials_root);
+	create_occluder(mesh_instance);
 
 	return mesh_instance;
 
-static func _generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
+static func create_occluder(mesh_instance: MeshInstance3D):
+	var occluder := OccluderInstance3D.new();
+	var box := BoxOccluder3D.new();
+	var vertices = mesh_instance.mesh.get_faces();
+	var average_center = Vector3.ZERO;
+
+	for vertex in vertices:
+		average_center += vertex;
+
+	average_center /= vertices.size();
+
+	box.size = mesh_instance.get_aabb().size / 1.5;
+	occluder.occluder = box;
+	occluder.position = average_center;
+
+	mesh_instance.add_child(occluder);
+	occluder.set_owner(mesh_instance);
+
+static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
 
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
 	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
@@ -130,7 +149,7 @@ static func _generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYRead
 
 		surface_index += 1;
 
-static func _generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D:
+static func generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D:
 	var skeleton = Skeleton3D.new();
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
 	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI);
@@ -161,14 +180,14 @@ static func _generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
-static func _assign_materials(mesh: ArrayMesh, mdl: MDLReader, mesh_instance: MeshInstance3D, materials_root: String):
+static func assign_materials(mesh: ArrayMesh, mdl: MDLReader, mesh_instance: MeshInstance3D, materials_root: String):
 	var materials = [];
 	var skin = 0;
 
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
 			var path = normalize_path(dir + "/" + tex.name);
-			var material = VMTImporter.load(path);
+			var material = VMTLoader.get_material(path);
 			if not material: continue;
 
 			materials.append(material);

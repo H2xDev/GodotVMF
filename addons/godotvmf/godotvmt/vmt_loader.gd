@@ -125,9 +125,9 @@ static func load(path: String):
 			var texture_path = str(details['$' + key]).to_lower()
 
 			if material_key in material:
-				var loaded_material = VTFImporter.load(texture_path);
-				if loaded_material:
-					material.set(material_key, loaded_material);
+				var loaded_texture = VTFLoader.get_texture(texture_path);
+				if loaded_texture:
+					material.set(material_key, loaded_texture);
 
 					if key in feature_mappings:
 						material[feature_mappings[key]] = true;
@@ -146,3 +146,36 @@ static func load(path: String):
 	material.set_meta("details", details);
 
 	return material;
+
+static func normalize_path(path: String) -> String:
+	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
+
+static var last_cache_changed: float;
+static var cached_materials: Dictionary;
+
+static func get_material(material: String):
+	var material_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".tres").to_lower();
+
+	if last_cache_changed == null:
+		last_cache_changed = 0;
+
+	if not ResourceLoader.exists(material_path):
+		material_path = material_path.replace(".tres", ".vmt");
+
+	if not ResourceLoader.exists(material_path):
+		VMFLogger.warn("Material not found: " + material);
+		return null;
+
+	cached_materials = cached_materials if cached_materials else {};
+	if Time.get_ticks_msec() - last_cache_changed > 10000:
+		cached_materials = {};
+
+	if material in cached_materials:
+		return cached_materials[material];
+
+	var res = ResourceLoader.load(material_path);
+	cached_materials[material] = res;
+
+	last_cache_changed = Time.get_ticks_msec();
+
+	return res;

@@ -22,15 +22,3 @@ func _import(path: String, save_path: String, _a, _b, _c):
 
 	var texture = vtf.compile_texture();
 	return ResourceSaver.save(texture, path_to_save, ResourceSaver.FLAG_CHANGE_PATH);
-
-static func normalize_path(path: String) -> String:
-	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
-
-static func load(material: String):
-	var texture_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vtf");
-
-	if not ResourceLoader.exists(texture_path):
-		VMFLogger.warn("Texture not found: " + material);
-		return null;
-
-	return ResourceLoader.load(texture_path);
