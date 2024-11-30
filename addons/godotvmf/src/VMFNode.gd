@@ -257,6 +257,8 @@ func import_materials() -> void:
 		VMFLogger.warn("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsed_time) + "ms");
 
 func import_material(material: String):
+	material = material.to_lower();
+
 	var vmt_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + material + ".vmt");
 	var target_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vmt");
 	if ResourceLoader.exists(target_path): return;
@@ -265,6 +267,8 @@ func import_material(material: String):
 	DirAccess.copy_absolute(vmt_path, target_path);
 
 func import_textures(material: String):
+	material = material.to_lower();
+
 	var target_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vmt");
 	var target_material = ResourceLoader.load(target_path);
 
