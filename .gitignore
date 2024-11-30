@@ -15,6 +15,7 @@ data_*/
 mono_crash.*.json
 
 *.vmx
+*.uid
 
 test.tscn
 godotvmf_mod

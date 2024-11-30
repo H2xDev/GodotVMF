@@ -3,6 +3,10 @@ class_name VMFTool
 static var vertex_cache: Array = [];
 static var intersections: Dictionary = {};
 
+## Record<material, Vector2>
+static var texture_sizes_cache: Dictionary = {};
+static var material_cache: Dictionary = {};
+
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
 class VectorSorter:
 	var normal: Vector3;
@@ -33,16 +37,6 @@ class VectorSorter:
 
 	func sort(a: Vector3, b: Vector3) -> bool:
 		return get_order(a) < get_order(b);
-
-static func get_similar_vertex(vertex: Vector3) -> Vector3:
-	vertex_cache = vertex_cache if vertex_cache else [];
-
-	for v: Vector3 in vertex_cache:
-		if (v - vertex).length() < 0.1:
-			return v;
-
-	vertex_cache.append(vertex);
-	return vertex;
 
 static func clear_caches() -> void:
 	vertex_cache = [];
@@ -99,14 +93,45 @@ static func calculate_vertices(side, brush) -> Array[Vector3]:
 
 	return vertices;
 
-static func normalize_path(path: String) -> String:
-	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
-
 static func get_material(material: String):
-	return VMTLoader.get_material(material);
+	material_cache = material_cache if material_cache else {};
+	if material in material_cache:
+		return material_cache[material];
+
+	material_cache[material] = VMTLoader.get_material(material);
+	return material_cache[material];
+
+static func get_texture_size(side_material: String) -> Vector2:
+	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
+	var has_cached_value = side_material in texture_sizes_cache;
+
+	if has_cached_value and texture_sizes_cache[side_material]:
+		return texture_sizes_cache[side_material];
+
+	var material = get_material(side_material) \
+		if not has_cached_value \
+		else texture_sizes_cache[side_material];
+	
+	if not material:
+		texture_sizes_cache[side_material] = Vector2(default_texture_size, default_texture_size);
+		return texture_sizes_cache[side_material];
+
+	# NOTE In case if material is blend texture we use texture_albedo param
+	var texture = material.albedo_texture \
+		if material is BaseMaterial3D \
+		else material.get_shader_parameter('albedo_texture');
+
+	var tsize: Vector2 = texture.get_size() \
+		if texture \
+		else Vector2(default_texture_size, default_texture_size);
+
+	texture_sizes_cache[side_material] = tsize;
+
+	return tsize;
 
 static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
+	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};
 
 	var ux: float = side.uaxis.x;
 	var uy: float = side.uaxis.y;
@@ -120,18 +145,9 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var vshift: float = side.vaxis.shift;
 	var vscale: float = side.vaxis.scale;
 
-	var material = get_material(side.material);
-	
-	if not material:
-		return Vector2(1, 1);
-
-	# NOTE In case if material is blend texture we use texture_albedo param
-	var texture = material.albedo_texture if material is BaseMaterial3D else material.get_shader_parameter('albedo_texture');
-
-	var tsize: Vector2 = texture.get_size() if texture else Vector2(default_texture_size, default_texture_size);
-
 	# FIXME Add texture scale from VMF metadata
 	var tscale = Vector2.ONE;
+	var tsize := get_texture_size(side.material);
 
 	var tsx: float = 1;
 	var tsy: float = 1;
@@ -139,9 +155,10 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var th := tsize.y;
 	var aspect := tw / th;
 
-	if material:
-		tsx /= tscale.x;
-		tsy /= tscale.y;
+	# NOTE: Not supported yet
+	# if material:
+	# 	tsx /= tscale.x;
+	# 	tsy /= tscale.y;
 
 	var uv := Vector3(ux, uy, uz);
 	var vv := Vector3(vx, vy, vz);
@@ -207,8 +224,6 @@ static func create_steam_audio_geometry(surface_prop: String, collision_shape: C
 	var is_audio_material_exists = ResourceLoader.exists(path);
 	if not is_audio_material_exists: return;
 
-	print("Checking audio material path: " + path);
-
 	var material = ResourceLoader.load(path);
 
 	var steam_audio_geometry = ClassDB.instantiate("SteamAudioGeometry");
@@ -223,19 +238,13 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 	clear_caches();
 
 	var _scale: float = VMFConfig.config.import.scale;
-	var _default_texture_size: float = VMFConfig.config.material.defaultTextureSize;
-	var _ignore_textures: Array[String];
-	_ignore_textures.assign(VMFConfig.config.material.ignore);
-	var _texture_import_mode: int = VMFConfig.config.material.importMode;
-
-	var elapsed_time := Time.get_ticks_msec();
+	var t := Time.get_ticks_msec();
 
 	if not "solid" in vmf_structure.world:
 		return null;
 
 	var brushes = vmf_structure.world.solid;
 	var material_sides = {};
-	var texture_cache = {};
 	var mesh := ArrayMesh.new();
 
 	for brush in brushes:
@@ -281,11 +290,10 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
 	
 				for v: Vector3 in vertices:
-					var vertex := get_similar_vertex(v);
-					var uv: Vector2 = calculate_uv_for_size(side, vertex);
+					var uv: Vector2 = calculate_uv_for_size(side, v);
 					sf.set_uv(uv);
 	
-					var vt := Vector3(vertex.x, vertex.z, -vertex.y) * _scale - _offset;
+					var vt := Vector3(v.x, v.z, -v.y) * _scale - _offset;
 					var sg := -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 					
 					sf.set_smooth_group(sg);
@@ -341,8 +349,7 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 						sf.add_index(base_index + x + 1 + y * verts_count);
 
 		var material = get_material(sides[0].side.material);
-		if material:
-			sf.set_material(material);
+		if material: sf.set_material(material);
 				
 		sf.optimize_indices_for_cache();
 		sf.generate_normals();
@@ -351,10 +358,8 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 
 		mesh.set_meta("surface_material_" + str(mesh.get_surface_count() - 1), sides[0].side.material);
 
-	elapsed_time = Time.get_ticks_msec() - elapsed_time;
-
-	if elapsed_time > 2000:
-		if "source" in vmf_structure: VMFLogger.warn(vmf_structure.source);
-		VMFLogger.warn("Mesh generation took " + str(elapsed_time) + "ms");
+	t = Time.get_ticks_msec() - t;
+	if t > 100:
+		VMFLogger.warn("Mesh generation took " + str(t) + "ms");
 
 	return mesh;

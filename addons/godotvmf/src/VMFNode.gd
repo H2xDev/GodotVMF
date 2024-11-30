@@ -34,8 +34,7 @@ var vmf: String = '';
 ## Full import of VMF with specified options
 @export var import: bool = false:
 	set(value):
-		if not value:
-			return;
+		if not value: return;
 		import_map();
 		import = false;
 ## If true then button "Full", "Entities" and "Geometry" won't trigger import on this Node.
@@ -48,7 +47,9 @@ var vmf: String = '';
 ## Save the resulting collision shape as a resource (saves to the geometryFolder in vmf.config.json)
 @export var save_collision: bool = true;
 
+## Set this to true before import if you're goint to use this node in runtime
 var is_runtime = false;
+
 var _structure: Dictionary = {};
 var _owner:
 	get: 
@@ -92,46 +93,26 @@ func import_geometry(_reimport := false) -> void:
 		read_vmf();
 		import_materials();
 
+	if navmesh:
+		navmesh.free();
+	if geometry:
+		geometry.free();
+
 	var mesh: ArrayMesh = VMFTool.create_mesh(_structure);
-	if not mesh:
-		return;
+	if not mesh: return;
 
-	var _current_mesh := MeshInstance3D.new()
-	_current_mesh.name = "Geometry";
-
+	var geometry_mesh := MeshInstance3D.new()
+	geometry_mesh.name = "Geometry";
+	geometry_mesh.set_mesh(save_geometry_file(mesh));
 	
-	add_child(_current_mesh);
-	_current_mesh.set_owner(_owner);
+	add_child(geometry_mesh);
+	geometry_mesh.set_owner(_owner);
 
-	var transform = _current_mesh.global_transform if _current_mesh.is_inside_tree() else self.transform;
+	var transform = geometry_mesh.global_transform if geometry_mesh.is_inside_tree() else self.transform;
 	var texel_size = VMFConfig.config.import.lightmapTexelSize;
 
 	if VMFConfig.config.import.generateLightmapUV2 and not is_runtime:
 		mesh.lightmap_unwrap(transform, texel_size);
-
-	if save_geometry:
-		var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.config.import.geometryFolder, _vmf_identifer()];
-		
-		if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
-			DirAccess.make_dir_recursive_absolute(resource_path.get_base_dir());
-		
-		var err := ResourceSaver.save(mesh, resource_path, ResourceSaver.FLAG_COMPRESS);
-		if err:
-			VMFLogger.error("Failed to save resource: %s" % err);
-			return;
-		
-		mesh.take_over_path(resource_path);
-		_current_mesh.mesh = load(resource_path);
-	else:
-		_current_mesh.mesh = mesh;
-	
-	if VMFConfig.config.import.generateCollision:
-		var bodies = VMFTool.generate_collisions(_current_mesh.mesh);
-		var body_idx = 0
-		for body in bodies:
-			_current_mesh.add_child(body);
-			set_owner_recurive(body, _owner);
-			body_idx += 1;
 
 	# NOTE Clear surface that has materials in ignore list
 	# FIXME Currently we don't have a way to remove surface from ArrayMesh since `surface_remove` were removed in 4.x
@@ -139,43 +120,70 @@ func import_geometry(_reimport := false) -> void:
 
 	# var _ignore_textures = VMFConfig.config.material.ignore;
 
-	# for surface_idx in _current_mesh.mesh.get_surface_count():
-	# 	var material = _current_mesh.mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+	# for surface_idx in geometry_mesh.mesh.get_surface_count():
+	# 	var material = geometry_mesh.mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
 	# 	var isIgnored = _ignore_textures.any(func(rx: String) -> bool: return material.match(rx.to_lower()));
 	# 	if isIgnored:
-	# 		_current_mesh.mesh.surface_remove(surface_idx);
+	# 		geometry_mesh.mesh.surface_remove(surface_idx);
 	# 		continue;
 
-	_save_collision();
+	generate_collisions(geometry_mesh);
+	generate_navmesh(geometry_mesh);
 
-	if VMFConfig.config.import.get("useNavigationMesh", false):
-		var navmesh_preset_path = VMFConfig.config.import.get("navigationMeshPreset", "default");
-		var navmesh_preset = null;
+func generate_collisions(geometry_mesh):
+	if not VMFConfig.config.import.generateCollision: return;
 
-		if ResourceLoader.exists(navmesh_preset_path):
-			navmesh_preset = ResourceLoader.load(navmesh_preset_path);
-			assert(navmesh_preset is NavigationMesh, "vmf.config.json -> import.navigationMeshPreset has wrong type. Expected NavigationMesh, got %s" % navmesh_preset.get_class());
+	var bodies = VMFTool.generate_collisions(geometry_mesh.mesh);
+	var body_idx = 0
+	for body in bodies:
+		geometry_mesh.add_child(body);
+		set_owner_recurive(body, _owner);
+		body_idx += 1;
 
-		var navreg := NavigationRegion3D.new();
-		navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset.duplicate();
-		navreg.name = "NavigationMesh";
+	save_collision_file();
 
-		add_child(navreg);
-		navreg.set_owner(_owner);
-		_current_mesh.reparent(navreg);
+func generate_navmesh(geometry_mesh: MeshInstance3D):
+	if not VMFConfig.config.import.get("useNavigationMesh", false): return;
 
-		navreg.bake_navigation_mesh.call_deferred();
+	var navmesh_preset_path = VMFConfig.config.import.get("navigationMeshPreset", "default");
+	var navmesh_preset = null;
 
+	if ResourceLoader.exists(navmesh_preset_path):
+		navmesh_preset = ResourceLoader.load(navmesh_preset_path);
+		assert(navmesh_preset is NavigationMesh, "vmf.config.json -> import.navigationMeshPreset has wrong type. Expected NavigationMesh, got %s" % navmesh_preset.get_class());
 
-func _save_collision() -> void:
+	var navreg := NavigationRegion3D.new();
+	navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset.duplicate();
+	navreg.name = "NavigationMesh";
+
+	add_child(navreg);
+	navreg.set_owner(_owner);
+	geometry_mesh.reparent(navreg);
+
+	navreg.bake_navigation_mesh.call_deferred();
+
+func save_geometry_file(target_mesh: Mesh):
+	if not save_geometry: return target_mesh;
+	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.config.import.geometryFolder, _vmf_identifer()];
+	
+	if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
+		DirAccess.make_dir_recursive_absolute(resource_path.get_base_dir());
+	
+	var err := ResourceSaver.save(target_mesh, resource_path, ResourceSaver.FLAG_COMPRESS);
+	if err:
+		VMFLogger.error("Failed to save resource: %s" % err);
+		return;
+	
+	target_mesh.take_over_path(resource_path);
+	return target_mesh;
+
+func save_collision_file() -> void:
 	output.emit("Save collision into a file...");
 
 	var collisions = $Geometry.get_children() as Array[StaticBody3D];
 
 	for body in collisions:
 		var collision := body.get_node('collision');
-		if not collision: continue;
-
 		var shape = collision.shape;
 		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.config.import.geometryFolder, _vmf_identifer(), body.name];
 		var error := ResourceSaver.save(collision.shape, save_path, ResourceSaver.FLAG_COMPRESS);
@@ -185,7 +193,6 @@ func _save_collision() -> void:
 			continue;
 		shape.take_over_path(save_path);
 		collision.shape = load(save_path);
-		
 
 func _vmf_identifer() -> String:
 	return vmf.split('/')[-1].replace('.', '_');
@@ -230,8 +237,9 @@ func import_materials() -> void:
 					if not list.has(side.material):
 						list.append(side.material);
 
-	if not is_runtime:
-		var fs = EditorInterface.get_resource_filesystem() if Engine.is_editor_hint() else null;
+	var editor_interface = Engine.get_singleton("EditorInterface")
+	if not is_runtime and editor_interface:
+		var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
 
 		for material in list:
 			import_material(material);
@@ -277,6 +285,7 @@ func clear_structure() -> void:
 		n.queue_free();
 
 func read_vmf() -> void:
+	var t = Time.get_ticks_msec();
 	output.emit("Reading vmf...");
 	_structure = VDFParser.parse(vmf);
 
@@ -288,6 +297,25 @@ func read_vmf() -> void:
 
 	if "solid" in _structure.world:
 		_structure.world.solid = [_structure.world.solid] if not _structure.world.solid is Array else _structure.world.solid;
+
+	t = Time.get_ticks_msec() - t;
+	if t > 1000:
+		VMFLogger.warn("Read vmf in " + str(t) + "ms");
+
+func get_entity_scene(clazz: String):
+	var res_path: String = (VMFConfig.config.import.entitiesFolder + '/' + clazz + '.tscn').replace('//', '/').replace('res:/', 'res://');
+	# NOTE: In case when custom entity wasn't found - use aliases from config
+	if not ResourceLoader.exists(res_path):
+		res_path = VMFConfig.config.get("entityAliases", {}).get(clazz, "");
+
+	# NOTE: In case when custom entity wasn't found - use plugin's entities list
+	if not ResourceLoader.exists(res_path):
+		res_path = 'res://addons/godotvmf/entities/' + clazz + '.tscn';
+
+	if not ResourceLoader.exists(res_path):
+		return null;
+
+	return load(res_path);
 
 func import_entities(_reimport := false) -> void:
 	output.emit("Importing entities...");
@@ -313,16 +341,9 @@ func import_entities(_reimport := false) -> void:
 		ent = ent.duplicate(true);
 		ent.vmf = vmf;
 
-		var resPath: String = (VMFConfig.config.import.entitiesFolder + '/' + ent.classname + '.tscn').replace('//', '/').replace('res:/', 'res://');
+		var tscn = get_entity_scene(ent.classname);
+		if not tscn: continue;
 
-		# NOTE: In case when custom entity wasn't found - use plugin's entities list
-		if not ResourceLoader.exists(resPath):
-			resPath = 'res://addons/godotvmf/entities/' + ent.classname + '.tscn';
-
-			if not ResourceLoader.exists(resPath):
-				continue;
-
-		var tscn = load(resPath);
 		var node = tscn.instantiate();
 		if "is_runtime" in node:
 			node.is_runtime = is_runtime;
@@ -336,6 +357,10 @@ func import_entities(_reimport := false) -> void:
 		_entities_node.add_child(node);
 		node.set_owner(_owner);
 
+		var clazz = node.get_script();
+		if "setup" in clazz:
+			clazz.setup(ent, node);
+
 		if not is_runtime and "_apply_entity" in node:
 			node._apply_entity(ent);
 
@@ -345,6 +370,27 @@ func import_entities(_reimport := false) -> void:
 
 	if time > 2000:
 		VMFLogger.warn("Imported entities in " + str(time) + "ms");
+
+func generate_occluder():
+	var mesh: MeshInstance3D = geometry
+	var mesh_center = Vector3.ZERO;
+	var vertices = mesh.mesh.get_faces();
+
+	for v in vertices:
+		mesh_center += v;
+
+	mesh_center /= vertices.size();
+
+	var occluder := OccluderInstance3D.new();
+	var box := BoxOccluder3D.new();
+
+	box.size = mesh.get_aabb().size / 1.5;
+	occluder.occluder = box;
+	occluder.position = mesh_center;
+	occluder.name = vmf.get_file().get_basename() + "_occluder";
+
+	add_child(occluder);
+	occluder.set_owner(_owner);
 
 func import_map() -> void:
 	VMFConfig.reload();
