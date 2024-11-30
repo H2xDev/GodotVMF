@@ -3,6 +3,9 @@ class_name VMFTool
 static var vertex_cache: Array = [];
 static var intersections: Dictionary = {};
 
+static var texture_sizes_cache: Dictionary = {};
+static var material_cache: Dictionary = {};
+
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
 class VectorSorter:
 	var normal: Vector3;
@@ -33,16 +36,6 @@ class VectorSorter:
 
 	func sort(a: Vector3, b: Vector3) -> bool:
 		return get_order(a) < get_order(b);
-
-static func get_similar_vertex(vertex: Vector3) -> Vector3:
-	vertex_cache = vertex_cache if vertex_cache else [];
-
-	for v: Vector3 in vertex_cache:
-		if (v - vertex).length() < 0.1:
-			return v;
-
-	vertex_cache.append(vertex);
-	return vertex;
 
 static func clear_caches() -> void:
 	vertex_cache = [];
@@ -111,6 +104,43 @@ static func calculate_vertices(side, brush) -> Array[Vector3]:
 
 	return vertices;
 
+static func get_texture_size(side_material: String) -> Vector2:
+	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};
+
+	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
+	var has_cached_value = side_material in texture_sizes_cache;
+
+	if has_cached_value and texture_sizes_cache[side_material]:
+		return texture_sizes_cache[side_material];
+
+	var material = get_material(side_material) \
+		if not has_cached_value \
+		else texture_sizes_cache[side_material];
+	
+	if not material:
+		texture_sizes_cache[side_material] = Vector2(default_texture_size, default_texture_size);
+		return texture_sizes_cache[side_material];
+
+	# NOTE In case if material is blend texture we use texture_albedo param
+	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
+
+	var tsize: Vector2 = texture.get_size() \
+		if texture \
+		else Vector2(default_texture_size, default_texture_size);
+
+	texture_sizes_cache[side_material] = tsize;
+
+	return tsize;
+
+static func get_material(material: String) -> Material:
+	material_cache = material_cache if material_cache else {};
+
+	if material in material_cache:
+		return material_cache[material];
+
+	material_cache[material] = VTFTool.get_material(material);
+	return material_cache[material];
+
 static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
 
@@ -131,10 +161,7 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	if not material:
 		return Vector2(1, 1);
 
-	# NOTE In case if material is blend texture we use texture_albedo param
-	var texture = material.albedo_texture if material is StandardMaterial3D else material.get_shader_parameter('texture_albedo');
-
-	var tsize: Vector2 = texture.get_size() if texture else Vector2(default_texture_size, default_texture_size);
+	var tsize: Vector2 = get_texture_size(side.material);
 	var tscale = material.get_meta("scale", Vector2(1, 1));
 
 	var tsx: float = 1;
@@ -223,11 +250,10 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
 	
 				for v: Vector3 in vertices:
-					var vertex := get_similar_vertex(v);
-					var uv: Vector2 = calculate_uv_for_size(side, vertex);
+					var uv: Vector2 = calculate_uv_for_size(side, v);
 					sf.set_uv(uv);
 	
-					var vt := Vector3(vertex.x, vertex.z, -vertex.y) * _scale - _offset;
+					var vt := Vector3(v.x, v.z, -v.y) * _scale - _offset;
 					var sg := -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
 					
 					sf.set_smooth_group(sg);
