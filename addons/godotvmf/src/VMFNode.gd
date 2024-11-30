@@ -12,7 +12,6 @@ const MATERIAL_KEYS_TO_IMPORT = [
 	"$basetexture2",
 	"$bumpmap",
 	"$bumpmap2",
-	"$detail",
 	"$selfillummask",
 ];
 
@@ -57,6 +56,9 @@ var _owner:
 		if o == null: return self;
 
 		return o;
+
+var editor_interface:
+	get: return Engine.get_singleton("EditorInterface");
 
 var geometry: Node3D:
 	get: 
@@ -237,24 +239,21 @@ func import_materials() -> void:
 					if not list.has(side.material):
 						list.append(side.material);
 
-	var editor_interface = Engine.get_singleton("EditorInterface")
 	if not is_runtime and editor_interface:
 		var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
 
 		for material in list:
-			import_material(material);
-		
-		if fs: await fs.resources_reimported;
-
-		for material in list:
 			import_textures(material);
 
-		if fs: await fs.resources_reimported;
+		for material in list:
+			import_material(material);
+		
+		if fs: fs.scan();
 
 	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
 	if elapsed_time > 1000:
-		VMFLogger.warn("Imported " + str(len(list)) + " materials in " + str(Time.get_ticks_msec() - elapsed_time) + "ms");
+		VMFLogger.warn("Imported " + str(len(list)) + " materials in " + str(elapsed_time) + "ms");
 
 func import_material(material: String):
 	material = material.to_lower();
@@ -269,17 +268,25 @@ func import_material(material: String):
 func import_textures(material: String):
 	material = material.to_lower();
 
-	var target_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vmt");
-	var target_material = ResourceLoader.load(target_path);
+	var target_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + material + ".vmt");
+	var details  = VDFParser.parse(target_path).values()[0];
 
-	var details = target_material.get_meta("details", {});
+	# NOTE: CS:GO/L4D
+	if "insert" in details:
+		details.merge(details["insert"]);
 
 	for key in MATERIAL_KEYS_TO_IMPORT:
 		if key not in details: continue;
-		var vtf_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + details[key] + ".vtf");
-		var target_vtf_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + details[key] + ".vtf");
-		DirAccess.make_dir_recursive_absolute(vtf_path.get_base_dir());
-		DirAccess.copy_absolute(vtf_path, target_vtf_path);
+		var vtf_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + details[key].to_lower() + ".vtf");
+		var target_vtf_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + details[key].to_lower() + ".vtf");
+
+		if ResourceLoader.exists(target_vtf_path): continue;
+
+		DirAccess.make_dir_recursive_absolute(target_vtf_path.get_base_dir());
+		var error = DirAccess.copy_absolute(vtf_path, target_vtf_path);
+
+		if error:
+			VMFLogger.error("Failed to copy texture: " + str(error));
 
 func clear_structure() -> void:
 	_structure = {};
@@ -402,8 +409,13 @@ func import_map() -> void:
 	if not VMFConfig.config: return;
 	if not vmf: return;
 
+	var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
+
 	clear_structure();
 	read_vmf();
 	import_materials();
+
+	if fs: await fs.resources_reimported;
+
 	import_geometry();
 	import_entities();
