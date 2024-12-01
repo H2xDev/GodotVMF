@@ -42,6 +42,7 @@ static func clear_caches() -> void:
 	vertex_cache = [];
 	intersections = {};
 	material_cache = {};
+	texture_sizes_cache = {};
 
 static func get_planes_intersection_point(side, side2, side3) -> Variant:
 	var d: Array[int] = [side.id, side2.id, side3.id];

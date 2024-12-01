@@ -98,7 +98,7 @@ static func load(path: String):
 
 		if details.get("$alphatest") == 1:
 			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
-			material.alpha_scissor_threshold = details.get("$alphatestreference", 0.0);
+			material.alpha_scissor_threshold = details.get("$alphatestreference", 0.5);
 
 		if details.get("$nocull") == 1:
 			material.cull_mode = BaseMaterial3D.CULL_DISABLED;

@@ -227,6 +227,7 @@ func get_mesh() -> ArrayMesh:
 			'solid': solids,
 		},
 	};
+
 	var offset: Vector3 = entity.origin if "origin" in entity else Vector3.ZERO;
 	
 	return VMFTool.create_mesh(struct, offset);

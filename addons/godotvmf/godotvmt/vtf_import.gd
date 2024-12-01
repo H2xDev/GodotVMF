@@ -21,4 +21,7 @@ func _import(path: String, save_path: String, _a, _b, _c):
 	if !vtf: return ERR_FILE_UNRECOGNIZED;
 
 	var texture = vtf.compile_texture();
-	return ResourceSaver.save(texture, path_to_save, ResourceSaver.FLAG_CHANGE_PATH);
+	if not texture: return ERR_FILE_CORRUPT;
+
+	return ResourceSaver.save(texture, path_to_save, ResourceSaver.FLAG_COMPRESS);
+

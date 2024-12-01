@@ -71,6 +71,8 @@ var geometry: Node3D:
 var navmesh: NavigationRegion3D:
 	get: return get_node_or_null("NavigationMesh");
 
+var has_imported_resources = false;
+
 func _validate_property(property: Dictionary) -> void:
 	if property.name == "vmf":
 		property.hint = PROPERTY_HINT_GLOBAL_FILE if use_external_file else PROPERTY_HINT_FILE
@@ -247,8 +249,6 @@ func import_materials() -> void:
 
 		for material in list:
 			import_material(material);
-		
-		if fs: fs.scan();
 
 	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
@@ -263,7 +263,11 @@ func import_material(material: String):
 	if ResourceLoader.exists(target_path): return;
 
 	DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
-	DirAccess.copy_absolute(vmt_path, target_path);
+	var has_error = DirAccess.copy_absolute(vmt_path, target_path);
+
+	if not has_error:
+		print("Imported material: " + material);
+		has_imported_resources = true;
 
 func import_textures(material: String):
 	material = material.to_lower();
@@ -280,13 +284,16 @@ func import_textures(material: String):
 		var vtf_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + details[key].to_lower() + ".vtf");
 		var target_vtf_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + details[key].to_lower() + ".vtf");
 
+		if not FileAccess.file_exists(vtf_path): continue;
 		if ResourceLoader.exists(target_vtf_path): continue;
 
 		DirAccess.make_dir_recursive_absolute(target_vtf_path.get_base_dir());
-		var error = DirAccess.copy_absolute(vtf_path, target_vtf_path);
+		var has_error = DirAccess.copy_absolute(vtf_path, target_vtf_path);
 
-		if error:
-			VMFLogger.error("Failed to copy texture: " + str(error));
+		if not has_error: 
+			has_imported_resources = true;
+			continue;
+		VMFLogger.error("Failed to copy texture: " + str(has_error));
 
 func clear_structure() -> void:
 	_structure = {};
@@ -404,6 +411,8 @@ func generate_occluder():
 	occluder.set_owner(_owner);
 
 func import_map() -> void:
+	has_imported_resources = false;
+
 	VMFConfig.reload();
 	if not VMFConfig.validate_config(): return;
 	if not VMFConfig.config: return;
@@ -415,7 +424,10 @@ func import_map() -> void:
 	read_vmf();
 	import_materials();
 
-	if fs: await fs.resources_reimported;
+	print("Imported map: " + str(has_imported_resources));
+	if fs && has_imported_resources: 
+		fs.scan();
+		await fs.resources_reimported;
 
 	import_geometry();
 	import_entities();

@@ -149,7 +149,9 @@ var hires_image_format:
 	get: return seek(52).get_32();
 
 var mipmap_count:
-	get: return seek(56).get_8();
+	get: 
+		if not use_mipmaps: return 1;
+		return seek(56).get_8();
 
 var low_res_image_format:
 	get: return seek(57).get_32();
@@ -169,6 +171,9 @@ var num_resources:
 	get:
 		if version < 7.3: return 0;
 		return seek(75).get_32();
+
+var use_mipmaps:
+	get: return not (flags & Flags.TEXTUREFLAGS_NOMIP);
 
 var frame_duration = 0;
 var path = '';
@@ -228,7 +233,7 @@ static var shader_material: ShaderMaterial;
 func _read_frame(frame):
 	var data = PackedByteArray();
 	var byteRead = 0;
-	var isDXT1 = hires_image_format == ImageFormat.IMAGE_FORMAT_DXT1;
+	var is_dxt_1 = hires_image_format == ImageFormat.IMAGE_FORMAT_DXT1;
 	var format = format_map[str(hires_image_format)];
 	var use_mipmaps = not (flags & Flags.TEXTUREFLAGS_NOMIP);
 
@@ -238,7 +243,7 @@ func _read_frame(frame):
 		var mipWidth = max(1, width >> i);
 		var mipHeight = max(1, height >> i);
 
-		var multiplier = 8 if isDXT1 else 16;
+		var multiplier = 8 if is_dxt_1 else 16;
 		var mip_size = max(1, mipWidth / 4) * max(1, mipHeight / 4) * multiplier;
 
 		file.seek(file.get_length() - byteRead - mip_size - mip_size * frame);
