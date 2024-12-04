@@ -1,30 +1,31 @@
 {
-	"gameInfoPath": "C:/Steam/steamapps/sourcemods/mymod",
+	"gameinfo_path": "res://",
 
 	"import": {
-		"scale": 0.025,
-		"generateCollision": true,
-		"generateLightmapUV2": true,
-		"lightmapTexelSize": 0.4,
-		"instancesFolder": "res://instances",
-		"entitiesFolder": "res://entities",
-		"geometryFolder": "res://geometry"
+		"scale": 0.02,
+		"generate_collision": true,
+		"generate_lightmap_uv2": true,
+		"lightmap_texel_size": 0.4,
+		"instances_folder": "res://instances",
+		"entities_folder": "res://entities",
+		"geometry_folder": "res://geometry"
 	},
 
 	"models": {
-		"lightmapTexelSize": 0.4,
-		"targetFolder": "res://"
+		"import": true,
+		"lightmap_texel_size": 0.4,
+		"target_folder": "res://"
 	},
 
-	"material": {
-		"importMode": 0,
+	"materials": {
+		"import_mode": 1,
 		"ignore": [
 			"TOOLS/TOOLSNODRAW",
 			"TOOLS/TOOLSSKYBOX",
 			"TOOLS/TOOLSINVISIBLE"
 		],
-		"fallbackMaterial": null,
-		"defaultTextureSize": 512,
-		"targetFolder": "res://materials"
+		"fallback_material": null,
+		"default_texture_size": 512,
+		"target_folder": "res://materials"
 	}
 }

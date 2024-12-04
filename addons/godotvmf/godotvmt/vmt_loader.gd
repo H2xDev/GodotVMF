@@ -121,7 +121,7 @@ static func load(path: String):
 
 		if key in texture_mappings:
 			var material_key = texture_mappings[key];
-			var root = VMFConfig.config.material.targetFolder
+			var root = VMFConfig.materials.target_folder;
 			var texture_path = str(details['$' + key]).to_lower()
 
 			if material_key in material:
@@ -154,7 +154,7 @@ static var last_cache_changed: float;
 static var cached_materials: Dictionary;
 
 static func get_material(material: String):
-	var material_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".tres").to_lower();
+	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
 	if last_cache_changed == null:
 		last_cache_changed = 0;

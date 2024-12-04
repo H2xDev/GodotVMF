@@ -90,9 +90,6 @@ func import_geometry(_reimport := false) -> void:
 
 	if _reimport:
 		VMFConfig.reload();
-		
-		if not VMFConfig.validate_config(): return;
-		if not VMFConfig.config: return;
 
 		read_vmf();
 		import_materials();
@@ -113,29 +110,37 @@ func import_geometry(_reimport := false) -> void:
 	geometry_mesh.set_owner(_owner);
 
 	var transform = geometry_mesh.global_transform if geometry_mesh.is_inside_tree() else self.transform;
-	var texel_size = VMFConfig.config.import.lightmapTexelSize;
+	var texel_size = VMFConfig.import.lightmap_texel_size;
 
-	if VMFConfig.config.import.generateLightmapUV2 and not is_runtime:
+	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
 		mesh.lightmap_unwrap(transform, texel_size);
 
+	clear_ignored_surfaces(geometry_mesh);
+	generate_collisions(geometry_mesh);
+	generate_navmesh(geometry_mesh);
+
+func clear_ignored_surfaces(geometry_mesh: MeshInstance3D):
 	# NOTE Clear surface that has materials in ignore list
 	# FIXME Currently we don't have a way to remove surface from ArrayMesh since `surface_remove` were removed in 4.x
 	#  		Engine's github issue: https://github.com/godotengine/godot/issues/67181
 
-	# var _ignore_textures = VMFConfig.config.material.ignore;
+	var ignored_textures = VMFConfig.materials.ignore;
+	var duplicated_mesh = ArrayMesh.new();
+	var original_mesh = geometry_mesh.mesh;
+	var mt = MeshDataTool.new();
 
-	# for surface_idx in geometry_mesh.mesh.get_surface_count():
-	# 	var material = geometry_mesh.mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
-	# 	var isIgnored = _ignore_textures.any(func(rx: String) -> bool: return material.match(rx.to_lower()));
-	# 	if isIgnored:
-	# 		geometry_mesh.mesh.surface_remove(surface_idx);
-	# 		continue;
+	for surface_idx in original_mesh.get_surface_count():
+		var material = geometry_mesh.mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material.match(rx.to_lower()));
+		if is_ignored: continue;
 
-	generate_collisions(geometry_mesh);
-	generate_navmesh(geometry_mesh);
+		mt.create_from_surface(original_mesh, surface_idx);
+		mt.commit_to_surface(duplicated_mesh, surface_idx);
+
+	geometry_mesh.mesh = duplicated_mesh;
 
 func generate_collisions(geometry_mesh):
-	if not VMFConfig.config.import.generateCollision: return;
+	if not VMFConfig.import.generate_collision: return;
 
 	var bodies = VMFTool.generate_collisions(geometry_mesh.mesh);
 	var body_idx = 0
@@ -147,9 +152,9 @@ func generate_collisions(geometry_mesh):
 	save_collision_file();
 
 func generate_navmesh(geometry_mesh: MeshInstance3D):
-	if not VMFConfig.config.import.get("useNavigationMesh", false): return;
+	if not VMFConfig.import.use_navigation_mesh: return;
 
-	var navmesh_preset_path = VMFConfig.config.import.get("navigationMeshPreset", "default");
+	var navmesh_preset_path = VMFConfig.import.navigation_mesh_preset;
 	var navmesh_preset = null;
 
 	if ResourceLoader.exists(navmesh_preset_path):
@@ -168,7 +173,7 @@ func generate_navmesh(geometry_mesh: MeshInstance3D):
 
 func save_geometry_file(target_mesh: Mesh):
 	if not save_geometry: return target_mesh;
-	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.config.import.geometryFolder, _vmf_identifer()];
+	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.import.geometry_folder, _vmf_identifer()];
 	
 	if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
 		DirAccess.make_dir_recursive_absolute(resource_path.get_base_dir());
@@ -189,7 +194,7 @@ func save_collision_file() -> void:
 	for body in collisions:
 		var collision := body.get_node('collision');
 		var shape = collision.shape;
-		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.config.import.geometryFolder, _vmf_identifer(), body.name];
+		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.import.geometry_folder, _vmf_identifer(), body.name];
 		var error := ResourceSaver.save(collision.shape, save_path, ResourceSaver.FLAG_COMPRESS);
 
 		if error:
@@ -201,17 +206,53 @@ func save_collision_file() -> void:
 func _vmf_identifer() -> String:
 	return vmf.split('/')[-1].replace('.', '_');
 
-func normalize_path(path: String) -> String:
-	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
+func import_models():
+	if not VMFConfig.models.import: return;
+	if not "entity" in _structure: return;
+
+	for entity in _structure.entity:
+		if not "model" in entity: continue;
+		var model_path = entity.get("model", "").to_lower().get_basename();
+		if not model_path: continue;
+
+		var mdl_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".mdl");
+		var vtx_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".vtx");
+		var vtx_dx90_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".dx90.vtx");
+		var vvd_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".vvd");
+		var phy_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".phy");
+		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
+
+		if ResourceLoader.exists(target_path + ".mdl"): continue;
+
+		if not FileAccess.file_exists(mdl_path): continue;
+		if not FileAccess.file_exists(vtx_path): vtx_path = vtx_dx90_path;
+		if not FileAccess.file_exists(vtx_path): continue;
+		if not FileAccess.file_exists(vvd_path): continue;
+		if not FileAccess.file_exists(phy_path): continue;
+
+		var model_materials = MDLReader.new(mdl_path).get_possible_material_paths();
+
+		for material_path in model_materials:
+			import_textures(material_path);
+			import_material(material_path);
+
+		DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
+		DirAccess.copy_absolute(vtx_path, target_path + '.' + vtx_path.get_extension());
+		DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
+		DirAccess.copy_absolute(phy_path, target_path + ".phy");
+		DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
+
+		has_imported_resources = true;
+
 
 func import_materials() -> void:
-	if VMFConfig.config.material.importMode == MaterialImportMode.USE_EXISTING:
+	if VMFConfig.materials.import_mode == VMFConfigClass.MaterialsConfig.ImportMode.USE_EXISTING:
 		return;
 
 	output.emit("Importing materials...");
 	var list: Array[String] = [];
 	var ignore_list: Array[String];
-	ignore_list.assign(VMFConfig.config.material.ignore);
+	ignore_list.assign(VMFConfig.material.ignore);
 	
 	var elapsed_time := Time.get_ticks_msec();
 
@@ -258,8 +299,8 @@ func import_materials() -> void:
 func import_material(material: String):
 	material = material.to_lower();
 
-	var vmt_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + material + ".vmt");
-	var target_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + material + ".vmt");
+	var vmt_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
+	var target_path = VMFUtils.normalize_path(VMFConfig.material.targetFolder + "/" + material + ".vmt");
 	if ResourceLoader.exists(target_path): return;
 
 	DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
@@ -272,7 +313,11 @@ func import_material(material: String):
 func import_textures(material: String):
 	material = material.to_lower();
 
-	var target_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + material + ".vmt");
+	var target_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
+	if not FileAccess.file_exists(target_path): 
+		VMFLogger.error("Material not found: " + target_path);
+		return;
+
 	var details  = VDFParser.parse(target_path).values()[0];
 
 	# NOTE: CS:GO/L4D
@@ -281,8 +326,8 @@ func import_textures(material: String):
 
 	for key in MATERIAL_KEYS_TO_IMPORT:
 		if key not in details: continue;
-		var vtf_path = normalize_path(VMFConfig.config.gameInfoPath + "/materials/" + details[key].to_lower() + ".vtf");
-		var target_vtf_path = normalize_path(VMFConfig.config.material.targetFolder + "/" + details[key].to_lower() + ".vtf");
+		var vtf_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + details[key].to_lower() + ".vtf");
+		var target_vtf_path = VMFUtils.normalize_path(VMFConfig.material.target_folder + "/" + details[key].to_lower() + ".vtf");
 
 		if not FileAccess.file_exists(vtf_path): continue;
 		if ResourceLoader.exists(target_vtf_path): continue;
@@ -321,10 +366,10 @@ func read_vmf() -> void:
 		VMFLogger.warn("Read vmf in " + str(t) + "ms");
 
 func get_entity_scene(clazz: String):
-	var res_path: String = (VMFConfig.config.import.entitiesFolder + '/' + clazz + '.tscn').replace('//', '/').replace('res:/', 'res://');
+	var res_path: String = (VMFConfig.import.entities_folder + '/' + clazz + '.tscn').replace('//', '/').replace('res:/', 'res://');
 	# NOTE: In case when custom entity wasn't found - use aliases from config
 	if not ResourceLoader.exists(res_path):
-		res_path = VMFConfig.config.get("entityAliases", {}).get(clazz, "");
+		res_path = VMFConfig.import.entity_aliases.get(clazz, "");
 
 	# NOTE: In case when custom entity wasn't found - use plugin's entities list
 	if not ResourceLoader.exists(res_path):
@@ -338,7 +383,7 @@ func get_entity_scene(clazz: String):
 func import_entities(_reimport := false) -> void:
 	output.emit("Importing entities...");
 	var elapsed_time := Time.get_ticks_msec();
-	var import_scale: float = VMFConfig.config.import.scale;
+	var import_scale: float = VMFConfig.import.scale;
 
 	if _reimport: read_vmf();
 
@@ -412,19 +457,17 @@ func generate_occluder():
 
 func import_map() -> void:
 	has_imported_resources = false;
-
-	VMFConfig.reload();
-	if not VMFConfig.validate_config(): return;
-	if not VMFConfig.config: return;
 	if not vmf: return;
+
+	VMFConfig.load_config();
 
 	var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
 
 	clear_structure();
 	read_vmf();
 	import_materials();
+	import_models();
 
-	print("Imported map: " + str(has_imported_resources));
 	if fs && has_imported_resources: 
 		fs.scan();
 		await fs.resources_reimported;

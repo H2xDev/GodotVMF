@@ -16,8 +16,7 @@ static func define_alias(name: String, value: Node):
 @export var flags: int = 0;
 
 var config:
-	get:
-		return VMFConfig.config;
+	get: return VMFConfig;
 
 static var aliases: Dictionary = {};
 
@@ -267,7 +266,6 @@ func get_entity_convex_shape():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
-
 	var struct := {
 		'world': {
 			'solid': solids,
@@ -275,7 +273,6 @@ func get_entity_convex_shape():
 	};
 
 	var origin = entity.origin if "origin" in entity else Vector3.ZERO;
-
 	var mesh := VMFTool.create_mesh(struct, origin);
 
 	return mesh.create_convex_shape();

@@ -4,14 +4,10 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 	var mesh_instance = MeshInstance3D.new();
 	var array_mesh = ArrayMesh.new();
 	var st = SurfaceTool.new();
+
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
 	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
-	var materials_root = options.get(
-		"materials_root", 
-		VMFConfig.config \
-			.get("material", {}) \
-			.get("targetFolder", "res://materials/")
-	);
+	var materials_root = options.get("materials_root", VMFConfig.materials.target_folder);
 
 	var _process_mesh = func(mesh: VTXReader.VTXMesh, body_part_index: int, model_index: int, mesh_index: int):
 		var mdl_model = mdl.body_parts[body_part_index].models[model_index];
@@ -69,7 +65,7 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 
 	skeleton.name = "skeleton";
 
-	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, VMFConfig.config.models.lightmapTexelSize);
+	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, VMFConfig.models.lightmap_texel_size);
 	mesh_instance.name = "mesh";
 	mesh_instance.set_skeleton_path("skeleton");
 	mesh_instance.add_child(skeleton);
@@ -177,16 +173,13 @@ static func generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D
 
 	return skeleton;
 
-static func normalize_path(path: String) -> String:
-	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
-
 static func assign_materials(mesh: ArrayMesh, mdl: MDLReader, mesh_instance: MeshInstance3D, materials_root: String):
 	var materials = [];
 	var skin = 0;
 
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
-			var path = normalize_path(dir + "/" + tex.name);
+			var path = VMFUtils.normalize_path(dir + "/" + tex.name);
 			var material = VMTLoader.get_material(path);
 			if not material: continue;
 

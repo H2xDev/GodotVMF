@@ -104,7 +104,7 @@ static func get_material(material: String):
 	return material_cache[material];
 
 static func get_texture_size(side_material: String) -> Vector2:
-	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
+	var default_texture_size: int = VMFConfig.materials.default_texture_size;
 	var has_cached_value = side_material in texture_sizes_cache;
 
 	if has_cached_value and texture_sizes_cache[side_material]:
@@ -132,7 +132,7 @@ static func get_texture_size(side_material: String) -> Vector2:
 	return tsize;
 
 static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
-	var default_texture_size: int = VMFConfig.config.material.defaultTextureSize;
+	var default_texture_size: int = VMFConfig.materials.default_texture_size;
 	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};
 
 	var ux: float = side.uaxis.x;
@@ -239,7 +239,7 @@ static func create_steam_audio_geometry(surface_prop: String, collision_shape: C
 static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0, 0, 0)) -> ArrayMesh:
 	clear_caches();
 
-	var _scale: float = VMFConfig.config.import.scale;
+	var _scale: float = VMFConfig.import.scale;
 	var t := Time.get_ticks_msec();
 
 	if not "solid" in vmf_structure.world:

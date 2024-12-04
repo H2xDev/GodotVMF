@@ -16,7 +16,7 @@ func _get_option_visibility(path: String, optionName: StringName, options: Dicti
 
 func _import(path: String, save_path: String, _a, _b, _c):
 	var path_to_save = save_path + '.' + _get_save_extension();
-	var vtf = VTFLoader.create(path, 0);
+	var vtf = VTFLoader.create(path, 0.033); # 30 FPS
 
 	if !vtf: return ERR_FILE_UNRECOGNIZED;
 

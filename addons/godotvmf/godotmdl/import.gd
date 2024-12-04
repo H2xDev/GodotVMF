@@ -54,9 +54,12 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 		push_error("Error while reading MDL or VTX file.");
 		return false;
 
+	if not vtx.header:
+		return ERR_PARSE_ERROR;
+
 	if (mdl.header.checksum != vtx.header.check_sum):
 		push_error("MDL and VTX checksums do not match.");
-		return false;
+		return ERR_PARSE_ERROR;
 
 	var path_to_save = save_path + '.' + _get_save_extension();
 

@@ -538,3 +538,17 @@ func _read_bones():
 		bone_index += 1;
 
 	bone_controllers = ByteReader.read_array(file, header, "bone_controller_offset", "bone_controller_count", MDLBoneController);
+
+
+static func normalize_path(path: String) -> String:
+	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
+
+func get_possible_material_paths():
+	var materials = [];
+
+	for tex in textures:
+		for dir in textureDirs:
+			var path = normalize_path(dir + "/" + tex.name);
+			materials.append(path);
+
+	return materials;

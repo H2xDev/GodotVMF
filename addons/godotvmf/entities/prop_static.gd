@@ -11,10 +11,8 @@ func _apply_entity(e):
 	if last_cache_changed == null:
 		last_cache_changed = 0;
 
-	assert("models" in VMFConfig.config, "Missing 'models' in VMFConfig.config");
-
 	var cache_key = e.get('model');
-	var model_path = (VMFConfig.config.models.targetFolder + "/" + e.get('model')).replace("\\", "/").replace("//", "/").replace("res:/", "res://");
+	var model_path = (VMFConfig.models.target_folder + "/" + e.get('model')).replace("\\", "/").replace("//", "/").replace("res:/", "res://");
 
 	if Time.get_ticks_msec() - last_cache_changed > 10000:
 		cached_models = {};
@@ -36,8 +34,8 @@ func _apply_entity(e):
 	model.reparent(get_vmfnode().geometry);
 	model.name = e.get('model', 'prop_static').get_file().get_basename() + str(model.get_instance_id());
 
-	var fade_min = entity.get('fademindist', 0.0) * VMFConfig.config.import.scale;
-	var fade_max = entity.get('fademaxdist', 0.0) * VMFConfig.config.import.scale;
+	var fade_min = entity.get('fademindist', 0.0) * VMFConfig.import.scale;
+	var fade_max = entity.get('fademaxdist', 0.0) * VMFConfig.import.scale;
 	var fade_margin = fade_max - fade_min;
 
 	model.visibility_range_end = max(0.0, fade_max);
