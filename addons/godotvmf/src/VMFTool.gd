@@ -3,7 +3,6 @@ class_name VMFTool
 static var vertex_cache: Array = [];
 static var intersections: Dictionary = {};
 
-## Record<material, Vector2>
 static var texture_sizes_cache: Dictionary = {};
 static var material_cache: Dictionary = {};
 

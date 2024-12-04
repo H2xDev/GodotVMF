@@ -66,6 +66,7 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 
 ## Additional things
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
+- [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY). A game made with this tool
 
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  
