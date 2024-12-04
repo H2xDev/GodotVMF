@@ -4,11 +4,6 @@ extends Node
 
 const CONFIG_FILE_PATH = "res://vmf.config.json";
 
-var gameinfo_path: String = "res://";
-var models: ModelsConfig = ModelsConfig.new();
-var materials: MaterialsConfig = MaterialsConfig.new();
-var import: ImportConfig = ImportConfig.new();
-
 class ModelsConfig:
 	## If true, the importer will import models from the mod folder
 	var import: bool = false;
@@ -32,10 +27,10 @@ class MaterialsConfig:
 	var target_folder: String = "res://materials";
 
 	## Materials in this list will be ignored during import
-	var ignore: Array[String] = [];
+	var ignore: Array = [];
 
 	## A material that will be used as a fallback for missing materials
-	var fallback_material: String = "";
+	var fallback_material = "";
 
 	## Fallback texture size for missing textures
 	var default_texture_size: int = 512;
@@ -71,13 +66,19 @@ class ImportConfig:
 	## If specified, the importer will use this preset for the navigation mesh
 	var navigation_mesh_preset: String = "";
 
+var gameinfo_path: String = "res://";
+var models: ModelsConfig = ModelsConfig.new();
+var materials: MaterialsConfig = MaterialsConfig.new();
+var import: ImportConfig = ImportConfig.new();
+
 func assign(target, source: Dictionary):
 	for key in source.keys():
 		if not key in target: continue;
 
-		target[key]	= assign(target[key], source[key]) \
-			if source[key] is Dictionary \
-			else target[key];
+		if source[key] is Dictionary and source[key] is not Array:
+			target[key]	= assign(target[key], source[key]);
+		else:
+			target[key] = source[key];
 
 	return target;
 

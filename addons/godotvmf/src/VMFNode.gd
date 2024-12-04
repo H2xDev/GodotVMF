@@ -212,6 +212,8 @@ func import_models():
 
 	for entity in _structure.entity:
 		if not "model" in entity: continue;
+		if entity.classname != "prop_static": continue;
+
 		var model_path = entity.get("model", "").to_lower().get_basename();
 		if not model_path: continue;
 
@@ -252,7 +254,7 @@ func import_materials() -> void:
 	output.emit("Importing materials...");
 	var list: Array[String] = [];
 	var ignore_list: Array[String];
-	ignore_list.assign(VMFConfig.material.ignore);
+	ignore_list.assign(VMFConfig.materials.ignore);
 	
 	var elapsed_time := Time.get_ticks_msec();
 
@@ -300,15 +302,15 @@ func import_material(material: String):
 	material = material.to_lower();
 
 	var vmt_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
-	var target_path = VMFUtils.normalize_path(VMFConfig.material.targetFolder + "/" + material + ".vmt");
+	var target_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + material + ".vmt");
+
 	if ResourceLoader.exists(target_path): return;
+	if not FileAccess.file_exists(vmt_path): return;
 
 	DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
 	var has_error = DirAccess.copy_absolute(vmt_path, target_path);
 
-	if not has_error:
-		print("Imported material: " + material);
-		has_imported_resources = true;
+	if not has_error: has_imported_resources = true;
 
 func import_textures(material: String):
 	material = material.to_lower();
@@ -318,7 +320,7 @@ func import_textures(material: String):
 		VMFLogger.error("Material not found: " + target_path);
 		return;
 
-	var details  = VDFParser.parse(target_path).values()[0];
+	var details  = VDFParser.parse(target_path, true).values()[0];
 
 	# NOTE: CS:GO/L4D
 	if "insert" in details:
@@ -327,7 +329,7 @@ func import_textures(material: String):
 	for key in MATERIAL_KEYS_TO_IMPORT:
 		if key not in details: continue;
 		var vtf_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + details[key].to_lower() + ".vtf");
-		var target_vtf_path = VMFUtils.normalize_path(VMFConfig.material.target_folder + "/" + details[key].to_lower() + ".vtf");
+		var target_vtf_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + details[key].to_lower() + ".vtf");
 
 		if not FileAccess.file_exists(vtf_path): continue;
 		if ResourceLoader.exists(target_vtf_path): continue;

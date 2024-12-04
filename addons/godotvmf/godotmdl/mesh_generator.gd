@@ -5,8 +5,10 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 	var array_mesh = ArrayMesh.new();
 	var st = SurfaceTool.new();
 
+	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
+
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
+	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * scale);
 	var materials_root = options.get("materials_root", VMFConfig.materials.target_folder);
 
 	var _process_mesh = func(mesh: VTXReader.VTXMesh, body_part_index: int, model_index: int, mesh_index: int):
@@ -75,32 +77,67 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 
 	generate_collision(mesh_instance, skeleton, phy, options);
 	assign_materials(array_mesh, mdl, mesh_instance, materials_root);
-	create_occluder(mesh_instance);
+	create_occluder(mesh_instance, options);
 
 	return mesh_instance;
 
-static func create_occluder(mesh_instance: MeshInstance3D):
+static func create_occluder(mesh_instance: MeshInstance3D, options):
+	if not options.generate_occluder: return;
+
 	var occluder := OccluderInstance3D.new();
-	var box := BoxOccluder3D.new();
-	var vertices = mesh_instance.mesh.get_faces();
-	var average_center = Vector3.ZERO;
+	var am: ArrayMesh = ArrayMesh.new();
+	var box = ArrayOccluder3D.new();
 
-	for vertex in vertices:
-		average_center += vertex;
+	var colliders = VMFUtils.get_children_recursive(mesh_instance).filter(func(n): return n is CollisionShape3D);
+	if not options.primitive_occluder:
+		var st = SurfaceTool.new();
+		var vertices = [];
+		var indices = [];
 
-	average_center /= vertices.size();
+		var begin_vid = 0;
 
-	box.size = mesh_instance.get_aabb().size / 1.5;
+		st.begin(Mesh.PRIMITIVE_TRIANGLES);
+
+		for child in colliders:
+			var s: ConvexPolygonShape3D = child.shape;
+
+			for p in s.points:
+				st.add_vertex(p);
+
+			for i in range(s.points.size()):
+				st.add_index(begin_vid + i);
+
+			begin_vid += s.points.size();
+
+		st.commit(am);
+		st.optimize_indices_for_cache();
+
+		var arrays = am.surface_get_arrays(0);
+		box.set_arrays(arrays[Mesh.ARRAY_VERTEX], arrays[Mesh.ARRAY_INDEX]);
+	else:
+		box = BoxOccluder3D.new();
+		var mesh = mesh_instance.mesh;
+		var average_position = Vector3.ZERO;
+		var points = mesh.get_faces();
+
+		for point in points:
+			average_position += point;
+
+		average_position /= points.size();
+
+		box.size = mesh_instance.get_mesh().get_aabb().size * options.primitive_occluder_scale;
+		occluder.position = average_position;
+
 	occluder.occluder = box;
-	occluder.position = average_center;
+	occluder.name = "occluder";
 
 	mesh_instance.add_child(occluder);
 	occluder.set_owner(mesh_instance);
 
 static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
-
+	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * options.scale);
+	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * scale);
 
 	var yup_to_zup = Basis().rotated(Vector3(1, 0, 0), PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
@@ -146,6 +183,7 @@ static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReade
 		surface_index += 1;
 
 static func generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D:
+	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
 	var skeleton = Skeleton3D.new();
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
 	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI);
@@ -160,7 +198,7 @@ static func generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D
 		var parent_bone = mdl.bones[bone.parent];
 		var parent_transform = parent_bone.pos_to_bone if parent_bone else Transform3D.IDENTITY;
 		var target_transform = bone.pos_to_bone * parent_transform;
-		var transform = Transform3D(Basis(bone.quat) * additional_basis, bone.pos * options.scale);
+		var transform = Transform3D(Basis(bone.quat) * additional_basis, bone.pos * scale);
 
 		skeleton.set_bone_global_pose_override(bone.id, target_transform, 1.0);
 		skeleton.set_bone_pose_position(bone.id, transform.origin);

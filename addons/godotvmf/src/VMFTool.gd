@@ -354,7 +354,6 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 				
 		sf.optimize_indices_for_cache();
 		sf.generate_normals();
-		sf.generate_tangents();
 		sf.commit(mesh);
 
 		mesh.set_meta("surface_material_" + str(mesh.get_surface_count() - 1), sides[0].side.material);

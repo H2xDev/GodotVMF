@@ -24,4 +24,3 @@ func _import(path: String, save_path: String, _a, _b, _c):
 	if not texture: return ERR_FILE_CORRUPT;
 
 	return ResourceSaver.save(texture, path_to_save, ResourceSaver.FLAG_COMPRESS);
-

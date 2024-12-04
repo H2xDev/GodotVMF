@@ -79,6 +79,7 @@ static func load(path: String):
 	var shader_name = structure.keys()[0];
 	var details = structure[shader_name];
 	var material = null; 
+	var is_blend_texture = shader_name == "worldvertextransition";
 	
 	# NOTE: CS:GO/L4D
 	if "insert" in details:
@@ -88,7 +89,7 @@ static func load(path: String):
 		var shader_path = "res://" + details["$shader"] + ".gdshader";
 		material = VMTShaderBasedMaterial.load(shader_path);
 	else:
-		material = StandardMaterial3D.new();
+		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
 	material.set_meta("surfaceprop", details.get("$surfaceprop", "default"));
 
@@ -114,7 +115,6 @@ static func load(path: String):
 		if details.get("$nextpass"):
 			var shader_material = VMTShaderBasedMaterial.load("res://" + details["$nextpass"] + ".gdshader");
 			material.next_pass = shader_material;
-
 
 	for key in details.keys():
 		key = key.replace('$', '');

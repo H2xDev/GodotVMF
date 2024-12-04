@@ -15,13 +15,18 @@ func _can_import_threaded(): return false;
 func _get_import_options(str, int):
 	return [
 		{
+			name = "use_global_scale",
+			default_value = true,
+			type = TYPE_BOOL,
+		},
+		{
 			name = "scale",
-			default_value = 0.025,
+			default_value = 0.02,
 			type = TYPE_FLOAT,
 		},
 		{
 			name = "additional_rotation",
-			property_hint = "In case you have wrong oriented model you can add the additional rotaion here to correct the original orientation",
+			description = "In case you have wrong oriented model you can add the additional rotaion here to correct the original orientation",
 			default_value = Vector3.ZERO,
 			type = TYPE_VECTOR3,
 		},
@@ -30,7 +35,23 @@ func _get_import_options(str, int):
 			default_value = "",
 			type = TYPE_STRING,
 			property_hint = PROPERTY_HINT_GLOBAL_DIR,
-			hint_string = "Materials Root",
+		},
+		{
+			name = "generate_occluder",
+			default_value = true,
+			type = TYPE_BOOL,
+		},
+		{
+			name = "primitive_occluder",
+			default_value = false,
+			type = TYPE_BOOL,
+			description = "Generates a simple box for the model's occluder. If disabled, the occluder will be generated from the model's collision data."
+		},
+		{
+			name = "primitive_occluder_scale",
+			default_value = Vector3.ONE,
+			type = TYPE_VECTOR3,
+			description = "Occluder box scale"
 		}
 	];
 
