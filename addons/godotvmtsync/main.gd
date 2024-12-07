@@ -13,7 +13,7 @@ func _exit_tree():
 	if watcher_thread: watcher_thread.wait_to_finish();
 
 func is_config_valid():
-	VMFConfig.reload();
+	VMFConfig.load_config();
 	var vtfcmd = VMFConfig.vtfcmd;
 
 	if vtfcmd == "":
