@@ -70,6 +70,7 @@ var gameinfo_path: String = "res://";
 var models: ModelsConfig = ModelsConfig.new();
 var materials: MaterialsConfig = MaterialsConfig.new();
 var import: ImportConfig = ImportConfig.new();
+var vtfcmd: String = "";
 
 func assign(target, source: Dictionary):
 	for key in source.keys():
@@ -89,6 +90,7 @@ func load_config():
 	file.close();
 
 	gameinfo_path = json.get("gameinfo_path", "res://");
+	vtfcmd = json.get("vtfcmd", "");
 	models = assign(models, json.get("models", {}));
 	materials = assign(materials, json.get("materials", {}));
 	import = assign(import, json.get("import", {}));
