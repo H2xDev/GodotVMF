@@ -14,7 +14,8 @@ func _exit_tree():
 
 func is_config_valid():
 	VMFConfig.reload();
-	var vtfcmd = VMFConfig.config.get("vtfcmd", "");
+	var vtfcmd = VMFConfig.vtfcmd;
+
 	if vtfcmd == "":
 		push_error("vtfcmd not set in vmf.config.json");
 		return false;

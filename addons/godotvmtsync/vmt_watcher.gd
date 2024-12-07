@@ -1,7 +1,7 @@
 class_name VMTWatcher extends RefCounted
 
 var config:
-	get: return VMFConfig.config;
+	get: return VMFConfig;
 
 var mod_materials_folder:
 	get: return _path_join(config.gameInfoPath, "materials");
@@ -84,7 +84,7 @@ func _debounce():
 	current_timer.start();
 
 func _get_texture_checksum(material_path: String):
-	var key = material_path.replace(config.material.targetFolder, "");
+	var key = material_path.replace(config.materials.target_folder, "");
 	var material = project_materials.get(key, null);
 
 	if not material:
@@ -95,12 +95,12 @@ func _get_texture_checksum(material_path: String):
 
 func _collect_texture_checksums():
 	for texture_key in project_textures.keys():
-		var file = _path_join(config.material.targetFolder, texture_key);
+		var file = _path_join(config.materials.target_folder, texture_key);
 		texture_checksums[texture_key] = FileAccess.get_md5(file);
 		_update_checksum_file();
 
 func _preload_resources():
-	var materials_folder = config.material.targetFolder;
+	var materials_folder = config.materials.target_folder;
 	var time = Time.get_ticks_msec();
 
 	var resources = get_all_files(materials_folder, "tres");
@@ -110,7 +110,7 @@ func _preload_resources():
 	var elapsed = Time.get_ticks_msec() - time;
 
 	for file in resources:
-		var key = file.replace(config.material.targetFolder, "");
+		var key = file.replace(config.materials.target_folder, "");
 		var data = project_materials.get(key, project_textures.get(key, ResourceLoader.load(file)));
 
 		if not data:
@@ -126,19 +126,19 @@ func _preload_resources():
 
 		if not texture: continue;
 
-		var basetexture = texture.resource_path.replace(config.material.targetFolder, '');
+		var basetexture = texture.resource_path.replace(config.materials.target_folder, '');
 
 		project_textures[basetexture] = texture;
 
 func _recheck_materials():
 	for key in project_materials.keys():
-		var file = _path_join(config.material.targetFolder, key);
+		var file = _path_join(config.materials.target_folder, key);
 
 		if not FileAccess.file_exists(file):
 			_on_material_removed(file);
 
 	for key in project_materials.keys():
-		var file = _path_join(config.material.targetFolder, key);
+		var file = _path_join(config.materials.target_folder, key);
 		var vmt_file = _to_target_path(file).replace(".tres", ".vmt");
 
 		var oldcheckSum = material_checksums.get(key, null);
@@ -155,7 +155,7 @@ func _recheck_materials():
 
 func _recheck_textures():
 	for key in project_textures.keys():
-		var file = _path_join(config.material.targetFolder, key);
+		var file = _path_join(config.materials.target_folder, key);
 		var vtf_file = ProjectSettings.globalize_path(_to_target_path(file).split(".")[0] + ".vtf");
 
 		if not FileAccess.file_exists(ProjectSettings.globalize_path(file)):
@@ -188,7 +188,7 @@ func _recheck_resources(_null = null):
 	is_in_process = false;
 
 func _on_material_added(file: String):
-	var materialKey = file.replace(config.material.targetFolder, "");
+	var materialKey = file.replace(config.materials.target_folder, "");
 	var vmt_file = _to_target_path(file).replace(".tres", ".vmt");
 	var materialData = project_materials.get(materialKey, null);
 	var basetexture;
@@ -205,7 +205,7 @@ func _on_material_added(file: String):
 		project_materials[materialKey] = materialData;
 
 	if basetexture != 'no_texture':
-		var textureKey = basetexture.replace(config.material.targetFolder, '');
+		var textureKey = basetexture.replace(config.materials.target_folder, '');
 
 		if not textureKey in project_textures:
 			var texture = ResourceLoader.load(basetexture);
@@ -225,7 +225,7 @@ func _on_material_added(file: String):
 		return;
 
 	basetexture = basetexture\
-		.replace(config.material.targetFolder, "") \
+		.replace(config.materials.target_folder, "") \
 		.split(".")[0] \
 		.substr(1, -1);
 
@@ -237,7 +237,7 @@ func _on_material_added(file: String):
 	VMFLogger.log("Material added: " + file);
 
 func _on_material_removed(file: String):
-	var materialKey = file.replace(config.material.targetFolder, "");
+	var materialKey = file.replace(config.materials.target_folder, "");
 
 	var vmt_file = _to_target_path(file).replace(".tres", ".vmt");
 	var vtf_file = vmt_file.replace(".vmt", ".vtf");
@@ -269,23 +269,23 @@ func _get_basetexture(material: Material):
 	if not albedo:
 		return null;
 
-	return albedo.replace(config.material.targetFolder, "").get_basename();
+	return albedo.replace(config.materials.target_folder, "").get_basename();
 
 func _to_target_path(path: String):
 	return path\
-			.replace(config.material.targetFolder, mod_materials_folder)\
-			.replace(ProjectSettings.globalize_path(config.material.targetFolder), mod_materials_folder);
+			.replace(config.materials.target_folder, mod_materials_folder)\
+			.replace(ProjectSettings.globalize_path(config.materials.target_folder), mod_materials_folder);
 
 func _update_vtf(file: String):
 	var elapsed_time = Time.get_ticks_msec();
 
-	var key = ProjectSettings.localize_path(file).replace(config.material.targetFolder, "");
+	var key = ProjectSettings.localize_path(file).replace(config.materials.target_folder, "");
 	var texture = project_textures.get(key, null);
 
 	var vtf_file = ProjectSettings.globalize_path(_to_target_path(file).split(".")[0] + ".vtf");
 	var png_file = vtf_file.replace(".vtf", ".png");
 
-	var vtfcmd = ProjectSettings.globalize_path(config.get("vtfcmd", ""));
+	var vtfcmd = ProjectSettings.globalize_path(config.vtfcmd);
 	var path = vtf_file.get_base_dir();
 
 	if not texture:
