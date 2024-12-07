@@ -10,9 +10,7 @@ var vtf_import_plugin;
 var vmt_import_plugin;
 
 func _enter_tree() -> void:
-	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
-	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
-	
+	add_autoload_singleton("VMFConfig", "res://addons/godotvmf/src/VMFConfig.gd");
 	dock = preload("res://addons/godotvmf/plugin.tscn").instantiate();
 	
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, dock);
@@ -29,7 +27,8 @@ func _enter_tree() -> void:
 	add_import_plugin(mdl_import_plugin);
 	add_import_plugin(vmt_import_plugin);
 	add_import_plugin(vtf_import_plugin);
-	add_autoload_singleton("VMFConfig", "res://addons/godotvmf/src/VMFConfig.gd");
+	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
 
 func _exit_tree():
 	remove_autoload_singleton("VMFConfig");
