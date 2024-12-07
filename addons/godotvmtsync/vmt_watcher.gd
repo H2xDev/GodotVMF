@@ -4,7 +4,7 @@ var config:
 	get: return VMFConfig;
 
 var mod_materials_folder:
-	get: return _path_join(config.gameInfoPath, "materials");
+	get: return _path_join(config.gameinfo_path, "materials");
 
 var eplugin = null;
 
