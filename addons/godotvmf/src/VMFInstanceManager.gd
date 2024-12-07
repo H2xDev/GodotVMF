@@ -6,8 +6,8 @@ static var last_cache_changed = 0;
 static func get_instance_path(entity: Dictionary) -> String:
 	var instance_path = entity.file.get_file().get_basename() + '.vmf';
 	var map_base_folder = entity.vmf.get_base_dir() if "vmf" in entity else "";
-	var maps_folder := str(VMFConfig.config.gameInfoPath).path_join('maps');
-	var mapsrc_folder := str(VMFConfig.config.gameInfoPath).path_join('mapsrc');
+	var maps_folder := str(VMFConfig.gameinfo_path).path_join('maps');
+	var mapsrc_folder := str(VMFConfig.gameinfo_path).path_join('mapsrc');
 
 	var instance_paths := [
 		map_base_folder.path_join('instances').path_join(instance_path),
@@ -42,7 +42,7 @@ static func get_subinstances(structure: Dictionary, entity_source: Dictionary) -
 	return subinstances;
 
 static func get_imported_instance_path(instance_name: String):
-	var folder: String = VMFConfig.config.import.instancesFolder;
+	var folder: String = VMFConfig.import.instances_folder;
 	var dir := ProjectSettings.globalize_path(folder);
 	return dir + "/" + instance_name + ".tscn";
 
@@ -78,7 +78,7 @@ static func is_instance_exists(instance_name: String):
 	return FileAccess.file_exists(path);
 
 static func import_instance(entity: Dictionary):
-	var instances_folder: String = VMFConfig.config.import.instancesFolder;
+	var instances_folder: String = VMFConfig.import.instances_folder;
 	var file = get_instance_path(entity);
 
 	if file == '':

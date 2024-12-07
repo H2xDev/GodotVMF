@@ -68,6 +68,9 @@ var geometry: Node3D:
 
 		return node;
 
+var entities: Node3D:
+	get: return get_node_or_null("Entities");
+
 var navmesh: NavigationRegion3D:
 	get: return get_node_or_null("NavigationMesh");
 
@@ -105,6 +108,7 @@ func import_geometry(_reimport := false) -> void:
 	var geometry_mesh := MeshInstance3D.new()
 	geometry_mesh.name = "Geometry";
 	geometry_mesh.set_mesh(save_geometry_file(mesh));
+	geometry_mesh.set_display_folded(true);
 	
 	add_child(geometry_mesh);
 	geometry_mesh.set_owner(_owner);
@@ -382,23 +386,34 @@ func get_entity_scene(clazz: String):
 
 	return load(res_path);
 
-func import_entities(_reimport := false) -> void:
+func push_entity_to_group(classname: String, target_node: Node):
+	var group_name = classname.split('_')[0] + 's';
+	var group = entities.get_node_or_null(group_name);
+
+	if not group:
+		group = Node3D.new();
+		group.name = group_name;
+		entities.add_child(group);
+		group.set_owner(_owner);
+		group.set_display_folded(true);
+	
+	group.add_child(target_node);
+	target_node.set_owner(_owner);
+
+func reset_entities_node():
+	if entities: entities.free();
+
+	var enode = Node3D.new();
+	enode.name = "Entities";
+	add_child(enode);
+	enode.set_owner(_owner);
+
+func import_entities(is_reimport := false) -> void:
 	output.emit("Importing entities...");
 	var elapsed_time := Time.get_ticks_msec();
-	var import_scale: float = VMFConfig.import.scale;
 
-	if _reimport: read_vmf();
-
-	var _entities_node: Node3D = get_node_or_null("Entities");
-
-	if _entities_node:
-		remove_child(_entities_node);
-		_entities_node.queue_free();
-
-	_entities_node = Node3D.new();
-	_entities_node.name = "Entities";
-	add_child(_entities_node);
-	_entities_node.set_owner(_owner);
+	if is_reimport: read_vmf();
+	reset_entities_node();
 
 	if not "entity" in _structure: return;
 
@@ -413,28 +428,19 @@ func import_entities(_reimport := false) -> void:
 		if "is_runtime" in node:
 			node.is_runtime = is_runtime;
 
-		if "entity" in node:
-			node.entity = ent;
-
-		if "origin" in ent:
-			ent.origin = Vector3(ent.origin.x, ent.origin.z, -ent.origin.y) * import_scale;
-
-		_entities_node.add_child(node);
-		node.set_owner(_owner);
+		push_entity_to_group(ent.classname, node);
+		set_editable_instance(node, true);
 
 		var clazz = node.get_script();
-		if "setup" in clazz:
-			clazz.setup(ent, node);
+		if "setup" in clazz: clazz.setup(ent, node);
 
 		if not is_runtime and "_apply_entity" in node:
 			node._apply_entity(ent);
 
-		set_editable_instance(node, true);
+	elapsed_time = Time.get_ticks_msec() - elapsed_time;
 
-	var time := Time.get_ticks_msec() - elapsed_time;
-
-	if time > 2000:
-		VMFLogger.warn("Imported entities in " + str(time) + "ms");
+	if elapsed_time > 2000:
+		VMFLogger.warn("Imported entities in " + str(elapsed_time) + "ms");
 
 func generate_occluder():
 	var mesh: MeshInstance3D = geometry
