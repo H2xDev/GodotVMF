@@ -177,7 +177,7 @@ func _recheck_resources(_null = null):
 	if is_in_process:
 		return;
 
-	VMFConfig.reload();
+	VMFConfig.load_config();
 
 	is_in_process = true;
 	
