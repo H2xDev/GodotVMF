@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://dqohp4r0iukoo"]
+
+[ext_resource type="Script" uid="uid://c3lkk2r3uiv12" path="res://entities/light_spot.gd" id="1_t5d4s"]
+
+[node name="LightSpot" type="Node3D"]
+rotation_order = 3
+script = ExtResource("1_t5d4s")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+light_energy = 0.0
+spot_range = 100.0

@@ -8,7 +8,7 @@ uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform sampler2D albedo_texture : source_color,filter_linear_mipmap,repeat_enable;
 
 uniform vec4 albedo_color2 : source_color = vec4(1.0);
-uniform sampler2D albedo_texture2: source_color,filter_linear_mipmap,repeat_enable; 
+uniform sampler2D albedo_texture2: source_color,filter_linear_mipmap,repeat_enable;
 
 uniform float point_size : hint_range(0, 128);
 uniform float roughness : hint_range(0, 1);
@@ -39,7 +39,7 @@ void fragment() {
 	vec4 albedo_tex2 = texture(albedo_texture2, UV);
 	vec4 albedo_tex = mix(albedo_tex1, albedo_tex2, COLOR.r);
 	vec4 albedo = mix(albedo_color, albedo_color2, COLOR.r);
-	
+
 	ALBEDO = albedo_tex.rgb * albedo.rgb;
 
 	float metallic_tex1 = dot(texture(metallic_texture, UV), metallic_texture_channel);
@@ -59,4 +59,3 @@ void fragment() {
 	ROUGHNESS = roughness_tex * roughness;
 	SPECULAR = specular;
 }
-

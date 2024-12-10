@@ -1,24 +1,57 @@
 [gd_scene format=3 uid="uid://d2ikk3rylrg4r"]
 
 [node name="Plugin" type="HBoxContainer"]
-offset_right = 236.0
-offset_bottom = 31.0
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -15.5
+offset_right = 541.0
+offset_bottom = 15.5
+grow_vertical = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Button" parent="."]
 layout_mode = 2
-text = "Reimport VMF:"
+size_flags_horizontal = 0
+disabled = true
+text = "GodotVMF:"
+flat = true
 
 [node name="ReimportVMF" type="Button" parent="."]
 layout_mode = 2
 text = "Full"
+flat = true
 
 [node name="ReimportEntities" type="Button" parent="."]
 layout_mode = 2
 text = "Entities"
+flat = true
 
 [node name="ReimportGeometry" type="Button" parent="."]
 layout_mode = 2
 text = "Geometry"
+flat = true
+
+[node name="VSeparator" type="VSeparator" parent="."]
+layout_mode = 2
+
+[node name="Docs" type="Button" parent="."]
+layout_mode = 2
+text = "Docs"
+flat = true
+
+[node name="ProgressBar" type="HBoxContainer" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="VSeparator2" type="VSeparator" parent="ProgressBar"]
+layout_mode = 2
+
+[node name="label" type="Button" parent="ProgressBar"]
+layout_mode = 2
+size_flags_horizontal = 0
+disabled = true
+text = "Importing..."
+flat = true

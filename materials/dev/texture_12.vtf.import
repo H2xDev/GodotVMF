@@ -1,0 +1,14 @@
+[remap]
+
+importer="VTF"
+type="Texture"
+uid="uid://cyuire3jdd1vy"
+path="res://.godot/imported/texture_12.vtf-8d42df345b1b89c0bb0bbc3fe5929695.vtf.tres"
+
+[deps]
+
+source_file="res://materials/dev/texture_12.vtf"
+dest_files=["res://.godot/imported/texture_12.vtf-8d42df345b1b89c0bb0bbc3fe5929695.vtf.tres"]
+
+[params]
+
