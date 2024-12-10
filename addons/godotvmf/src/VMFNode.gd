@@ -399,6 +399,7 @@ func push_entity_to_group(classname: String, target_node: Node):
 	
 	group.add_child(target_node);
 	target_node.set_owner(_owner);
+	target_node.set_display_folded(true);
 
 func reset_entities_node():
 	if entities: entities.free();
@@ -428,11 +429,14 @@ func import_entities(is_reimport := false) -> void:
 		if "is_runtime" in node:
 			node.is_runtime = is_runtime;
 
+		if "entity" in node:
+			node.entity = ent;
+
 		push_entity_to_group(ent.classname, node);
 		set_editable_instance(node, true);
 
 		var clazz = node.get_script();
-		if "setup" in clazz: clazz.setup(ent, node);
+		if clazz and "setup" in clazz: clazz.setup(ent, node);
 
 		if not is_runtime and "_apply_entity" in node:
 			node._apply_entity(ent);

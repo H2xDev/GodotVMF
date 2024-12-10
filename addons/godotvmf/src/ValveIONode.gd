@@ -192,20 +192,16 @@ func trigger_output(output) -> void:
 		emit_signal(output);
 
 func get_mesh() -> ArrayMesh:
-	if not validate_entity():
-		return;
+	if not validate_entity(): return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 
 	var struct := {
 		'source': entity.classname + '_' + str(entity.id),
-		'world': {
-			'solid': solids,
-		},
+		'world': { 'solid': solids },
 	};
-	var offset: Vector3 = entity.origin if "origin" in entity else Vector3.ZERO;
 	
-	return VMFTool.create_mesh(struct, offset);
+	return VMFTool.create_mesh(struct, global_position);
 
 static func convert_vector(v) -> Vector3:
 	return Vector3(v.x, v.z, -v.y);
@@ -248,17 +244,13 @@ func get_entity_convex_shape():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
-
 	var struct := {
 		'world': {
 			'solid': solids,
 		},
 	};
 
-	var origin = entity.origin if "origin" in entity else Vector3.ZERO;
-
-	var mesh := VMFTool.create_mesh(struct, origin);
-
+	var mesh = VMFTool.create_mesh(struct, global_position);
 	return mesh.create_convex_shape();
 	
 ## Creates optimised trimesh shape of the entity by using CSGCombiner3D
@@ -271,17 +263,10 @@ func get_entity_trimesh_shape():
 	var combiner = CSGCombiner3D.new();
 
 	for solid in solids:
-		var struct = {
-			'world': {
-				'solid': [solid],
-			},
-		};
-	
+		var struct = { 'world': { 'solid': [solid] } };
 		var csgmesh = CSGMesh3D.new();
-		var origin = entity.get("origin", Vector3.ZERO);
 
-		csgmesh.mesh = VMFTool.create_mesh(struct, origin);
-
+		csgmesh.mesh = VMFTool.create_mesh(struct, global_position);
 		combiner.add_child(csgmesh);
 		
 	combiner._update_shape();
@@ -290,3 +275,16 @@ func get_entity_trimesh_shape():
 	combiner.queue_free();
 	
 	return shape;
+
+func get_separated_collisions() -> Array[CollisionShape3D]:
+	var collisions: Array[CollisionShape3D] = [];
+
+	var solids = entity.solid if entity.solid is Array else [entity.solid];
+	for solid in solids:
+		var struct = { 'world': { 'solid': [solid] } };
+		var mesh = VMFTool.create_mesh(struct, global_position);
+		var collision_shape = CollisionShape3D.new();
+		collision_shape.shape = mesh.create_convex_shape(true);
+		collisions.append(collision_shape);
+
+	return collisions;
