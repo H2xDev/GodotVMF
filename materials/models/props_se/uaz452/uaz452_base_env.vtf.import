@@ -1,0 +1,14 @@
+[remap]
+
+importer="VTF"
+type="Texture"
+uid="uid://n7tm5rlowwpj"
+path="res://.godot/imported/uaz452_base_env.vtf-6c1d95668608d0ba61fe0011c90db216.vtf.tres"
+
+[deps]
+
+source_file="res://materials/models/props_se/uaz452/uaz452_base_env.vtf"
+dest_files=["res://.godot/imported/uaz452_base_env.vtf-6c1d95668608d0ba61fe0011c90db216.vtf.tres"]
+
+[params]
+

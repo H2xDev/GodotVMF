@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cb0240swycsj5"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/entities/prop_static.gd" id="1_xdb2b"]
+
+[node name="PropStatic" type="Node3D"]
+script = ExtResource("1_xdb2b")
