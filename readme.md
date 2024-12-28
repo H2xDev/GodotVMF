@@ -29,7 +29,7 @@ A useful tool for those who like making levels in Hammer and are making a projec
 Or for those who just want to port their map from Source Engine to Godot and see what happens.
 
 ## Usage
-- [Installation instruction and other documents](https://github.com/H2xDev/GodotVMF/wiki)
+- [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
 - [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template) (example project)
 - [How to import VMF (video tutorial)](https://youtu.be/uTBzx0bwizU)
 
