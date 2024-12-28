@@ -74,7 +74,7 @@ var vtfcmd: String = "";
 
 func assign(target, source: Dictionary):
 	for key in source.keys():
-		if not key in target: continue;
+		if not key in target and target is not Dictionary: continue;
 
 		if source[key] is Dictionary and source[key] is not Array:
 			target[key]	= assign(target[key], source[key]);
@@ -89,10 +89,6 @@ func load_config():
 	var json = JSON.parse_string(file.get_as_text());
 	file.close();
 
-	gameinfo_path = json.get("gameinfo_path", "res://");
-	vtfcmd = json.get("vtfcmd", "");
-	models = assign(models, json.get("models", {}));
-	materials = assign(materials, json.get("materials", {}));
-	import = assign(import, json.get("import", {}));
+	assign(self, json);
 
 func _ready(): load_config();

@@ -145,7 +145,7 @@ static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReade
 
 		for solid in surface.solids:
 			# NOTE: Skip the last solid since it's a fullbody collision shape
-			if solid_index == surface.solids.size() - 1: break;
+			if solid_index == surface.solids.size() - 1 and surface.solids.size() > 1: break;
 
 			var static_body: StaticBody3D = StaticBody3D.new();
 			var collision: CollisionShape3D = CollisionShape3D.new();
