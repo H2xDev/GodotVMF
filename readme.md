@@ -52,17 +52,21 @@ Or for those who just want to port their map from Source Engine to Godot and see
     - Use `Additional Rotation` property in the MDL import options
 - Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issues with threaded import in the engine.
 
+## Legality of use
+If you are going to use Hammer Editor for commercial purpose it's worth to asking Valve for permission to use their tool. There shouldn't be any problems if you are using this tool for non-commercial projects.
+
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
 - If you've added a new feature please add the relevant documentation.
 - Follow the common Godot codestyle (yea-yea i'll fix the existing code in upcoming updates).
 
-### How to take part in testing
+### How to test the addon after adding new features or fixing some bugs
 1. Install any of Source Engine Games (L4D, HL2, TF2)
 2. Unpack all textures and models from VPKs
 3. Decompile most complex maps
 4. Try to import decompiled maps in Godot
 5. Check for errors if they appear
+
 
 ## Additional things
 - Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
