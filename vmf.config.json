@@ -3,7 +3,7 @@
 	"mdl2obj": "res://mdl2obj/mdl2obj.exe",
 
 	"import": {
-		"scale": 0.025,
+		"scale": 0.02,
 		"generateCollision": true,
 		"generateLightmapUV2": true,
 		"lightmapTexelSize": 0.4,

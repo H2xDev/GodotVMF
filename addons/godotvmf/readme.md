@@ -30,7 +30,7 @@ Default config:
     	"instancesFolder": "res://Assets/Instances",
     	"entitiesFolder": "res://Assets/Entities",
     	"nodeConfig": {
-    		"importScale": 0.025,
+    		"importScale": 0.02,
     		"defaultTextureSize": 512,
     		"generateCollision": true,
     		"fallbackMaterial": null,
