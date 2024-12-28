@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwxttgf1xbejo"]
+
+[ext_resource type="Script" uid="uid://csnaybjakvpod" path="res://entities/light_environment.gd" id="1_m4j1f"]
+
+[node name="LightEnvironment" type="Node3D"]
+script = ExtResource("1_m4j1f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+shadow_bias = 0.001
+shadow_reverse_cull_face = true
+shadow_blur = 3.0
+sky_mode = 1

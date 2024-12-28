@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://bp50y1nufh13p"]
+
+[ext_resource type="Script" path="res://entities/trigger_once.gd" id="1_ufyfw"]
+
+[node name="TriggerOnce" type="Node3D"]
+script = ExtResource("1_ufyfw")
+
+[node name="area" type="Area3D" parent="."]
+
+[node name="collision" type="CollisionShape3D" parent="area"]

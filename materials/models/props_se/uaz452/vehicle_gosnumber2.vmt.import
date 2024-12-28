@@ -1,0 +1,14 @@
+[remap]
+
+importer="VMT"
+type="Material"
+uid="uid://dq6muqg0qa5f6"
+path="res://.godot/imported/vehicle_gosnumber2.vmt-b52ac83c400156f04c1ee064890f4d96.vmt.tres"
+
+[deps]
+
+source_file="res://materials/models/props_se/uaz452/vehicle_gosnumber2.vmt"
+dest_files=["res://.godot/imported/vehicle_gosnumber2.vmt-b52ac83c400156f04c1ee064890f4d96.vmt.tres"]
+
+[params]
+
