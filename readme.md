@@ -30,8 +30,6 @@ Or for those who just want to port their map from Source Engine to Godot and see
 
 ## Usage
 - [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
-- [Project Template](https://github.com/H2xDev/GodotVMF-Project-Template) (example project)
-- [How to import VMF (video tutorial)](https://youtu.be/uTBzx0bwizU)
 
 ## Features
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
