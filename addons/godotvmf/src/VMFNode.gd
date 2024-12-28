@@ -92,7 +92,7 @@ func import_geometry(_reimport := false) -> void:
 	output.emit("Importing geometry...");
 
 	if _reimport:
-		VMFConfig.reload();
+		VMFConfig.load_config();
 
 		read_vmf();
 		import_materials();
