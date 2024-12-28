@@ -60,20 +60,23 @@ static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: P
 		_process_body_part.call(body_part, body_part_index);
 		body_part_index += 1;
 	
-	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, 0.2);
 
-	var skeleton = generate_skeleton(mdl, options)
-	var skin = skeleton.create_skin_from_rest_transforms();
+	var skeleton;
 
-	skeleton.name = "skeleton";
+	# NOTE: Disabled since there's no any sence to import it without animations
+	# if Engine.get_version_info().minor >= 4:
+	# 	skeleton = generate_skeleton(mdl, options)
+	# 	var skin = skeleton.create_skin_from_rest_transforms();
+
+	# 	skeleton.name = "skeleton";
+	# 	mesh_instance.set_skeleton_path("skeleton");
+	# 	mesh_instance.add_child(skeleton);
+	# 	mesh_instance.set_skin(skin);
+	# 	skeleton.set_owner(mesh_instance);
 
 	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, VMFConfig.models.lightmap_texel_size);
 	mesh_instance.name = "mesh";
-	mesh_instance.set_skeleton_path("skeleton");
-	mesh_instance.add_child(skeleton);
-	mesh_instance.set_skin(skin);
 	mesh_instance.set_mesh(array_mesh);
-	skeleton.set_owner(mesh_instance);
 
 	generate_collision(mesh_instance, skeleton, phy, options);
 	assign_materials(array_mesh, mdl, mesh_instance, materials_root);
@@ -99,34 +102,28 @@ static func create_occluder(mesh_instance: MeshInstance3D, options):
 		st.begin(Mesh.PRIMITIVE_TRIANGLES);
 
 		for child in colliders:
-			var s: ConvexPolygonShape3D = child.shape;
+			var s: ConcavePolygonShape3D = child.shape;
+			var points = s.get_faces();
 
-			for p in s.points:
+			for p in points:
 				st.add_vertex(p);
 
-			for i in range(s.points.size()):
+			for i in range(points.size()):
 				st.add_index(begin_vid + i);
 
-			begin_vid += s.points.size();
+			begin_vid += points.size();
 
 		st.commit(am);
 		st.optimize_indices_for_cache();
 
 		var arrays = am.surface_get_arrays(0);
-		box.set_arrays(arrays[Mesh.ARRAY_VERTEX], arrays[Mesh.ARRAY_INDEX]);
+		if arrays.size() > 0:
+			box.set_arrays(arrays[Mesh.ARRAY_VERTEX], arrays[Mesh.ARRAY_INDEX]);
 	else:
 		box = BoxOccluder3D.new();
-		var mesh = mesh_instance.mesh;
-		var average_position = Vector3.ZERO;
-		var points = mesh.get_faces();
-
-		for point in points:
-			average_position += point;
-
-		average_position /= points.size();
-
-		box.size = mesh_instance.get_mesh().get_aabb().size * options.primitive_occluder_scale;
-		occluder.position = average_position;
+		var aabb = mesh_instance.mesh.get_aabb();
+		box.size = aabb.size * options.primitive_occluder_scale;
+		occluder.position = aabb.position + aabb.size / 2.0;
 
 	occluder.occluder = box;
 	occluder.name = "occluder";
@@ -147,18 +144,20 @@ static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReade
 		var solid_index = 0;
 
 		for solid in surface.solids:
-			if skeleton.get_bone_count() <= solid.bone_index: continue;
+			# NOTE: Skip the last solid since it's a fullbody collision shape
+			if solid_index == surface.solids.size() - 1: break;
 
 			var static_body: StaticBody3D = StaticBody3D.new();
 			var collision: CollisionShape3D = CollisionShape3D.new();
-			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
+
+			# FIXME: Use ConvexPolygonShape3D instead of ConcavePolygonShape3D
+			# 		 but if it used then for some models it triggers an error
+			# 		 "Failed to build convex hull godot"
+			var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new();
+
 			collision.shape = shape;
-
-			var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
-			bone_attachment.bone_idx = max(0, solid.bone_index - 1);
-			bone_attachment.add_child(static_body);
-
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
+			static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
 
 			var vertices = [];
 
@@ -169,14 +168,21 @@ static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReade
 
 				vertices.append_array([v1, v2, v3]);
 
-			collision.shape.points = PackedVector3Array(vertices);
+			collision.shape.set_faces(PackedVector3Array(vertices));
 
-			skeleton.add_child(bone_attachment);
+			if skeleton:
+				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
+				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
+				bone_attachment.bone_idx = max(0, solid.bone_index - 1);
+				bone_attachment.add_child(static_body);
+				skeleton.add_child(bone_attachment);
+				bone_attachment.set_owner(root);
+			else:
+				root.add_child(static_body);
+				static_body.set_owner(root);
+
 			static_body.add_child(collision);
-
-			bone_attachment.set_owner(root);
 			collision.set_owner(root);
-			static_body.set_owner(root);
 
 			solid_index += 1;
 
@@ -186,7 +192,7 @@ static func generate_skeleton(mdl: MDLReader, options: Dictionary) -> Skeleton3D
 	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
 	var skeleton = Skeleton3D.new();
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI);
+	var additional_basis = Basis.from_euler(Vector3.ZERO);
 
 	for bone in mdl.bones:
 		skeleton.add_bone(bone.name);
