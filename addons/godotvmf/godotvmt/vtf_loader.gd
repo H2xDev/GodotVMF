@@ -271,11 +271,8 @@ func _init(path, duration):
 
 	file = FileAccess.open(path, FileAccess.READ);
 
-static func normalize_path(path: String) -> String:
-	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
-
 static func get_texture(texture: String):
-	var texture_path = normalize_path(VMFConfig.materials.target_folder + "/" + texture + ".vtf");
+	var texture_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + texture + ".vtf");
 
 	if not ResourceLoader.exists(texture_path):
 		VMFLogger.warn("Texture not found: " + texture);

@@ -1,47 +1,80 @@
 class_name VMTLoader extends RefCounted
 
-static var default_shaders:
-	get: return [
-		'lightmappedgeneric'
-	];
+class VMTTransformer:
+	func basetexture(material: Material, value: Variant):
+		if "albedo_texture" in material:
+			material.set("albedo_texture", VTFLoader.get_texture(value));
+	
+	func basetexture2(material: Material, value: Variant):
+		if "albedo_texture2" in material:
+			material.set("albedo_texture2", VTFLoader.get_texture(value));
 
-static var texture_mappings:
-	get: return {
-		basetexture = "albedo_texture",
-		basetexture2 = "albedo_texture2",
-		bumpmap = "normal_texture",
-		bumpmap2 = "normal_texture2",
-		detail = "detail_mask",
-		roughnesstexture = "roughness_texture",
-		metalnesstexture = "metallic_texture",
-		ambientocclusiontexture = "ao_texture",
-		selfillummask = "emission_texture",
-	};
+	func bumpmap(material: Material, value: Variant):
+		if "normal_texture" in material:
+			material.set("normal_texture", VTFLoader.get_texture(value));
+			material.normal_enabled = true;
+	
+	func bumpmap2(material: Material, value: Variant):
+		if "normal_texture2" in material:
+			material.set("normal_texture2", VTFLoader.get_texture(value));
 
-static var feature_mappings:
-	get: return {
-		bumpmap = "normal_enabled",
-		detail = "detail_enabled",
-		ambientocclusiontexture = "ao_enabled",
-		selfillummask = "emission_enabled",
-	}
+	func selfillummask(material: Material, value: Variant):
+		if "emission_texture" in material:
+			material.set("emission_texture", VTFLoader.get_texture(value));
+			material.emission_enabled = true;
+	
+	func roughnesstexture(material: Material, value: Variant):
+		if "roughness_texture" in material:
+			material.set("roughness_texture", VTFLoader.get_texture(value));
+	
+	func metalnesstexture(material: Material, value: Variant):
+		if "metallic_texture" in material:
+			material.set("metallic_texture", VTFLoader.get_texture(value));
+	
+	func ambientocclusiontexture(material: Material, value: Variant):
+		if "ao_texture" in material:
+			material.set("ao_texture", VTFLoader.get_texture(value));
+			material.ao_enabled = true;
+	
+	func bumpmapscale(material: Material, value: Variant):
+		if "normal_scale" in material:
+			material.set("normal_scale", value);
+	
+	func nocull(material: Material, value: Variant):
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED \
+				if value == 1 else BaseMaterial3D.CULL_BACK;
 
-static var boolean_mappings:
-	get: return {
-		selfillum = "emission_enabled",
-	}
+	func translucent(material: Material, value: Variant):
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA \
+				if value == 1 else BaseMaterial3D.TRANSPARENCY_DISABLED;
 
-static var numberic_mappings:
-	get: return {
-		bumpmapscale = "normal_scale",
-		roughnessfactor = "roughness",
-		metallnessfactor = "metallic",
-		specularfactor = "metallic_specular",
-		ambientocclusionlightaffect = "ao_light_affect",
-		detailblendmode = "detail_blend_mode",
-		emissioncolor = "emission",
-		emissionenergy = "emission_energy",
-	}
+	func alphatest(material: Material, value: Variant):
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR \
+				if value == 1 else BaseMaterial3D.TRANSPARENCY_DISABLED;
+
+	func alphatestreference(material: Material, value: Variant):
+		material.alpha_scissor_threshold = value;
+
+	func nextpass(material: Material, value: Variant):
+		var shader_material = VMTShaderBasedMaterial.load("res://" + value + ".gdshader");
+		material.next_pass = shader_material;
+	
+	func detail(material: Material, value: Variant):
+		if "detail_mask" in material:
+			material.set("detail_mask", value);
+			material.detail_enabled = true;
+
+	func detailblendmode(material: Material, value: Variant):
+		if "detail_blend_mode" in material:
+			material.set("detail_blend_mode", value);
+
+	func surfaceprop(material: Material, value: Variant):
+		material.set_meta("surfaceprop", value);
+
+	func basetexturetransform(material: Material, value: Variant):
+		var transform = VMTLoader._parse_transform(value);
+		material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
+		material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
 
 static func is_file_valid(path: String):
 	var import_path = path + ".import";
@@ -85,64 +118,22 @@ static func load(path: String):
 	if "insert" in details:
 		details.merge(details["insert"]);
 
+	if details.get(">=dx90_20b"):
+		details.merge(details['>=dx90_20b']);
+
 	if "$shader" in details:
 		var shader_path = "res://" + details["$shader"] + ".gdshader";
 		material = VMTShaderBasedMaterial.load(shader_path);
 	else:
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
-	material.set_meta("surfaceprop", details.get("$surfaceprop", "default"));
-
-	if material is BaseMaterial3D:
-		# FIXME move this into a transformer class
-		if details.get("$translucent") == 1:
-			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
-
-		if details.get("$alphatest") == 1:
-			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR;
-			material.alpha_scissor_threshold = details.get("$alphatestreference", 0.5);
-
-		if details.get("$nocull") == 1:
-			material.cull_mode = BaseMaterial3D.CULL_DISABLED;
-
-		if details.get(">=dx90_20b"):
-			details.merge(details['>=dx90_20b']);
-
-		if details.get("$basetexturetransform"):
-			var transform = _parse_transform(details);
-			material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
-			material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
-
-		if details.get("$nextpass"):
-			var shader_material = VMTShaderBasedMaterial.load("res://" + details["$nextpass"] + ".gdshader");
-			material.next_pass = shader_material;
-
+	var transformer = VMTTransformer.new();
 	for key in details.keys():
+		var value = details[key];
 		key = key.replace('$', '');
 
-		if key in texture_mappings:
-			var material_key = texture_mappings[key];
-			var root = VMFConfig.materials.target_folder;
-			var texture_path = str(details['$' + key]).to_lower()
-
-			if material_key in material:
-				var loaded_texture = VTFLoader.get_texture(texture_path);
-				if loaded_texture:
-					material.set(material_key, loaded_texture);
-
-					if key in feature_mappings:
-						material[feature_mappings[key]] = true;
-			continue;
-
-		if key in numberic_mappings:
-			var material_key = numberic_mappings[key];
-			material[material_key] = details['$' + key];
-			continue;
-
-		if key in boolean_mappings:
-			var material_key = boolean_mappings[key];
-			material[material_key] = details['$' + key] == 1;
-			continue;
+		if key in transformer:
+			transformer[key].call(material, value);
 
 	material.set_meta("details", details);
 
