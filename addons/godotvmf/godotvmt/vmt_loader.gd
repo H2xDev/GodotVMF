@@ -94,6 +94,7 @@ static func load(path: String):
 	material.set_meta("surfaceprop", details.get("$surfaceprop", "default"));
 
 	if material is BaseMaterial3D:
+		# FIXME move this into a transformer class
 		if details.get("$translucent") == 1:
 			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA;
 
