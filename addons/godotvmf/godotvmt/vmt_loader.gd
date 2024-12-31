@@ -128,9 +128,15 @@ static func load(path: String):
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
 	var transformer = VMTTransformer.new();
+	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMTExtend");
+
 	for key in details.keys():
 		var value = details[key];
 		key = key.replace('$', '');
+
+		if extend_transformer and key in extend_transformer:
+			extend_transformer[key].call(material, value);
+			continue;
 
 		if key in transformer:
 			transformer[key].call(material, value);

@@ -22,8 +22,10 @@ static func parse(file_path: String, keys_to_lower := false):
 
 	var file := FileAccess.open(file_path, FileAccess.READ);
 	var src = file.get_as_text();
+
 	file.close();
 	return parse_from_string(src, keys_to_lower);
+
 static func parse_value(line: String) -> Variant:
 	var m = _vectorRegex.search(line)
 	if m:

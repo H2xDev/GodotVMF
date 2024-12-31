@@ -15,8 +15,6 @@ const MATERIAL_KEYS_TO_IMPORT = [
 	"$selfillummask",
 ];
 
-signal output(message: String);
-
 @export_category("VMF File")
 
 ## Allow the file picker to select an external file
@@ -30,12 +28,14 @@ signal output(message: String);
 var vmf: String = '';
 
 @export_category("Import")
+
 ## Full import of VMF with specified options
 @export var import: bool = false:
 	set(value):
 		if not value: return;
 		import_map();
 		import = false;
+
 ## If true then button "Full", "Entities" and "Geometry" won't trigger import on this Node.
 @export var ignore_global_import: bool = false;
 
@@ -89,18 +89,15 @@ func set_owner_recurive(node: Node, owner: Node):
 		set_owner_recurive(child, owner);
 
 func import_geometry(_reimport := false) -> void:
-	output.emit("Importing geometry...");
-
 	if _reimport:
 		VMFConfig.load_config();
 
 		read_vmf();
 		import_materials();
+		await for_resource_import();
 
-	if navmesh:
-		navmesh.free();
-	if geometry:
-		geometry.free();
+	if navmesh: navmesh.free();
+	if geometry: geometry.free();
 
 	var mesh: ArrayMesh = VMFTool.create_mesh(_structure);
 	if not mesh: return;
@@ -191,8 +188,6 @@ func save_geometry_file(target_mesh: Mesh):
 	return target_mesh;
 
 func save_collision_file() -> void:
-	output.emit("Save collision into a file...");
-
 	var collisions = $Geometry.get_children() as Array[StaticBody3D];
 
 	for body in collisions:
@@ -255,7 +250,6 @@ func import_materials() -> void:
 	if VMFConfig.materials.import_mode == VMFConfigClass.MaterialsConfig.ImportMode.USE_EXISTING:
 		return;
 
-	output.emit("Importing materials...");
 	var list: Array[String] = [];
 	var ignore_list: Array[String];
 	ignore_list.assign(VMFConfig.materials.ignore);
@@ -355,7 +349,6 @@ func clear_structure() -> void:
 
 func read_vmf() -> void:
 	var t = Time.get_ticks_msec();
-	output.emit("Reading vmf...");
 	_structure = VDFParser.parse(vmf);
 
 	## NOTE: In case if "entity" or "solid" fields are Dictionary,
@@ -410,7 +403,6 @@ func reset_entities_node():
 	enode.set_owner(_owner);
 
 func import_entities(is_reimport := false) -> void:
-	output.emit("Importing entities...");
 	var elapsed_time := Time.get_ticks_msec();
 
 	if is_reimport: read_vmf();
@@ -467,22 +459,28 @@ func generate_occluder():
 	add_child(occluder);
 	occluder.set_owner(_owner);
 
-func import_map() -> void:
-	has_imported_resources = false;
-	if not vmf: return;
-
-	VMFConfig.load_config();
-
+func for_resource_import():
 	var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
-
-	clear_structure();
-	read_vmf();
-	import_materials();
-	import_models();
 
 	if fs && has_imported_resources: 
 		fs.scan();
 		await fs.resources_reimported;
+
+	has_imported_resources = false;
+
+func import_map() -> void:
+	if not vmf: return;
+
+	VMFConfig.load_config();
+
+	clear_structure();
+	read_vmf();
+
+	var elapsed_time = Time.get_ticks_msec();
+	import_materials();
+	import_models();
+
+	await for_resource_import();
 
 	import_geometry();
 	import_entities();
