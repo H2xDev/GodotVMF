@@ -476,7 +476,6 @@ func import_map() -> void:
 	clear_structure();
 	read_vmf();
 
-	var elapsed_time = Time.get_ticks_msec();
 	import_materials();
 	import_models();
 
