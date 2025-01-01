@@ -26,6 +26,18 @@ class VMTTransformer:
 		if "emission_texture" in material:
 			material.set("emission_texture", VTFLoader.get_texture(value));
 			material.emission_enabled = true;
+
+	func emissioncolor(material: Material, value: Variant):
+		if "emission" in material:
+			material.set("emission", value);
+
+	func emissionenergy(material: Material, value: Variant):
+		if "emission_energy_multiplier" in material:
+			material.set("emission_energy_multiplier", value);
+
+	func emissionoperator(material: Material, value: Variant):
+		if "emission_operator" in material:
+			material.set("emission_operator", value);
 	
 	func roughnesstexture(material: Material, value: Variant):
 		if "roughness_texture" in material:
