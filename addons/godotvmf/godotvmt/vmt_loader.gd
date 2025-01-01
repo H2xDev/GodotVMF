@@ -18,6 +18,10 @@ class VMTTransformer:
 		if "normal_texture2" in material:
 			material.set("normal_texture2", VTFLoader.get_texture(value));
 
+	func selfillum(material: Material, value: Variant):
+		if "emission_enabled" in material:
+			material.emission_enabled = value == 1;
+
 	func selfillummask(material: Material, value: Variant):
 		if "emission_texture" in material:
 			material.set("emission_texture", VTFLoader.get_texture(value));
