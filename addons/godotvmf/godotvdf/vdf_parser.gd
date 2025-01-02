@@ -7,7 +7,7 @@ static var _propRegex := RegEx.create_from_string('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$
 static var _vectorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');
-static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)\\s?\\(([\\d\\-.e]+\\s[\\d\\-.e]+\\s[\\d\\-.e]+)\\)');
+static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)');
 static var _commentRegex := RegEx.create_from_string('\\s+?\\/\\/.+');
 
 # Cache the results of regex searches when possible
@@ -50,6 +50,7 @@ static func parse_value(line: String) -> Variant:
 			plane.append(Vector3(values[0], values[1], values[2]));
 		
 		var v = Plane(plane[0], plane[1], plane[2]);
+
 		if not v:
 			push_error('ValveFormatParser: Failed to create plane from: ' + line);
 			return null;

@@ -286,6 +286,8 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 				VMFLogger.error("Side corrupted: " + str(side.id));
 				continue;
 
+			if not side.plane: continue;
+
 			if not is_displacement:
 				var normal = side.plane.value.normal;
 				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));

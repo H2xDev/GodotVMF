@@ -104,21 +104,24 @@ func import_geometry(_reimport := false) -> void:
 
 	var geometry_mesh := MeshInstance3D.new()
 	geometry_mesh.name = "Geometry";
-	geometry_mesh.set_mesh(save_geometry_file(mesh));
 	geometry_mesh.set_display_folded(true);
 	
 	add_child(geometry_mesh);
 	geometry_mesh.set_owner(_owner);
 
-	var transform = geometry_mesh.global_transform if geometry_mesh.is_inside_tree() else self.transform;
+	var transform = geometry_mesh.global_transform;
 	var texel_size = VMFConfig.import.lightmap_texel_size;
 
-	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
-		mesh.lightmap_unwrap(transform, texel_size);
+	geometry_mesh.mesh = mesh;
 
 	clear_ignored_surfaces(geometry_mesh);
 	generate_collisions(geometry_mesh);
 	generate_navmesh(geometry_mesh);
+
+	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
+		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
+
+	geometry_mesh.set_mesh(save_geometry_file(geometry_mesh.mesh));
 
 func clear_ignored_surfaces(geometry_mesh: MeshInstance3D):
 	# NOTE Clear surface that has materials in ignore list

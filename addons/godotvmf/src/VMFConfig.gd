@@ -48,6 +48,9 @@ class ImportConfig:
 	## Texel size for lightmap 
 	var lightmap_texel_size: float = 0.4;
 
+	## Lightmap texture size
+	var lightmap_size: int = 1024;
+
 	## The path where imported instances be saved
 	var instances_folder: String = "res://instances";
 
