@@ -155,7 +155,13 @@ static func load(path: String):
 
 	for key in details.keys():
 		var value = details[key];
-		key = key.replace('$', '');
+		var is_compile_key = key.begins_with("%");
+		key = key.replace('$', '').replace('%', '');
+
+		if is_compile_key and value and key != "keywords":
+			var compile_keys = material.get_meta("compile_keys", []);
+			compile_keys.append(key);
+			material.set_meta("compile_keys", compile_keys);
 
 		if extend_transformer and key in extend_transformer:
 			extend_transformer[key].call(material, value);
