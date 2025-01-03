@@ -83,11 +83,6 @@ func _validate_property(property: Dictionary) -> void:
 func _ready() -> void:
 	add_to_group("vmfnode_group");
 
-func set_owner_recurive(node: Node, owner: Node):
-	node.set_owner(owner);
-	for child in node.get_children():
-		set_owner_recurive(child, owner);
-
 func import_geometry(_reimport := false) -> void:
 	if _reimport:
 		VMFConfig.load_config();
@@ -114,46 +109,16 @@ func import_geometry(_reimport := false) -> void:
 
 	geometry_mesh.mesh = mesh;
 
-	clear_ignored_surfaces(geometry_mesh);
-	generate_collisions(geometry_mesh);
+	VMFTool.generate_collisions(geometry_mesh);
+	save_collision_file();
 	generate_navmesh(geometry_mesh);
+
+	geometry_mesh.mesh = VMFTool.cleanup_mesh(geometry_mesh.mesh);
 
 	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
 		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
 
-	geometry_mesh.set_mesh(save_geometry_file(geometry_mesh.mesh));
-
-func clear_ignored_surfaces(geometry_mesh: MeshInstance3D):
-	# NOTE Clear surface that has materials in ignore list
-	# FIXME Currently we don't have a way to remove surface from ArrayMesh since `surface_remove` were removed in 4.x
-	#  		Engine's github issue: https://github.com/godotengine/godot/issues/67181
-
-	var ignored_textures = VMFConfig.materials.ignore;
-	var duplicated_mesh = ArrayMesh.new();
-	var original_mesh = geometry_mesh.mesh;
-	var mt = MeshDataTool.new();
-
-	for surface_idx in original_mesh.get_surface_count():
-		var material = geometry_mesh.mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
-		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material.match(rx.to_lower()));
-		if is_ignored: continue;
-
-		mt.create_from_surface(original_mesh, surface_idx);
-		mt.commit_to_surface(duplicated_mesh, surface_idx);
-
-	geometry_mesh.mesh = duplicated_mesh;
-
-func generate_collisions(geometry_mesh):
-	if not VMFConfig.import.generate_collision: return;
-
-	var bodies = VMFTool.generate_collisions(geometry_mesh.mesh);
-	var body_idx = 0
-	for body in bodies:
-		geometry_mesh.add_child(body);
-		set_owner_recurive(body, _owner);
-		body_idx += 1;
-
-	save_collision_file();
+	geometry_mesh.mesh = save_geometry_file(geometry_mesh.mesh);
 
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
@@ -191,6 +156,8 @@ func save_geometry_file(target_mesh: Mesh):
 	return target_mesh;
 
 func save_collision_file() -> void:
+	if save_collision == false: return;
+
 	var collisions = $Geometry.get_children() as Array[StaticBody3D];
 
 	for body in collisions:

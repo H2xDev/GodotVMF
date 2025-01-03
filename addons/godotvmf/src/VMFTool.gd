@@ -6,6 +6,23 @@ static var intersections: Dictionary = {};
 static var texture_sizes_cache: Dictionary = {};
 static var material_cache: Dictionary = {};
 
+class VMFTransformer:
+	var norender_compileclip = true;
+	var norender_compilenodraw = true;
+	var norender_compilesky = true;
+	var norender_npcclip = true;
+	var norender_compileplayerclip = true;
+	var norender_compilenpcclip = true;
+	var nocollision_compilesky = true;
+
+	func compileplayerclip(solid: StaticBody3D):
+		solid.collision_layer = 1 << 1
+		solid.collision_mask = 1 << 1
+
+	func compilenpcclip(solid: StaticBody3D):
+		solid.collision_layer = 1 << 2
+		solid.collision_mask = 1 << 2
+
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
 class VectorSorter:
 	var normal: Vector3;
@@ -171,37 +188,67 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	return Vector2(u, v);
 
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
-static func generate_collisions(mesh: ArrayMesh):
+static func generate_collisions(mesh_instance: MeshInstance3D):
 	var bodies: Array[StaticBody3D] = [];
 	var surface_props = {};
+	var mesh = mesh_instance.mesh;
+	var transformer = VMFTransformer.new();
+	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
 
 	# NOTE: If the mesh is too small then we don't need to generate SteamAudioGeometry for this mesh;
 	var is_allowed_to_generate_steam_audio = mesh.get_aabb().size.length() > 2;
 
 	for surface_idx in range(mesh.get_surface_count()):
 		var material = mesh.surface_get_material(surface_idx);
+		var compilekeys = material.get_meta("compile_keys", []) if material else [];
 		var surface_prop = (material.get_meta("surfaceprop", "default") if material else "default").to_lower();
 
+		if compilekeys.size() > 0:
+			surface_prop = "tool_" + compilekeys[0];
+
+		var is_nocoll = false;
+
+		for key in compilekeys:
+			var transformer_key = "nocollision_" + key;
+
+			if extend_transformer and transformer_key in extend_transformer:
+				is_nocoll = extend_transformer[transformer_key];
+			if is_nocoll: break;
+
+			if transformer_key in transformer:
+				is_nocoll = transformer[transformer_key];
+			if is_nocoll: break;
+
+		if is_nocoll: continue;
+
 		if not surface_prop in surface_props:
-			surface_props[surface_prop] = [];
+			surface_props[surface_prop] = ArrayMesh.new();
 
-		surface_props[surface_prop].append(surface_idx);
+		var array_mesh = surface_props[surface_prop];
+		var arrays = mesh.surface_get_arrays(surface_idx);
+		array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays);
 
+		if compilekeys.size() > 0:
+			array_mesh.set_meta("compile_keys", compilekeys);
+	
 	for surface_prop in surface_props.keys():
 		var static_body = StaticBody3D.new();
 		var collision = CollisionShape3D.new();
-		var array_mesh = ArrayMesh.new();
+		var compilekeys = surface_props[surface_prop].get_meta("compile_keys", []);
+
+		for key in compilekeys:
+			if extend_transformer and key in extend_transformer:
+				extend_transformer[key].call(static_body);
+				continue;
+
+			if key in transformer:
+				transformer[key].call(static_body);
 
 		static_body.name = "surface_prop_" + surface_prop;
 		static_body.set_meta("surface_prop", surface_prop);
 
-		for surface_idx in surface_props[surface_prop]:
-			var arrays = mesh.surface_get_arrays(surface_idx);
-			array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays);
-
-		var shape = array_mesh.create_trimesh_shape();
-		collision.shape = shape;
-		collision.name = "collision"
+		collision.name = "collision";
+		collision.shape = surface_props[surface_prop].create_trimesh_shape();
 
 		static_body.add_child(collision);
 		collision.set_owner(static_body);
@@ -209,9 +256,49 @@ static func generate_collisions(mesh: ArrayMesh):
 		if is_allowed_to_generate_steam_audio:
 			create_steam_audio_geometry(surface_prop, collision);
 
-		bodies.append(static_body);
+		mesh_instance.add_child(static_body);
+		VMFUtils.set_owner_recursive(static_body, mesh_instance.get_owner());
 
-	return bodies;
+static func cleanup_mesh(original_mesh: ArrayMesh):
+	# NOTE Clear surface that has materials in ignore list
+	# FIXME Currently we don't have a way to remove surface from ArrayMesh since `surface_remove` were removed in 4.x
+	#  		Engine's github issue: https://github.com/godotengine/godot/issues/67181
+
+	var ignored_textures = VMFConfig.materials.ignore;
+	var duplicated_mesh = ArrayMesh.new();
+	var transformer = VMFTransformer.new();
+	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
+
+	var mt = MeshDataTool.new();
+
+	for surface_idx in original_mesh.get_surface_count():
+		var material_name = original_mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+		var material = original_mesh.surface_get_material(surface_idx);
+		var compilekeys = material.get_meta("compile_keys", []) if material else [];
+
+		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
+		if is_ignored: continue;
+		var is_norender = false;
+
+		for key in compilekeys:
+			var transformer_key = "norender_" + key;
+
+			if extend_transformer and transformer_key in extend_transformer:
+				is_norender = extend_transformer[transformer_key];
+
+			if is_norender: break;
+
+			if transformer_key in transformer:
+				is_norender = transformer[transformer_key];
+
+			if is_norender: break;
+
+		if is_norender: continue;
+
+		mt.create_from_surface(original_mesh, surface_idx);
+		mt.commit_to_surface(duplicated_mesh, surface_idx);
+
+	return duplicated_mesh;
 
 # In case if SteamAudio plugin detected in the project it will create SteamAudioGeometry for each surface
 static func create_steam_audio_geometry(surface_prop: String, collision_shape: CollisionShape3D):
