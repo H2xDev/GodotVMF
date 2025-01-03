@@ -77,7 +77,9 @@ class VMTTransformer:
 	
 	func detail(material: Material, value: Variant):
 		if "detail_mask" in material:
-			material.set("detail_mask", value);
+			var texture = VTFLoader.get_texture(value);
+			if not texture: return;
+			material.set("detail_mask", texture);
 			material.detail_enabled = true;
 
 	func detailblendmode(material: Material, value: Variant):
@@ -88,7 +90,12 @@ class VMTTransformer:
 		material.set_meta("surfaceprop", value);
 
 	func basetexturetransform(material: Material, value: Variant):
-		var transform = VMTLoader._parse_transform(value);
+		if "uv1_scale" not in material:
+			return;
+		if "uv1_offset" not in material:
+			return;
+
+		var transform = VMTLoader.parse_transform(value);
 		material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
 		material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
 
@@ -104,11 +111,11 @@ static func is_file_valid(path: String):
 
 	return not is_valid;
 
-static func _parse_transform(structure):
+static func parse_transform(transform_data: String):
 	var transformRegex = RegEx.new();
 	transformRegex.compile('^"?center\\s+([0-9-.]+)\\s+([0-9-.]+)\\s+scale\\s+([0-9-.]+)\\s+([0-9-.]+)\\s+rotate\\s+([0-9-.]+)\\s+translate\\s+([0-9-.]+)\\s+([0-9-.]+)"?$')
 
-	var transformParams = transformRegex.search(structure['$basetexturetransform']);
+	var transformParams = transformRegex.search(transform_data);
 	
 	var center = Vector2(float(transformParams.get_string(1)), float(transformParams.get_string(2)));
 	var scale = Vector2(float(transformParams.get_string(3)), float(transformParams.get_string(4)));
