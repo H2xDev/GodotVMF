@@ -131,7 +131,7 @@ static func create_occluder(mesh_instance: MeshInstance3D, options):
 	mesh_instance.add_child(occluder);
 	occluder.set_owner(mesh_instance);
 
-static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
+static func generate_collision(root: Node3D, skeleton, phy: PHYReader, options: Dictionary):
 	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
 	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
 	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * scale);
