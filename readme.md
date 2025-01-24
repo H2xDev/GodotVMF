@@ -40,8 +40,9 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Displacements import (with vertex data)
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Entities support
+- FGD Generator
 - Hammer's Input/Output  system support
-- Automatically generates SteamAudioGeometry in case [godot-steam-audio](https://github.com/stechyo/godot-steam-audio) plugin detected
+- Automatically generates SteamAudioGeometry in case [godot-steam-audio](https://github.com/stechyo/godot-steam-audio) plugin (by [@stechyo](https://github.com/stechyo)) detected
 - Surface props support
 
 ## Known issues
