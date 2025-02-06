@@ -18,11 +18,13 @@ var entity_template = "\n".join([
 const FLAG_TEMPLATE = "		{flag_index} : \"{flag_name}\" : {value}";
 const INPUT_TEMPLATE = "	input {input_name}({input_type}) : \"\"";
 const SIGNAL_TEMPLATE = "	output {signal_name}({signal_type}) : \"\"";
-const PROPERTY_TEMPLATE = "	{property_name}({property_type}) : \"{property_name_normalized}\" : \"{property_default}\" : \"{property_description}\"";
+const PROPERTY_TEMPLATE = "	{property_name}({property_type}) : \"{property_name_normalized}\" : {property_default} : \"{property_description}\"";
 const BOOL_PROPERTY_TEMPLATE = "	{property_name}(choices) : \"{property_name_normalized}\" : {property_default} = [\
 		\"0\" : \"No\"\
 		\"1\" : \"Yes\"\
 	]";
+
+const QUOTE_WRAPPED = "\"{0}\"";
 
 const TYPE_DICTIONARY = {
 	TYPE_NIL: "void",
@@ -36,27 +38,44 @@ const TYPE_DICTIONARY = {
 
 var script_hashes = {};
 
+func get_aliases_scripts():
+	return VMFConfig.import.entity_aliases.values() \
+		.map(func(alias): return load(alias)._bundled.variants[0].resource_path);
+
 func is_entity_scripts_changed():
 	var files = DirAccess.get_files_at(VMFConfig.import.entities_folder);
+	files.append_array(get_aliases_scripts());
 
 	var is_changed = false;
 	for file in files:
 		if file.get_extension() != "gd": continue;
-		var path = VMFConfig.import.entities_folder + '/' + file;
+		var path = VMFConfig.import.entities_folder + '/' + file if not file.begins_with("res://") else file;
 		var hash = FileAccess.get_md5(path);
+		var filename = path.get_file().replace(".gd", "");
+
 		if not is_changed:
-			is_changed = script_hashes.get(file, "") != hash;
-		script_hashes[file] = hash;
+			is_changed = script_hashes.get(filename, "") != hash;
+		script_hashes[filename] = hash;
 	
 	return is_changed;
 
 func recompose_fgd(resources = null):
 	if not is_entity_scripts_changed(): return;
 
-	var scripts: Array = Array(DirAccess.get_files_at(VMFConfig.import.entities_folder)) \
+	var files = Array(DirAccess.get_files_at(VMFConfig.import.entities_folder));
+	var aliases = get_aliases_scripts().filter(func (file): not files.has(file));
+	files.append_array(aliases);
+
+	var scripts: Array = files \
 		.filter(func(file): if file.get_extension() == "gd": return true) \
-		.map(func(file): return load(VMFConfig.import.entities_folder + '/' + file)) \
-		.filter(func(script): return "ENTITY_DEFINE" in script);
+		.map(func(file): 
+			var file_path = VMFConfig.import.entities_folder + '/' + file if not file.begins_with("res://") else file;
+			return load(file_path)
+			) \
+		.filter(func(script):
+			var decorators = get_prop_decorators(script, script.get_global_name());
+
+			return decorators.has("entity"));
 
 	var file_name = ProjectSettings.get('application/config/name').to_snake_case();
 	var fgd_file = FileAccess.open('res://{0}.fgd'.format([file_name]), FileAccess.WRITE);
@@ -107,7 +126,8 @@ func get_inputs(script: Script):
 
 		var decorators = get_prop_decorators(script, method.name);
 		var name = decorators.get("exposed", "");
-		name = name if name != "" else method.name.to_lower().capitalize();
+		name = name if name != "" else method.name;
+		name = name.replace("_", " ").capitalize().replace(" ", "");
 
 		return INPUT_TEMPLATE.format({
 			"input_name": name,
@@ -150,8 +170,10 @@ func get_properties(script: Script):
 				scr.set_source_code("static func eval(): return " + default_value);
 				scr.reload();
 				default_value = str(scr.eval()).replace("(", "").replace(")", "").replace(",", "");
-		
-		default_value = default_value.replace("\"", "");
+
+
+		if prop.type != TYPE_INT:
+			default_value = QUOTE_WRAPPED.format([default_value]);
 
 		return template.format({
 			"property_name": prop.name,
@@ -172,16 +194,18 @@ func get_properties(script: Script):
 	return "\n".join(properties);
 
 func get_entity_description(script: Script):
+	var class_decorator = get_prop_decorators(script, script.get_global_name());
+
 	return entity_template.format({
 		entity_name 	= script.get_global_name(),
 		spawnflags 		= get_flags(script),
 		inputs 			= get_inputs(script),
 		outputs 		= get_outputs(script),
 		properties 		= get_properties(script),
-		type 			= script.ENTITY_DEFINE,
-		base 			= script.ENTITY_BASE if "ENTITY_BASE" in script else "",
-		description 	= script.ENTITY_DESCRIPTION if "ENTITY_DESCRIPTION" in script else "",
-		modificators 	= "",
+		type 			= class_decorator.entity,
+		base 			= class_decorator.get("base", "Targetname, Origin"),
+		description 	= get_prop_description(script, script.get_global_name()),
+		modificators 	= class_decorator.get("appearance", ""),
 	}).replace("\r\r", "\n");
 
 func get_property_line_index(script: Script, property_name: String):
@@ -194,8 +218,9 @@ func get_property_line_index(script: Script, property_name: String):
 		var property_pattern = "var " + property_name;
 		var is_property = line.begins_with(property_pattern) or (line.contains(property_pattern) and line.contains("@export"));
 		var is_method = line.begins_with("func " + property_name);
+		var is_class = line.begins_with("class_name");
 
-		if not is_property and not is_method:
+		if not is_property and not is_method and not is_class:
 			line_index += 1;
 			continue;
 
@@ -233,7 +258,10 @@ func get_prop_decorators(script: Script, property_name: String):
 		var name = line.split(" ")[0];
 		var value = line.split(name)[1].trim_prefix(" ").trim_suffix(" ");
 
-		decorators[name] = value;
+		if name in decorators:
+			decorators[name] += "\n" + value;
+		else:
+			decorators[name] = value;
 
 	return decorators;
 
