@@ -24,8 +24,12 @@ const BOOL_PROPERTY_TEMPLATE = "	{property_name}(choices) : \"{property_name_nor
 		\"1\" : \"Yes\"\
 	]";
 
+const CHOICES_TEMPLATE = "	{property_name}(choices) : \"{property_name_normalized}\" : {property_default} = [{choices}\
+	]";
+
 const QUOTE_WRAPPED = "\"{0}\"";
 
+const TYPE_CHOICES = 1001;
 const TYPE_DICTIONARY = {
 	TYPE_NIL: "void",
 	TYPE_FLOAT: "float",
@@ -34,7 +38,9 @@ const TYPE_DICTIONARY = {
 	TYPE_STRING: "string",
 	TYPE_OBJECT: "target_destination",
 	TYPE_VECTOR3: "angle",
+	TYPE_CHOICES: "choices",
 };
+
 
 var script_hashes = {};
 
@@ -170,9 +176,26 @@ func get_properties(script: Script):
 				scr.set_source_code("static func eval(): return " + default_value);
 				scr.reload();
 				default_value = str(scr.eval()).replace("(", "").replace(")", "").replace(",", "");
+			TYPE_INT:
+				prop.type = TYPE_CHOICES if prop.class_name != "" else prop.type;
 
+		var choices := "";
 
-		if prop.type != TYPE_INT:
+		if prop.type == TYPE_CHOICES:
+			template = CHOICES_TEMPLATE;
+
+			var enum_name = prop.class_name.split(".")[1];
+			var values = script[enum_name];
+
+			for choice_name in values.keys():
+				var choice_value = values.get(choice_name);
+
+				choices += "\n\t\t" + QUOTE_WRAPPED.format([choice_value]) + " : " + QUOTE_WRAPPED.format([choice_name.capitalize()]);
+
+			var selected_key = default_value.split('.')[1];
+			default_value = values.get(selected_key);
+
+		if prop.type != TYPE_INT && prop.type != TYPE_CHOICES:
 			default_value = QUOTE_WRAPPED.format([default_value]);
 
 		return template.format({
@@ -181,6 +204,7 @@ func get_properties(script: Script):
 			"property_type": TYPE_DICTIONARY[prop.type] if prop.type in TYPE_DICTIONARY else "void",
 			"property_default": default_value,
 			"property_description": description,
+			"choices": choices,
 		}));
 
 	properties.append(BOOL_PROPERTY_TEMPLATE.format({
@@ -211,7 +235,7 @@ func get_entity_description(script: Script):
 func get_property_line_index(script: Script, property_name: String):
 	if not is_instance_valid(script): return -1;
 
-	var source = script.source_code.split("\n");
+	var source = script.source_code.split("\r\n");
 	var line_index = 0;
 
 	for line in source:
