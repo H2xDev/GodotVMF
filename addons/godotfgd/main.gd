@@ -218,7 +218,7 @@ func get_property_line_index(script: Script, property_name: String):
 		var property_pattern = "var " + property_name;
 		var is_property = line.begins_with(property_pattern) or (line.contains(property_pattern) and line.contains("@export"));
 		var is_method = line.begins_with("func " + property_name);
-		var is_class = line.begins_with("class_name");
+		var is_class = line.begins_with("class_name " + property_name);
 
 		if not is_property and not is_method and not is_class:
 			line_index += 1;
