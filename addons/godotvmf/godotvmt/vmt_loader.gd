@@ -12,6 +12,7 @@ class VMTTransformer:
 	func bumpmap(material: Material, value: Variant):
 		if "normal_texture" in material:
 			material.set("normal_texture", VTFLoader.get_texture(value));
+		if "normal_enabled" in material:
 			material.normal_enabled = true;
 	
 	func bumpmap2(material: Material, value: Variant):
@@ -42,6 +43,10 @@ class VMTTransformer:
 	func roughnesstexture(material: Material, value: Variant):
 		if "roughness_texture" in material:
 			material.set("roughness_texture", VTFLoader.get_texture(value));
+	
+	func roughnessfactor(material: Material, value: Variant):
+		if "roughness" in material:
+			material.set("roughness", value);
 	
 	func metalnesstexture(material: Material, value: Variant):
 		if "metallic_texture" in material:
@@ -76,6 +81,7 @@ class VMTTransformer:
 		material.next_pass = shader_material;
 	
 	func detail(material: Material, value: Variant):
+		return;
 		if "detail_mask" in material:
 			var texture = VTFLoader.get_texture(value);
 			if not texture: return;
@@ -145,17 +151,38 @@ static func load(path: String):
 		details.merge(details['>=dx90_20b']);
 
 	if "$shader" in details:
-		var shader_path = "res://" + details["$shader"] + ".gdshader";
+		var extension = ".gdshader" if not details["$shader"].get_extension() else "";
+		var shader_path = details["$shader"] + extension;
+
+		if not shader_path.begins_with("res://"):
+			shader_path = "res://" + shader_path;
+
 		material = VMTShaderBasedMaterial.load(shader_path);
 	else:
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
 	var transformer = VMTTransformer.new();
 	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMTExtend");
+	var uniforms: Array = material.shader.get_shader_uniform_list() if material is ShaderMaterial else [];
 
 	for key in details.keys():
 		var value = details[key];
-		key = key.replace('$', '');
+		var is_compile_key = key.begins_with("%");
+		key = key.replace('$', '').replace('%', '');
+
+		if is_compile_key and value and key != "keywords":
+			var compile_keys = material.get_meta("compile_keys", []);
+			compile_keys.append(key);
+			material.set_meta("compile_keys", compile_keys);
+
+		if material is ShaderMaterial:
+			var mat: ShaderMaterial = material;
+			var uniform = uniforms.filter(func(u): return u.name == key);
+
+			if uniform.size() > 0:
+				var is_texture = uniform[0].hint_string == "Texture2D";
+				mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
+				continue;
 
 		if extend_transformer and key in extend_transformer:
 			extend_transformer[key].call(material, value);
@@ -185,7 +212,9 @@ static func get_material(material: String):
 
 	if not ResourceLoader.exists(material_path):
 		VMFLogger.warn("Material not found: " + material);
-		return null;
+		material_path = VMFConfig.materials.fallback_material
+	
+		if not ResourceLoader.exists(material_path): return null;
 
 	cached_materials = cached_materials if cached_materials else {};
 	if Time.get_ticks_msec() - last_cache_changed > 10000:
