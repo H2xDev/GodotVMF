@@ -35,7 +35,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
 - Instances support
 - Native MDL support
-- Native materials support
+- Native VMT support
 - Native VTF support (only DXT1, DXT3, DXT5 supported)
 - Displacements import (with vertex data)
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
