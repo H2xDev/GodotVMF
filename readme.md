@@ -44,7 +44,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Automatically generates SteamAudioGeometry in case [godot-steam-audio](https://github.com/stechyo/godot-steam-audio) plugin detected
 - Surface props support
 - Material's compile properties support
-- FGD generator that compiles a FGD file based on source code of implemented entities in GDScript
+- FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
 
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
