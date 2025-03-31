@@ -22,6 +22,5 @@ func assign_instance(instance_scene):
 		if child.name.begins_with(node.name):
 			i += 1;
 	node.name = "%s_%s" % [node.name, i]
-	node.ignore_global_import = true;
 	add_child(node);
 	node.set_owner(get_owner());

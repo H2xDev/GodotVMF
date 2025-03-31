@@ -32,7 +32,12 @@ static func parse_value(line: String) -> Variant:
 		return Vector3(m.get_string(1).to_float(), m.get_string(2).to_float(), m.get_string(3).to_float());
 	m = _colorRegex.search(line)
 	if m:
-		return Color(m.get_string(1).to_float() / 255, m.get_string(2).to_float() / 255, m.get_string(3).to_float() / 255, m.get_string(4).to_float() / 255);
+		return Color(
+			m.get_string(1).to_float() / 255,
+			m.get_string(2).to_float() / 255,
+			m.get_string(3).to_float() / 255,
+			m.get_string(4).to_float() / 255
+		);
 	m = _uvRegex.search(line)
 	if m:
 		return {

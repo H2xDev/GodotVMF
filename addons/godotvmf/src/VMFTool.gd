@@ -6,6 +6,28 @@ static var intersections: Dictionary = {};
 static var texture_sizes_cache: Dictionary = {};
 static var material_cache: Dictionary = {};
 
+class VMFTransformer:
+	const norender = [
+		'compileclip',
+		'compilenodraw',
+		'compilesky',
+		'npcclip',
+		'compileplayerclip',
+		'compilenpcclip',
+	];
+
+	const nocollision = [
+		'compilesky',
+	];
+
+	func compileplayerclip(solid: StaticBody3D):
+		solid.collision_layer = 1 << 1
+		solid.collision_mask = 1 << 1
+
+	func compilenpcclip(solid: StaticBody3D):
+		solid.collision_layer = 1 << 2
+		solid.collision_mask = 1 << 2
+
 ## Credit: https://github.com/Dylancyclone/VMF2OBJ/blob/master/src/main/java/com/lathrum/VMF2OBJ/dataStructure/VectorSorter.java;
 class VectorSorter:
 	var normal: Vector3;
@@ -42,6 +64,7 @@ static func clear_caches() -> void:
 	intersections = {};
 	material_cache = {};
 	texture_sizes_cache = {};
+	VMTLoader.clear_cache();
 
 static func get_planes_intersection_point(side, side2, side3) -> Variant:
 	var d: Array[int] = [side.id, side2.id, side3.id];
@@ -117,7 +140,6 @@ static func get_texture_size(side_material: String) -> Vector2:
 		texture_sizes_cache[side_material] = Vector2(default_texture_size, default_texture_size);
 		return texture_sizes_cache[side_material];
 
-	# NOTE In case if material is blend texture we use texture_albedo param
 	var texture = material.albedo_texture \
 		if material is BaseMaterial3D \
 		else material.get_shader_parameter('albedo_texture');
@@ -137,14 +159,14 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var ux: float = side.uaxis.x;
 	var uy: float = side.uaxis.y;
 	var uz: float = side.uaxis.z;
-	var ushift: float = side.uaxis.shift;
 	var uscale: float = side.uaxis.scale;
+	var ushift: float = side.uaxis.shift * uscale;
 	
 	var vx: float = side.vaxis.x;
 	var vy: float = side.vaxis.y;
 	var vz: float = side.vaxis.z;
-	var vshift: float = side.vaxis.shift;
 	var vscale: float = side.vaxis.scale;
+	var vshift: float = side.vaxis.shift * vscale;
 
 	# FIXME Add texture scale from VMF metadata
 	var tscale = Vector2.ONE;
@@ -156,52 +178,85 @@ static func calculate_uv_for_size(side: Dictionary, vertex: Vector3) -> Vector2:
 	var th := tsize.y;
 	var aspect := tw / th;
 
-	# NOTE: Not supported yet
-	# if material:
-	# 	tsx /= tscale.x;
-	# 	tsy /= tscale.y;
-
 	var uv := Vector3(ux, uy, uz);
 	var vv := Vector3(vx, vy, vz);
 	var v2 := Vector3(vertex.x, vertex.y, vertex.z);
+	var normal = side.plane.value.normal;
 
-	var u := (v2.dot(uv) + ushift * uscale) / tw / uscale / tsx;
-	var v := (v2.dot(vv) + vshift * vscale) / th / vscale / tsy;
+	var u := (v2.dot(uv) + ushift) / tw / uscale;
+	var v := (v2.dot(vv) + vshift) / th / vscale;
 	
 	return Vector2(u, v);
 
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
-static func generate_collisions(mesh: ArrayMesh):
+static func generate_collisions(mesh_instance: MeshInstance3D):
 	var bodies: Array[StaticBody3D] = [];
 	var surface_props = {};
+	var mesh = mesh_instance.mesh;
+	var transformer = VMFTransformer.new();
+	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
 
 	# NOTE: If the mesh is too small then we don't need to generate SteamAudioGeometry for this mesh;
 	var is_allowed_to_generate_steam_audio = mesh.get_aabb().size.length() > 2;
 
 	for surface_idx in range(mesh.get_surface_count()):
 		var material = mesh.surface_get_material(surface_idx);
+		var material_name = mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+
+		var is_ignored = VMFConfig.materials.ignore.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
+		if is_ignored: continue;
+
+		var compilekeys = material.get_meta("compile_keys", []) if material else [];
 		var surface_prop = (material.get_meta("surfaceprop", "default") if material else "default").to_lower();
 
+		if compilekeys.size() > 0:
+			surface_prop = "tool_" + compilekeys[0];
+
+		var has_nocollision_extender = extend_transformer and "nocollision" in extend_transformer;
+		var is_no_collision = false;
+
+		for key in compilekeys:
+			if has_nocollision_extender:
+				if extend_transformer.nocollision.has(key): 
+					is_no_collision = true;
+					break;
+
+			if is_no_collision: break;
+
+			if transformer.nocollision.has(key): 
+				is_no_collision = true;
+				break;
+
+		if is_no_collision: continue;
+
 		if not surface_prop in surface_props:
-			surface_props[surface_prop] = [];
+			surface_props[surface_prop] = ArrayMesh.new();
 
-		surface_props[surface_prop].append(surface_idx);
+		var array_mesh = surface_props[surface_prop];
+		var arrays = mesh.surface_get_arrays(surface_idx);
+		array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays);
 
+		if compilekeys.size() > 0:
+			array_mesh.set_meta("compile_keys", compilekeys);
+	
 	for surface_prop in surface_props.keys():
 		var static_body = StaticBody3D.new();
 		var collision = CollisionShape3D.new();
-		var array_mesh = ArrayMesh.new();
+		var compilekeys = surface_props[surface_prop].get_meta("compile_keys", []);
+
+		for key in compilekeys:
+			if extend_transformer and key in extend_transformer:
+				extend_transformer[key].call(static_body);
+				continue;
+
+			if key in transformer:
+				transformer[key].call(static_body);
 
 		static_body.name = "surface_prop_" + surface_prop;
 		static_body.set_meta("surface_prop", surface_prop);
 
-		for surface_idx in surface_props[surface_prop]:
-			var arrays = mesh.surface_get_arrays(surface_idx);
-			array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays);
-
-		var shape = array_mesh.create_trimesh_shape();
-		collision.shape = shape;
-		collision.name = "collision"
+		collision.name = "collision";
+		collision.shape = surface_props[surface_prop].create_trimesh_shape();
 
 		static_body.add_child(collision);
 		collision.set_owner(static_body);
@@ -209,9 +264,56 @@ static func generate_collisions(mesh: ArrayMesh):
 		if is_allowed_to_generate_steam_audio:
 			create_steam_audio_geometry(surface_prop, collision);
 
-		bodies.append(static_body);
+		mesh_instance.add_child(static_body);
+		VMFUtils.set_owner_recursive(static_body, mesh_instance.get_owner());
 
-	return bodies;
+## Clear mesh from ignored textures and materials
+static func cleanup_mesh(original_mesh: ArrayMesh):
+	var is_44 = Engine.get_version_info().minor >= 4;
+
+	var ignored_textures = VMFConfig.materials.ignore;
+	var duplicated_mesh = ArrayMesh.new() if not is_44 else null;
+	var transformer = VMFTransformer.new();
+	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
+	var mt = MeshDataTool.new() if not is_44 else null;
+
+	var surface_removed = 0;
+	for surface_idx in range(original_mesh.get_surface_count()):
+		surface_idx -= surface_removed;
+
+		var material_name = original_mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+		var material = original_mesh.surface_get_material(surface_idx);
+		var compilekeys = material.get_meta("compile_keys", []) if material else [];
+
+		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
+		if is_ignored and is_44:
+			original_mesh.surface_remove(surface_idx);
+			surface_removed += 1;
+			continue;
+
+		var is_norender = false;
+
+		for key in compilekeys:
+			if is_ignored: break;
+			if extend_transformer and "norender" in extend_transformer.norender:
+				is_norender = extend_transformer.norender.has(key);
+				break;
+
+			is_norender = transformer.norender.has(key);
+			if is_norender: break;
+
+		if is_norender and is_44:
+			original_mesh.surface_remove(surface_idx);
+			surface_idx -= 1;
+			continue;
+
+		if is_norender or is_44: continue;
+
+		mt.create_from_surface(original_mesh, surface_idx);
+		mt.commit_to_surface(duplicated_mesh, surface_idx);
+		duplicated_mesh.set_meta("surface_material_" + str(surface_idx), material_name);
+
+	return duplicated_mesh if not is_44 else original_mesh;
 
 # In case if SteamAudio plugin detected in the project it will create SteamAudioGeometry for each surface
 static func create_steam_audio_geometry(surface_prop: String, collision_shape: CollisionShape3D):
@@ -365,3 +467,18 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 		VMFLogger.warn("Mesh generation took " + str(t) + "ms");
 
 	return mesh;
+
+static func generate_lods(mesh: ArrayMesh) -> ArrayMesh:
+	var importer_mesh := ImporterMesh.new();
+	for surface_idx in range(mesh.get_surface_count()):
+		importer_mesh.add_surface(
+			ArrayMesh.PRIMITIVE_TRIANGLES,
+			mesh.surface_get_arrays(surface_idx),
+			[], {},
+			mesh.surface_get_material(surface_idx),
+			'surface_' + str(surface_idx)
+		);
+
+	importer_mesh.generate_lods(60, 60, []);
+
+	return importer_mesh.get_mesh();

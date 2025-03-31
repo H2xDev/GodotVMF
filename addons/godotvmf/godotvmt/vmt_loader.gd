@@ -152,11 +152,7 @@ static func load(path: String):
 
 	if "$shader" in details:
 		var extension = ".gdshader" if not details["$shader"].get_extension() else "";
-		var shader_path = details["$shader"] + extension;
-
-		if not shader_path.begins_with("res://"):
-			shader_path = "res://" + shader_path;
-
+		var shader_path = "res://" + details["$shader"] + extension;
 		material = VMTShaderBasedMaterial.load(shader_path);
 	else:
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
@@ -177,10 +173,8 @@ static func load(path: String):
 
 		if material is ShaderMaterial:
 			var mat: ShaderMaterial = material;
-			var uniform = uniforms.filter(func(u): return u.name == key);
-
-			if uniform.size() > 0:
-				var is_texture = uniform[0].hint_string == "Texture2D";
+			if uniforms.find(key) > -1:
+				var is_texture = value.has("/");
 				mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
 				continue;
 
@@ -198,14 +192,13 @@ static func load(path: String):
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
-static var last_cache_changed: float;
 static var cached_materials: Dictionary;
+
+static func clear_cache():
+	cached_materials = {};
 
 static func get_material(material: String):
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
-
-	if last_cache_changed == null:
-		last_cache_changed = 0;
 
 	if not ResourceLoader.exists(material_path):
 		material_path = material_path.replace(".tres", ".vmt");
@@ -217,15 +210,11 @@ static func get_material(material: String):
 		if not ResourceLoader.exists(material_path): return null;
 
 	cached_materials = cached_materials if cached_materials else {};
-	if Time.get_ticks_msec() - last_cache_changed > 10000:
-		cached_materials = {};
 
 	if material in cached_materials:
 		return cached_materials[material];
 
 	var res = ResourceLoader.load(material_path);
 	cached_materials[material] = res;
-
-	last_cache_changed = Time.get_ticks_msec();
 
 	return res;

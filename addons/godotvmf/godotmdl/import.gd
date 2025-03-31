@@ -31,13 +31,12 @@ func _get_import_options(str, int):
 			type = TYPE_VECTOR3,
 		},
 		{
-			name = "materials_root",
-			default_value = "",
-			type = TYPE_STRING,
-			property_hint = PROPERTY_HINT_GLOBAL_DIR,
+			name = "generate_occluder",
+			default_value = false,
+			type = TYPE_BOOL,
 		},
 		{
-			name = "generate_occluder",
+			name = "generate_lods",
 			default_value = true,
 			type = TYPE_BOOL,
 		},
@@ -52,6 +51,13 @@ func _get_import_options(str, int):
 			default_value = Vector3.ONE,
 			type = TYPE_VECTOR3,
 			description = "Occluder box scale"
+		},
+		{
+			name = "gi_mode",
+			default_value = 1,
+			type = TYPE_INT,
+			property_hint = PROPERTY_HINT_ENUM,
+			hint_string = "Disabled,Static,Dynamic",
 		}
 	];
 

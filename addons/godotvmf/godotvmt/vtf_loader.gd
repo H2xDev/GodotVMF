@@ -259,10 +259,6 @@ func _read_frame(frame):
 		push_error("Corrupted file: {0}".format([file.get_path()]));
 		return null;
 
-	if flags & Flags.TEXTUREFLAGS_NORMAL:
-		img.decompress()
-		img.normal_map_to_xy();
-
 	return ImageTexture.create_from_image(img);
 
 func _init(path, duration):

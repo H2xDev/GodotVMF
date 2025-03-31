@@ -33,6 +33,9 @@ func Disable(_param = null):
 	enabled = false;
 
 func Kill(_param = null):
+	if entity.get("targetname", "") in ValveIONode.named_entities:
+		named_entities.erase(entity.targetname);
+
 	get_parent().remove_child(self);
 	queue_free();
 
@@ -62,8 +65,6 @@ func _ready():
 
 	if ename: add_named_entity(ename, self);
 
-	enabled = entity.get("StartDisabled", 0) == 0;
-
 	parse_connections(self);
 
 	set_process(true);
@@ -76,6 +77,7 @@ func _apply_entity(ent) -> void:
 	self.entity = ent;
 	self.flags = ent.get("spawnflags", 0);
 	self.transform = get_entity_transform(ent);
+	self.enabled = ent.get("StartDisabled", 0) == 0;
 
 	assign_name();
 
@@ -116,6 +118,7 @@ static func call_target_input(target, input, param, delay, caller) -> void:
 			node.set("activator", caller);
 			node.call(input, param);
 
+## Returns the first node with the targetname
 static func get_target(n, caller = null) -> Node3D:
 	if n in ValveIONode.aliases:
 		return ValveIONode.aliases[n];
@@ -130,6 +133,7 @@ static func get_target(n, caller = null) -> Node3D:
 
 	return node;
 
+## Returns all nodes with the targetname
 static func get_all_targets(target_name: String, caller = null) -> Array:
 	if VMFConfig.get_tree().has_group(target_name):
 		return VMFConfig.get_tree().get_nodes_in_group(target_name);
@@ -146,7 +150,8 @@ static func parse_connections(caller: Node) -> void:
 		var connections = caller.entity.connections[output];
 		connections = connections if connections is Array else [connections];
 
-		caller.add_user_signal(output);
+		if not caller.has_signal(output):
+			caller.add_user_signal(output);
 
 		for connectionData in connections:
 			var arr = connectionData.split(",");
@@ -186,12 +191,16 @@ func has_flag(flag: int) -> bool:
 	return (entity.spawnflags & flag) != 0;
 
 func trigger_output(output) -> void:
+	if output is Signal:
+		output = output.get_name();
+
 	if not enabled: return;
 
 	if has_signal(output):
 		emit_signal(output);
 
-func get_mesh() -> ArrayMesh:
+## Returns mesh of the entity
+func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
 	if not validate_entity(): return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
@@ -201,14 +210,20 @@ func get_mesh() -> ArrayMesh:
 		'world': { 'solid': solids },
 	};
 	
-	return VMFTool.create_mesh(struct, global_position);
+	var mesh = VMFTool.cleanup_mesh(VMFTool.create_mesh(struct, global_position)) \
+			if cleanup \
+			else VMFTool.create_mesh(struct, global_position);
+	return VMFTool.generate_lods(mesh) if lods else mesh;
 
+## Converts the vector from Z-up to Y-up
 static func convert_vector(v) -> Vector3:
 	return Vector3(v.x, v.z, -v.y);
 
+## Converts Source's angles to Godot's Euler angles
 static func convert_direction(v) -> Vector3:
 	return get_entity_basis({ "angles": v }).get_euler();
 
+## Returns Transform3D based on the entity parameters
 static func get_entity_transform(ent):
 	var angles = ent.get("angles", Vector3.ZERO) / 180 * PI;
 	angles = Vector3(angles.z, angles.y, -angles.x);
@@ -218,6 +233,7 @@ static func get_entity_transform(ent):
 	pos = Vector3(pos.x, pos.z, -pos.y);
 	return Transform3D(basis, pos);
 	
+## Returns Basis based on the entity parameters
 static func get_entity_basis(ent) -> Basis:
 	return get_entity_transform(ent).basis;
 
@@ -226,9 +242,6 @@ static func get_movement_vector(v):
 	var movement = _basis.z;
 
 	return Vector3(movement.z, movement.y, movement.x);
-
-func get_value(field, fallback):
-	return entity[field] if field in entity else fallback;
 
 ## Returns the shape of the entity that depends on solids that it have
 func get_entity_shape():

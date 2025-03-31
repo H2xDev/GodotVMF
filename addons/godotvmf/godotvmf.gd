@@ -8,6 +8,7 @@ var textureChecksums = {};
 var mdl_import_plugin;
 var vtf_import_plugin;
 var vmt_import_plugin;
+var vmt_context_plugin: VMTContextMenu;
 
 func _enter_tree() -> void:
 	add_autoload_singleton("VMFConfig", "res://addons/godotvmf/src/VMFConfig.gd");
@@ -30,6 +31,9 @@ func _enter_tree() -> void:
 	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
 	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
 
+	vmt_context_plugin = VMTContextMenu.new();
+	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_context_plugin);
+
 func _exit_tree():
 	remove_autoload_singleton("VMFConfig");
 	remove_custom_type("VMFNode");
@@ -41,10 +45,12 @@ func _exit_tree():
 	remove_import_plugin(mdl_import_plugin);
 	remove_import_plugin(vmt_import_plugin);
 	remove_import_plugin(vtf_import_plugin);
+	remove_context_menu_plugin(vmt_context_plugin);
 
 	mdl_import_plugin = null;
 	vmt_import_plugin = null;
 	vtf_import_plugin = null;
+	vmt_context_plugin = null;
 
 func GetExistingVMFNodes() -> Array[VMFNode]:
 	var nodes: Array[VMFNode] = [];
@@ -52,7 +58,7 @@ func GetExistingVMFNodes() -> Array[VMFNode]:
 	if !get_tree(): return nodes;
 	
 	nodes.assign(get_tree().get_nodes_in_group("vmfnode_group"));
-	return nodes.filter(func(node): return not node.get_meta("is_instance", false));
+	return nodes.filter(func(node): return not node.get_meta("instance", false));
 
 func ReimportVMF():
 	var nodes := GetExistingVMFNodes();

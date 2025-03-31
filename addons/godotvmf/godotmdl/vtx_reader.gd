@@ -331,14 +331,14 @@ func _read_strip_groups(mesh: VTXMesh, file: FileAccess, debug = false):
 		_read_strip_headers(strip_group, file);
 
 func _read_strip_groups_csgo(mesh: VTXMesh, file: FileAccess, debug = false):
-	mesh.strip_groups = ByteReader.read_array(file, mesh, "strip_group_offset", "num_strip_groups", VTXStripGroup);
+	mesh.strip_groups = ByteReader.read_array(file, mesh, "strip_group_offset", "num_strip_groups", VTXStripGroupCSGO);
 
 	for strip_group in mesh.strip_groups:
 		_read_vertices(strip_group, file);
 		_read_indices(strip_group, mesh, file);
 		_read_strip_headers_csgo(strip_group, file);
 
-func _read_indices(strip_group: VTXStripGroup, mesh: VTXMesh, file: FileAccess):
+func _read_indices(strip_group, mesh: VTXMesh, file: FileAccess):
 	file.seek(strip_group.address + strip_group.index_offset);
 
 	for j in range(strip_group.num_indices):
@@ -346,7 +346,7 @@ func _read_indices(strip_group: VTXStripGroup, mesh: VTXMesh, file: FileAccess):
 	
 	mesh.idx_base += strip_group.num_verts;
 
-func _read_vertices(strip_group: VTXStripGroup, file: FileAccess):
+func _read_vertices(strip_group, file: FileAccess):
 	strip_group.vertices = ByteReader.read_array(file, strip_group, "vert_offset", "num_verts", VTXVertex) as Array[VTXVertex];
 
 func _read_strip_headers(strip_group: VTXStripGroup, file: FileAccess):

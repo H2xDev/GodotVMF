@@ -87,6 +87,7 @@ func assign(target, source: Dictionary):
 	return target;
 
 func load_config():
+	if not Engine.is_editor_hint(): return;
 	if not FileAccess.file_exists(CONFIG_FILE_PATH): return;
 	var file = FileAccess.open(CONFIG_FILE_PATH, FileAccess.READ);
 	var json = JSON.parse_string(file.get_as_text());
