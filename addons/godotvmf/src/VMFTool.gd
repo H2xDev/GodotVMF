@@ -197,7 +197,7 @@ static func generate_collisions(mesh_instance: MeshInstance3D):
 	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
 
 	# NOTE: If the mesh is too small then we don't need to generate SteamAudioGeometry for this mesh;
-	var is_allowed_to_generate_steam_audio = mesh.get_aabb().size.length() > 2;
+	var is_allowed_to_generate_steam_audio = mesh.get_aabb().size.length() > 10;
 
 	for surface_idx in range(mesh.get_surface_count()):
 		var material = mesh.surface_get_material(surface_idx);
@@ -304,7 +304,7 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 
 		if is_norender and is_44:
 			original_mesh.surface_remove(surface_idx);
-			surface_idx -= 1;
+			surface_removed += 1;
 			continue;
 
 		if is_norender or is_44: continue;
