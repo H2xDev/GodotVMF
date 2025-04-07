@@ -217,7 +217,7 @@ func import_models():
 
 
 func import_materials() -> void:
-	if VMFConfig.materials.import_mode == VMFConfigClass.MaterialsConfig.ImportMode.USE_EXISTING:
+	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
 		return;
 
 	var list: Array[String] = [];

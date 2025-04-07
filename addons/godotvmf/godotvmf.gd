@@ -11,7 +11,6 @@ var vmt_import_plugin;
 var vmt_context_plugin: VMTContextMenu;
 
 func _enter_tree() -> void:
-	add_autoload_singleton("VMFConfig", "res://addons/godotvmf/src/VMFConfig.gd");
 	dock = preload("res://addons/godotvmf/plugin.tscn").instantiate();
 	
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, dock);

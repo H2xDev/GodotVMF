@@ -2,6 +2,7 @@
 class_name ValveIONode extends Node3D;
 
 static var named_entities = {};
+static var scene_instance: Node = null;
 
 ## Assigns global targetname for the node
 static func define_alias(name: String, value: Node):
@@ -72,6 +73,7 @@ func _ready():
 
 	call_deferred("_reparent");
 	call_deferred("_entity_ready");
+	scene_instance = get_tree().current_scene;
 
 func _apply_entity(ent) -> void:
 	self.entity = ent;
@@ -135,8 +137,8 @@ static func get_target(n, caller = null) -> Node3D:
 
 ## Returns all nodes with the targetname
 static func get_all_targets(target_name: String, caller = null) -> Array:
-	if VMFConfig.get_tree().has_group(target_name):
-		return VMFConfig.get_tree().get_nodes_in_group(target_name);
+	if scene_instance.get_tree().has_group(target_name):
+		return scene_instance.get_tree().get_nodes_in_group(target_name);
 
 	return ValveIONode.named_entities.get(target_name, []);
 

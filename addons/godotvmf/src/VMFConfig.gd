@@ -1,6 +1,5 @@
-@tool
-class_name VMFConfigClass
-extends Node
+@static_unload
+class_name VMFConfig extends RefCounted
 
 const CONFIG_FILE_PATH = "res://vmf.config.json";
 
@@ -60,6 +59,9 @@ class ImportConfig:
 	## The path where imported geometry and collision be saved
 	var geometry_folder: String = "res://geometry";
 
+	## The path where imported materials be saved
+	var steam_materials_folder: String = "res://steam_audio_materials";
+
 	## A dictionary of entity aliases where key is an entity name and value is a path to the scene
 	var entity_aliases: Dictionary = {}
 
@@ -69,13 +71,39 @@ class ImportConfig:
 	## If specified, the importer will use this preset for the navigation mesh
 	var navigation_mesh_preset: String = "";
 
-var gameinfo_path: String = "res://";
-var models: ModelsConfig = ModelsConfig.new();
-var materials: MaterialsConfig = MaterialsConfig.new();
-var import: ImportConfig = ImportConfig.new();
-var vtfcmd: String = "";
+static var gameinfo_path: String = "res://":
+	get:
+		if not gameinfo_path:
+			gameinfo_path = "res://";
 
-func assign(target, source: Dictionary):
+		return gameinfo_path;
+
+static var models: ModelsConfig:
+	get:
+		if not models:
+			models = ModelsConfig.new();
+		return models;
+
+static var materials: MaterialsConfig:
+	get:
+		if not materials:
+			materials = MaterialsConfig.new();
+		return materials;
+
+static var import: ImportConfig:
+	get:
+		if not import:
+			import = ImportConfig.new();
+		return import;
+
+static var vtfcmd: String = "":
+	get:
+		if not vtfcmd:
+			vtfcmd = "";
+		return vtfcmd;
+
+static func assign(target, source: Dictionary):
+	if not target: return;
 	for key in source.keys():
 		if not key in target and target is not Dictionary: continue;
 
@@ -86,13 +114,11 @@ func assign(target, source: Dictionary):
 
 	return target;
 
-func load_config():
+static func load_config():
 	if not Engine.is_editor_hint(): return;
 	if not FileAccess.file_exists(CONFIG_FILE_PATH): return;
 	var file = FileAccess.open(CONFIG_FILE_PATH, FileAccess.READ);
 	var json = JSON.parse_string(file.get_as_text());
 	file.close();
 
-	assign(self, json);
-
-func _ready(): load_config();
+	assign(VMFConfig, json);

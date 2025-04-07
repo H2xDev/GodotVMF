@@ -319,7 +319,7 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 static func create_steam_audio_geometry(surface_prop: String, collision_shape: CollisionShape3D):
 	if not type_exists("SteamAudioGeometry"): return;
 
-	var path = (VMFConfig.config.import.steamAudioMaterialsFolder + "/" + surface_prop + ".tres") \
+	var path = (VMFConfig.import.steam_audio_materials_folder + "/" + surface_prop + ".tres") \
 		.replace("\\", "/") \
 		.replace("//", "/") \
 		.replace("res:/", "res://");
