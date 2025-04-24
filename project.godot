@@ -14,10 +14,6 @@ config/name="GodotVMF Example"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
-
-VMFConfig="*res://addons/godotvmf/src/VMFConfig.gd"
-
 [debug]
 
 gdscript/warnings/untyped_declaration=1
