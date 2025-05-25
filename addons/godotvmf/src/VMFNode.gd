@@ -148,7 +148,7 @@ func save_geometry_file(target_mesh: Mesh):
 	
 	var err := ResourceSaver.save(target_mesh, resource_path, ResourceSaver.FLAG_COMPRESS);
 	if err:
-		VMFLogger.error("Failed to save resource: %s" % err);
+		VMFLogger.error("Failed to save geometry resource: %s" % err);
 		return;
 	
 	target_mesh.take_over_path(resource_path);
@@ -163,10 +163,14 @@ func save_collision_file() -> void:
 		var collision := body.get_node('collision');
 		var shape = collision.shape;
 		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.import.geometry_folder, _vmf_identifer(), body.name];
+
+		if not DirAccess.dir_exists_absolute(save_path.get_base_dir()):
+			DirAccess.make_dir_recursive_absolute(save_path.get_base_dir());
+
 		var error := ResourceSaver.save(collision.shape, save_path, ResourceSaver.FLAG_COMPRESS);
 
 		if error:
-			VMFLogger.error("Failed to save resource: %s" % error);
+			VMFLogger.error("Failed to save collision resource: %s" % error);
 			continue;
 		shape.take_over_path(save_path);
 		collision.shape = load(save_path);
