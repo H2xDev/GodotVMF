@@ -198,7 +198,6 @@ func import_models():
 		if not FileAccess.file_exists(vtx_path): vtx_path = vtx_dx90_path;
 		if not FileAccess.file_exists(vtx_path): continue;
 		if not FileAccess.file_exists(vvd_path): continue;
-		if not FileAccess.file_exists(phy_path): continue;
 
 		var model_materials = MDLReader.new(mdl_path).get_possible_material_paths();
 
@@ -209,7 +208,7 @@ func import_models():
 		DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
 		DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
 		DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
-		DirAccess.copy_absolute(phy_path, target_path + ".phy");
+		if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
 		DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
 
 		has_imported_resources = true;

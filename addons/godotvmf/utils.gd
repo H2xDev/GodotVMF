@@ -4,7 +4,8 @@ static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/') \
 			.replace('//', '/') \
 			.replace('//', '/') \
-			.replace('res:/', 'res://');
+			.replace('res:/', 'res://') \
+			.replace('res:///', 'res://');
 
 static func get_children_recursive(node: Node3D) -> Array:
 	var children = [];

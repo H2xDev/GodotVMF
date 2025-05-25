@@ -6,6 +6,10 @@ extends prop_studio
 func _apply_entity(e):
 	super._apply_entity(e);
 
+	if not model_instance:
+		VMFLogger.error("Corrupted prop_static: " + str(model));
+		return;
+
 	model_instance.set_owner(get_owner());
 	model_instance.scale *= e.get('modelscale', 1.0);
 
