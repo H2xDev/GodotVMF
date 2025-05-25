@@ -207,7 +207,7 @@ static func get_material(material: String):
 		VMFLogger.warn("Material not found: " + material);
 		material_path = VMFConfig.materials.fallback_material
 	
-		if not ResourceLoader.exists(material_path): return null;
+		if not material_path or not ResourceLoader.exists(material_path): return null;
 
 	cached_materials = cached_materials if cached_materials else {};
 
