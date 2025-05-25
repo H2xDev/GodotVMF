@@ -2,10 +2,10 @@ class_name MDLMeshGenerator extends RefCounted
 
 static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary) -> MeshInstance3D:
 	var mesh_instance := create_mesh_instance(mdl, vtx, vvd, options);
-	# var skeleton := generate_skeleton(mesh_instance, mdl, options);
+	var skeleton := generate_skeleton(mesh_instance, mdl, options);
 
 	generate_lods(mesh_instance, options)
-	generate_collision(mesh_instance, null, phy, options);
+	generate_collision(mesh_instance, skeleton, phy, options);
 	create_occluder(mesh_instance, options);
 	assign_materials(mesh_instance, mdl);
 

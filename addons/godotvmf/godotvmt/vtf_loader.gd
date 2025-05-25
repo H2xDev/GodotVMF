@@ -268,6 +268,7 @@ func _init(path, duration):
 	file = FileAccess.open(path, FileAccess.READ);
 
 static func get_texture(texture: String):
+	texture = texture.to_lower();
 	var texture_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + texture + ".vtf");
 
 	if not ResourceLoader.exists(texture_path):

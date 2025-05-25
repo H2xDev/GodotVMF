@@ -279,6 +279,8 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 
 	var surface_removed = 0;
 	for surface_idx in range(original_mesh.get_surface_count()):
+		# NOTE: Remapping surface material meta to the new index in case previous surface was removed
+		original_mesh.set_meta("surface_material_" + str(surface_idx - surface_removed), original_mesh.get_meta("surface_material_" + str(surface_idx), ""));
 		surface_idx -= surface_removed;
 
 		var material_name = original_mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();

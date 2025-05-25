@@ -108,15 +108,14 @@ func import_geometry(_reimport := false) -> void:
 
 	VMFTool.generate_collisions(geometry_mesh);
 	save_collision_file();
-	# generate_occluder(true);
 
 	if not get_meta("instance", false):
 		generate_navmesh(geometry_mesh);
 
 	geometry_mesh.mesh = VMFTool.cleanup_mesh(geometry_mesh.mesh);
 
-	# if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
-	# 	geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
+	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
+		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
 
 	geometry_mesh.mesh = save_geometry_file(geometry_mesh.mesh);
 
