@@ -42,6 +42,14 @@ layout_mode = 2
 text = "Docs"
 flat = true
 
+[node name="VSeparator2" type="VSeparator" parent="."]
+layout_mode = 2
+
+[node name="DiscordSupport" type="Button" parent="."]
+layout_mode = 2
+text = "Support In Discord"
+flat = true
+
 [node name="ProgressBar" type="HBoxContainer" parent="."]
 visible = false
 layout_mode = 2

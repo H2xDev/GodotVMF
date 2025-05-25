@@ -19,6 +19,7 @@ func _enter_tree() -> void:
 	dock.get_node('ReimportEntities').pressed.connect(ReimportEntities);
 	dock.get_node('ReimportGeometry').pressed.connect(ReimportGeometry);
 	dock.get_node('Docs').pressed.connect(func(): OS.shell_open("https://github.com/H2xDev/GodotVMF/wiki"));
+	dock.get_node('DiscordSupport').pressed.connect(func(): OS.shell_open("https://discord.gg/wtSK94fPxd"));
 
 	mdl_import_plugin = preload("res://addons/godotvmf/godotmdl/import.gd").new();
 	vmt_import_plugin = preload("res://addons/godotvmf/godotvmt/vmt_import.gd").new();
