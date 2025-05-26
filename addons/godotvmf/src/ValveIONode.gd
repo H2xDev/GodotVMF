@@ -158,10 +158,12 @@ static func parse_connections(caller: Node) -> void:
 		for connectionData in connections:
 			var arr = connectionData.split(",");
 			var target = arr[0];
-			var input = arr[1];
-			var param = arr[2];
-			var delay = float(arr[3]);
-			var times = arr[4];
+			var input = arr[1] if arr.size() > 1 else "";
+			var param = arr[2] if arr.size() > 2 else "";
+			var delay = float(arr[3]) if arr.size() > 3 else 0.0;
+			var times = arr[4] if arr.size() > 4 else 1;
+
+			if not input or not target: continue;
 
 			caller.connect(output, func(): call_target_input(target, input, param, delay, caller));
 
