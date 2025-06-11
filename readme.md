@@ -45,7 +45,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
 
 ## Made with this tool
-- [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY). A game made with this tool
+- [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY) by Lazy
 - [Vampire Bloodlines map example](https://www.youtube.com/watch?v=dV3nllCZYNM)  by Rendara
 - [SurfsUp](https://store.steampowered.com/app/3688390/SurfsUp_Demo) by [@bearlikelion](https://github.com/bearlikelion)
 
