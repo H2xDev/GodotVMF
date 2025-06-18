@@ -47,7 +47,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 ## Made with this tool
 - [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY) by Lazy
 - [Vampire Bloodlines map example](https://www.youtube.com/watch?v=dV3nllCZYNM)  by Rendara
-- [SurfsUp](https://store.steampowered.com/app/3688390/SurfsUp_Demo) by [@bearlikelion](https://github.com/bearlikelion)
+- [SurfsUp](https://store.steampowered.com/app/3454830/SurfsUp) by [@bearlikelion](https://github.com/bearlikelion)
 
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
