@@ -27,6 +27,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 
 ## Usage
 - [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
+- [Demo video](https://www.youtube.com/watch?v=5XYfvbIAlJU)
 
 ## Features
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
@@ -42,6 +43,11 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Surface props support
 - Material's compile properties support
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
+
+## Made with this tool
+- [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY) by Lazy
+- [Vampire Bloodlines map example](https://www.youtube.com/watch?v=dV3nllCZYNM)  by Rendara
+- [SurfsUp](https://store.steampowered.com/app/3454830/SurfsUp) by [@bearlikelion](https://github.com/bearlikelion)
 
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
@@ -64,10 +70,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 4. Try to import decompiled maps in Godot
 5. Check for errors if they appear
 
-
-## Additional things
-- Demo (video): https://www.youtube.com/watch?v=5XYfvbIAlJU
-- [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY). A game made with this tool
 
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  
