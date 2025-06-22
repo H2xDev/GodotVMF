@@ -29,7 +29,6 @@ static func create_mesh_instance(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader,
 
 		for strip_group in mesh.strip_groups:
 			st.begin(Mesh.PRIMITIVE_TRIANGLES);
-	
 			for vert_info in strip_group.vertices:
 				var vid = vvd.find_vertex_index(model_vertex_index_start + mdl_mesh.vertex_index_start + vert_info.orig_mesh_vert_id);
 				var vert := vvd.vertices[vid];
@@ -43,6 +42,7 @@ static func create_mesh_instance(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader,
 				st.add_vertex(vert.position * additional_basis);
 	
 			for indice in strip_group.indices:
+				if indice > strip_group.vertices.size() - 1: break;
 				st.add_index(indice);
 	
 			st.commit(array_mesh);
@@ -226,7 +226,7 @@ static func assign_materials(mesh_instance: MeshInstance3D, mdl: MDLReader):
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
 			var path = VMFUtils.normalize_path(dir + "/" + tex.name);
-			var material = VMTLoader.get_material(path);
+			var material = VMTLoader.get_material(path.to_lower());
 			if not material: continue;
 			materials.append(material);
 
