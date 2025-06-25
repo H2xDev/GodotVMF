@@ -10,6 +10,9 @@
 
 <a href="https://godotengine.org/asset-library/asset/2605" target="_blank">
 <img src="https://img.shields.io/badge/asset_library-%23EEEEEE.svg?style=for-the-badge&logo=godot-engine" alt="Godot Asset Library"></a>
+
+<a href="https://store-beta.godotengine.org/asset/h2xdev/godotvmf" target="_blank">
+<img src="https://img.shields.io/badge/asset_store-%23333333.svg?style=for-the-badge&logo=godot-engine&logoColor=%23ffffff" alt="Godot Asset Store"></a>
 </p>
 
 ## Description
