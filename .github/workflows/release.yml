@@ -33,6 +33,6 @@ jobs:
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
-          files: addons-v${{ steps.get_version.outputs.version }}.zip
+          files: godotvmf-v${{ steps.get_version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
