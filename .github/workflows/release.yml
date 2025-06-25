@@ -1,0 +1,38 @@
+name: Release Addons
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  release:
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract version from plugin.cfg
+        id: get_version
+        run: |
+          version=$(grep '^version=' addons/godotvmf/plugin.cfg | cut -d= -f2 | tr -d '"')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create ZIP archive with version in name
+        run: |
+          zip -r addons-v${{ steps.get_version.outputs.version }}.zip addons
+
+      - name: Create GitHub release and upload archive
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          files: addons-v${{ steps.get_version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
