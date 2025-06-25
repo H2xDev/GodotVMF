@@ -1,0 +1,22 @@
+[remap]
+
+importer="MDL"
+type="PackedScene"
+uid="uid://cgvcm3bc6pc2"
+path="res://.godot/imported/male_07.mdl-1b40cd9b07e103f5c27cbcac1c5562f1.tscn"
+
+[deps]
+
+source_file="res://models/male_07.mdl"
+dest_files=["res://.godot/imported/male_07.mdl-1b40cd9b07e103f5c27cbcac1c5562f1.tscn"]
+
+[params]
+
+use_global_scale=true
+scale=0.02
+additional_rotation=Vector3(0, 0, 0)
+generate_occluder=false
+generate_lods=true
+primitive_occluder=false
+primitive_occluder_scale=Vector3(1, 1, 1)
+gi_mode=1
