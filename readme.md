@@ -28,8 +28,11 @@ We with my friend [Ambiabstract](https://github.com/Ambiabstract) did not find a
 A useful tool for those who like making levels in Hammer and are making a project on the Godot.
 Or for those who just want to port their map from Source Engine to Godot and see what happens.
 
-## Usage
+## Installation and Usage
+- [Installation Guide](https://github.com/H2xDev/GodotVMF/wiki/Installation-guide)
 - [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
+
+## Video demonstration
 - [Demo video](https://www.youtube.com/watch?v=5XYfvbIAlJU)
 
 ## Features
