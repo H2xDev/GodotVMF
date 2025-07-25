@@ -1,72 +1,58 @@
-class_name MDLMeshGenerator extends RefCounted
+## This class generates a MeshInstance3D from parsed MDL, VTX, VVD and PHY files.
+class_name MDLCombiner extends RefCounted
 
-static func generate_mesh(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary) -> MeshInstance3D:
-	var mesh_instance := create_mesh_instance(mdl, vtx, vvd, options);
-	var skeleton := generate_skeleton(mesh_instance, mdl, options);
+var st := SurfaceTool.new();
+var array_mesh := ArrayMesh.new();
+var mesh_instance := MeshInstance3D.new();
+var skeleton := Skeleton3D.new();
+var options: Dictionary = {};
+var mdl: MDLReader;
+var vtx: VTXReader;
+var vvd: VVDReader;
+var phy: PHYReader;
 
-	generate_lods(mesh_instance, options)
-	generate_collision(mesh_instance, skeleton, phy, options);
-	create_occluder(mesh_instance, options);
-	assign_materials(mesh_instance, mdl);
+var scale: float:
+	get: return options.scale if not options.use_global_scale else VMFConfig.import.scale;
 
-	return mesh_instance;
+var rotation_radians: Vector3:
+	get: return options.get("additional_rotation", Vector3.ZERO) / 180.0 * PI;
 
-static func create_mesh_instance(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, options: Dictionary) -> MeshInstance3D:
-	var mesh_instance = MeshInstance3D.new();
-	var array_mesh = ArrayMesh.new();
-	var st = SurfaceTool.new();
+var additional_basis: Basis:
+	get: return Basis.from_euler(rotation_radians);
+	
+## Apply a skin to a mesh instance
+## directly means that skin is applied to internal mesh itself
+static func apply_skin(mesh_instance: MeshInstance3D, skin_id: int, directly: bool = false):
+	if not mesh_instance.has_meta("skin_" + str(skin_id)): return;
+	var materials = mesh_instance.get_meta("skin_" + str(skin_id));
 
+	for surface_idx in range(mesh_instance.mesh.get_surface_count()):
+		if directly:
+			mesh_instance.mesh.surface_set_material(surface_idx, materials[surface_idx]);
+		else:
+			mesh_instance.set_surface_override_material(surface_idx, materials[surface_idx]);
+
+func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary):
+	self.options = options;
+	self.mdl = mdl;
+	self.vtx = vtx;
+	self.vvd = vvd;
+	self.phy = phy;
+
+	setup_mesh_instance();
+	setup_skeleton();
+
+	generate_lods()
+	generate_collision();
+	create_occluder();
+	assign_materials();
+
+func setup_mesh_instance():
 	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
-
-	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * scale);
-
-	var _process_mesh = func(mesh: VTXReader.VTXMesh, body_part_index: int, model_index: int, mesh_index: int):
-		var mdl_model = mdl.body_parts[body_part_index].models[model_index];
-		var mdl_mesh = mdl_model.meshes[mesh_index];
-
-		var model_vertex_index_start = mdl_model.vert_index / 0x30 | 0; # WTF?????
-
-		for strip_group in mesh.strip_groups:
-			st.begin(Mesh.PRIMITIVE_TRIANGLES);
-			for vert_info in strip_group.vertices:
-				var vid = vvd.find_vertex_index(model_vertex_index_start + mdl_mesh.vertex_index_start + vert_info.orig_mesh_vert_id);
-				var vert := vvd.vertices[vid];
-				var tangent := vvd.tangents[vid];
-	
-				st.set_normal(vert.normal * additional_basis);
-				st.set_tangent(tangent);
-				st.set_uv(vert.uv);
-				st.set_bones(vert.bone_weight.bone_bytes);
-				st.set_weights(vert.bone_weight.weight_bytes);
-				st.add_vertex(vert.position * additional_basis);
-	
-			for indice in strip_group.indices:
-				if indice > strip_group.vertices.size() - 1: break;
-				st.add_index(indice);
-	
-			st.commit(array_mesh);
-
-	var _process_lod = func(lod: VTXReader.VTXLod, body_part_index: int, model_index: int):
-		var mesh_index = 0;
-		for mesh in lod.meshes:
-			_process_mesh.call(mesh, body_part_index, model_index, mesh_index);
-			mesh_index += 1;
-
-	var _process_model = func(model: VTXReader.VTXModel, body_part_index: int, model_index: int):
-		# NOTE: Since godot doesn't support importing custom 
-		# 		lod models, we will only use the first lod
-		_process_lod.call(model.lods[0], body_part_index, model_index);
-
-	var _process_body_part = func(body_part: VTXReader.VTXBodyPart, body_part_index: int):
-		var model_index = 0;
-		for model in body_part.models:
-			_process_model.call(model, body_part_index, model_index);
-			model_index += 1;
 
 	var body_part_index = 0;
 	for body_part in vtx.body_parts: 
-		_process_body_part.call(body_part, body_part_index);
+		process_body_part(body_part, body_part_index);
 		body_part_index += 1;
 
 	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, VMFConfig.models.lightmap_texel_size);
@@ -74,9 +60,50 @@ static func create_mesh_instance(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader,
 	mesh_instance.gi_mode = options.get("gi_mode", GeometryInstance3D.GI_MODE_DYNAMIC);
 	mesh_instance.set_mesh(array_mesh);
 
-	return mesh_instance;
+func process_body_part(body_part: VTXReader.VTXBodyPart, body_part_index: int):
+	var model_index = 0;
+	for model in body_part.models:
+		process_model(model, body_part_index, model_index);
+		model_index += 1;
 
-static func create_occluder(mesh_instance: MeshInstance3D, options):
+func process_model(model: VTXReader.VTXModel, body_part_index: int, model_index: int):
+	# NOTE: Since godot doesn't support importing custom 
+	# 		lod models, we will only use the first lod
+	process_lod(model.lods[0], body_part_index, model_index);
+
+func process_lod(lod: VTXReader.VTXLod, body_part_index: int, model_index: int):
+	var mesh_index = 0;
+	for mesh in lod.meshes:
+		process_mesh(mesh, body_part_index, model_index, mesh_index);
+		mesh_index += 1;
+
+func process_mesh(mesh: VTXReader.VTXMesh, body_part_index: int, model_index: int, mesh_index: int):
+	var mdl_model = mdl.body_parts[body_part_index].models[model_index];
+	var mdl_mesh = mdl_model.meshes[mesh_index];
+
+	var model_vertex_index_start = mdl_model.vert_index / 0x30 | 0; # WTF?????
+
+	for strip_group in mesh.strip_groups:
+		st.begin(Mesh.PRIMITIVE_TRIANGLES);
+		for vert_info in strip_group.vertices:
+			var vid = vvd.find_vertex_index(model_vertex_index_start + mdl_mesh.vertex_index_start + vert_info.orig_mesh_vert_id);
+			var vert := vvd.vertices[vid];
+			var tangent := vvd.tangents[vid];
+
+			st.set_normal(vert.normal * additional_basis);
+			st.set_tangent(tangent);
+			st.set_uv(vert.uv);
+			st.set_bones(vert.bone_weight.bone_bytes);
+			st.set_weights(vert.bone_weight.weight_bytes);
+			st.add_vertex(vert.position * additional_basis.scaled(Vector3.ONE * scale));
+
+		for indice in strip_group.indices:
+			if indice > strip_group.vertices.size() - 1: break;
+			st.add_index(indice);
+
+		st.commit(array_mesh);
+
+func create_occluder():
 	if not options.generate_occluder: return;
 
 	var occluder := OccluderInstance3D.new();
@@ -123,12 +150,8 @@ static func create_occluder(mesh_instance: MeshInstance3D, options):
 	occluder.set_owner(mesh_instance);
 
 # TODO: For non-static props collision should be rotated by 90 degrees around y-axis
-static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReader, options: Dictionary):
-	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
-	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(additional_rotation / 180.0 * PI).scaled(Vector3.ONE * scale);
-
-	var yup_to_zup = Basis().rotated(Vector3(1, 0, 0), PI / 2);
+func generate_collision():
+	var yup_to_zup = Basis().rotated(Vector3.RIGHT, PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
 
 	var surface_index = 0;
@@ -150,44 +173,41 @@ static func generate_collision(root: Node3D, skeleton: Skeleton3D, phy: PHYReade
 			collision.shape = shape;
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
 			static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
+			static_body.basis *= additional_basis;
 
 			var vertices = [];
 
 			for face in solid.faces:
-				var v1 = surface.vertices[face.v1] * additional_basis;
-				var v2 = surface.vertices[face.v2] * additional_basis;
-				var v3 = surface.vertices[face.v3] * additional_basis;
+				var v1 = surface.vertices[face.v1] * additional_basis.scaled(Vector3.ONE * scale);
+				var v2 = surface.vertices[face.v2] * additional_basis.scaled(Vector3.ONE * scale);
+				var v3 = surface.vertices[face.v3] * additional_basis.scaled(Vector3.ONE * scale);
 
 				vertices.append_array([v1, v2, v3]);
 
 			collision.shape.set_faces(PackedVector3Array(vertices));
-
-			# NOTE: We don't need bone attachment for static bodies since they has only one bone
-			if skeleton and !skeleton.find_bone("static_body"):
+			if skeleton and skeleton.find_bone("static_body") == -1:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
 				bone_attachment.bone_idx = max(0, solid.bone_index - 1);
 				bone_attachment.add_child(static_body);
 				skeleton.add_child(bone_attachment);
-				bone_attachment.set_owner(root);
-				static_body.set_owner(root);
+				bone_attachment.set_owner(mesh_instance);
+				static_body.set_owner(mesh_instance);
 			else:
-				root.add_child(static_body);
-				static_body.set_owner(root);
+				# NOTE: We don't need bone attachment for static bodies since they has only one bone
+				mesh_instance.add_child(static_body);
+				static_body.set_owner(mesh_instance);
 
 			static_body.add_child(collision);
-			collision.set_owner(root);
+			collision.set_owner(mesh_instance);
 
 			solid_index += 1;
 
 		surface_index += 1;
 
-static func generate_skeleton(mesh_instance: MeshInstance3D, mdl: MDLReader, options: Dictionary) -> Skeleton3D:
+func setup_skeleton():
 	if Engine.get_version_info().minor < 4: return;
-	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
-	var skeleton = Skeleton3D.new();
-	var additional_rotation: Vector3 = options.get("additional_rotation", Vector3.ZERO);
-	var additional_basis = Basis.from_euler(Vector3.ZERO);
+	skeleton.basis = additional_basis.inverse();
 
 	for bone in mdl.bones:
 		skeleton.add_bone(bone.name);
@@ -199,7 +219,9 @@ static func generate_skeleton(mesh_instance: MeshInstance3D, mdl: MDLReader, opt
 		var parent_bone = mdl.bones[bone.parent];
 		var parent_transform = parent_bone.pos_to_bone if parent_bone else Transform3D.IDENTITY;
 		var target_transform = bone.pos_to_bone * parent_transform;
-		var transform = Transform3D(Basis(bone.quat) * additional_basis, bone.pos * scale);
+		var basis = additional_basis if bone.parent == -1 else Basis.IDENTITY;
+		var transform = Transform3D(Basis(bone.quat), bone.pos);
+		transform = transform.scaled(Vector3.ONE * scale);
 
 		skeleton.set_bone_global_pose_override(bone.id, target_transform, 1.0);
 		skeleton.set_bone_pose_position(bone.id, transform.origin);
@@ -217,9 +239,7 @@ static func generate_skeleton(mesh_instance: MeshInstance3D, mdl: MDLReader, opt
 	mesh_instance.set_skin(skin);
 	skeleton.set_owner(mesh_instance);
 
-	return skeleton;
-
-static func assign_materials(mesh_instance: MeshInstance3D, mdl: MDLReader):
+func assign_materials():
 	var materials = [];
 	var skin = 0;
 	var mesh = mesh_instance.mesh;
@@ -247,20 +267,8 @@ static func assign_materials(mesh_instance: MeshInstance3D, mdl: MDLReader):
 		skin_id += 1;
 	
 	apply_skin(mesh_instance, 0, true);
-	
-## Apply a skin to a mesh instance
-## directly means that skin is applied to internal mesh itself
-static func apply_skin(mesh_instance: MeshInstance3D, skin_id: int, directly: bool = false):
-	if not mesh_instance.has_meta("skin_" + str(skin_id)): return;
-	var materials = mesh_instance.get_meta("skin_" + str(skin_id));
 
-	for surface_idx in range(mesh_instance.mesh.get_surface_count()):
-		if directly:
-			mesh_instance.mesh.surface_set_material(surface_idx, materials[surface_idx]);
-		else:
-			mesh_instance.set_surface_override_material(surface_idx, materials[surface_idx]);
-
-static func generate_lods(mesh_instance: MeshInstance3D, options):
+func generate_lods():
 	if not options.get("generate_lods", false): return;
 
 	var mesh = mesh_instance.mesh;

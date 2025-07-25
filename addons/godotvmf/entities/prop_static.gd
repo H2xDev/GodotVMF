@@ -12,7 +12,7 @@ func _apply_entity(e):
 
 	model_instance.set_owner(get_owner());
 	model_instance.scale *= e.get('modelscale', 1.0);
-	MDLMeshGenerator.apply_skin(model_instance, e.get("skin", 0));
+	MDLCombiner.apply_skin(model_instance, e.get("skin", 0));
 
 	var fade_min = entity.get('fademindist', 0.0) * VMFConfig.import.scale;
 	var fade_max = entity.get('fademaxdist', 0.0) * VMFConfig.import.scale;
