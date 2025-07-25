@@ -26,13 +26,13 @@ jobs:
 
       - name: Create ZIP archive with version in name
         run: |
-          zip -r addons-v${{ steps.get_version.outputs.version }}.zip addons
+          zip -r godotvmf-v${{ steps.get_version.outputs.version }}.zip addons
 
       - name: Create GitHub release and upload archive
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
-          files: addons-v${{ steps.get_version.outputs.version }}.zip
+          files: godotvmf-v${{ steps.get_version.outputs.version }}.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
