@@ -79,13 +79,13 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 	var vvd_path = mdl_path.replace(".mdl", ".vvd");
 	var phy_path = mdl_path.replace(".mdl", ".phy");
 	# TODO: Add support for animations
-	# var ani_path = mdl_path.replace(".mdl", ".ani");
-	# var ani = ANIReader.new(mdl_path, mdl.header);
+	var ani_path = mdl_path.replace(".mdl", ".ani");
 
 	var mdl = MDLReader.new(mdl_path);
 	var vtx = VTXReader.new(vtx_path, mdl.header.version);
 	var vvd = VVDReader.new(vvd_path);
 	var phy = PHYReader.new(phy_path);
+	var ani = ANIReader.new(mdl_path, mdl.header);
 
 	var model_name = mdl_path.get_file().get_basename().replace(".mdl", "");
 

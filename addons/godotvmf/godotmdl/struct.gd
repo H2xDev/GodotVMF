@@ -1,4 +1,4 @@
-class_name ByteReader extends RefCounted
+class_name MDLStruct extends RefCounted
 
 enum Type {
 	INT 						= 1,
@@ -20,63 +20,80 @@ enum Type {
 	VECTOR4 					= 17,
 }
 
-static func read_array(file: FileAccess, root_structure, offset_field: String, count_field: String, Clazz):
-	var address = root_structure.address if "address" in root_structure else 0;
-	var count = root_structure[count_field] if count_field in root_structure else 0;
-	var offset = root_structure[offset_field] if offset_field in root_structure else 0;
+const SIZES = {
+	Type.INT: 4,
+	Type.STRING: 1,
+	Type.FLOAT: 4,
+	Type.UNSIGNED_SHORT: 2,
+	Type.UNSIGNED_CHAR: 1,
+	Type.CHAR: 1,
+	Type.BYTE: 1,
+	Type.VECTOR3: 12,
+	Type.VECTOR2: 8,
+	Type.TANGENT: 16,
+	Type.LONG: 8,
+	Type.SHORT: 2,
+	Type.STRING_NULL_TERMINATED: 0,  # Variable size
+	Type.QUATERNION: 16,
+	Type.MAT3X4: 48,
+	Type.EULER_VECTOR: 12,
+	Type.VECTOR4: 16,
+}
 
-	file.seek(address + offset);
-	var result = [];
+static func size_of(struct: Variant) -> int:
+	var result = 0;
+	var scheme = struct._scheme();
+	for key in scheme.keys():
+		var is_array = scheme[key] is Array;
+		var type = scheme[key] if not is_array else scheme[key][0];
+		var length = 1 if not is_array else scheme[key][1];
 
-	for i in range(count):
-		result.append(read_by_structure(file, Clazz));
+		if type == Type.STRING and not is_array:
+			return -1;
 
+		result += MDLStruct.SIZES[type] * length;
 	return result;
 
-static func read_by_structure(file: FileAccess, Clazz, read_from = -1):
-	var result = Clazz.new();
+static func _scheme() -> Dictionary: return {};
 
-	if read_from > -1:
-		file.seek(read_from);
+## Address of this structure in the file.
+var address: int = 0;
 
-	if "scheme" not in Clazz:
-		push_error("ByteReader: Scheme not found in class: " + Clazz.name);
-		return null;
+## Name of this structure, used for debugging.
+var name: String = "unnamed";
 
-	if "address" in result:
-		result.address = file.get_position();
+## The file this structure belongs to.
+var file: FileAccess = null;
 
-	for key in Clazz.scheme.keys():
-		var type = Clazz.scheme[key];
-		var elements_count = -1;
+## @virtual
+func _post_read(): pass;
 
-		if type is Array:
-			elements_count = type[1];
-			type = type[0];
+func _init(file: FileAccess, address: int = file.get_position()):
+	self.file = file;
+	self.address = address;
+	file.seek(address);
+	read_structure();
+	_post_read();
 
-		if not (key in result):
-			print("Key not found: " + key);
-			continue;
+func read_structure():
+	var scheme = _scheme();
+	for key in scheme.keys():
+		var is_array = scheme[key] is Array;
+		var type = scheme[key] if not is_array else scheme[key][0];
+		var length = 1 if not is_array else scheme[key][1];
 
-		if elements_count < 0:
-			result[key] = _read_data(file, type);
-		else:
-			var buffer = "";
-			for i in range(elements_count):
-				if type != Type.STRING:
-					result[key].append(_read_data(file, type));
-				else:
-					buffer += _read_data(file, type);
+		warn_if(not key in self, "Key {0} not found in scheme.".format([key]));
+		assert(!is_array or (is_array and self[key] is Array), instance_message("Key {0} should be an array.".format([key])));
 
-			if type == Type.STRING:
-				result[key] = buffer;
+		if is_array:
+			self[key].resize(length);
 
-	if "_on_read" in result:
-		result._on_read();
+		for i in range(0, length):
+			var value = read_field(type);
+			if is_array: self[key][i] = value;
+			else: self[key] = value;
 
-	return result;
-
-static func _read_data(file: FileAccess, type: Type):
+func read_field(type: Type):
 	match type:
 		Type.FLOAT: 					return file.get_float();
 		Type.BYTE: 						return file.get_8();
@@ -99,6 +116,25 @@ static func _read_data(file: FileAccess, type: Type):
 		Type.EULER_VECTOR: 				return read_euler_vector(file);
 		_: return type;
 
+func instance_message(message: String) -> String:
+	return get_class().get_basename() + ": " + message;
+
+func warn_if(condition: bool, message: String):
+	if condition:
+		push_warning(instance_message(message));
+
+func _to_string() -> String:
+	var scheme = _scheme();
+	var result = get_script().get_global_name() + " {0} {";
+	for key in scheme.keys():
+		if key in self:
+			result += "\n  " + key + ": " + str(self[key]) + ",";
+		else:
+			result += "\n  " + key + ": <not set>,";
+	result += "\n}";
+	return result.format([name]);
+
+## STATIC DEFINITIONS =========================
 static func read_signed_short(file: FileAccess):
 	var value = file.get_16();
 	if value > 32767:
@@ -167,56 +203,3 @@ static func read_string(file: FileAccess, offset: int = -1):
 
 		if index > 100: break;
 	return result;
-
-static func get_structure_string(name: String, class_instance, additional_fields = []):
-	if "scheme" not in class_instance:
-		push_error("ByteReader: Scheme not found in class: " + class_instance.name);
-		return;
-
-	var string = ""
-
-	string += name + ": {\n";
-
-	for field in additional_fields:
-		string += "\t" + field + ": " + str(class_instance[field]) + ",\n";
-
-	for key in class_instance.scheme.keys():
-		string += "\t" + key + ": " + str(class_instance[key]) + ",\n";
-	
-	string += "}";
-
-	return string;
-	
-
-static func size_of(clazz) -> int:
-	if "scheme" not in clazz:
-		push_error("ByteReader: Scheme not found in class: " + clazz.name);
-		return 0;
-
-	var size = 0;
-
-	for key in clazz.scheme.keys():
-		var type = clazz.scheme[key];
-		var length = 1;
-		if type is Array:
-			type = type[0];
-			length = type[1];
-
-		match type:
-			Type.FLOAT, Type.INT: size += 4 * length;
-			Type.LONG: size += 8 * length;
-			Type.UNSIGNED_SHORT, Type.SHORT: size += 2 * length;
-			Type.UNSIGNED_CHAR, Type.CHAR, Type.BYTE: size += length;
-			Type.SHORT: size += 2 * length;
-			Type.STRING_NULL_TERMINATED: size += length;
-			Type.STRING: size += length;
-			Type.VECTOR2: size += 8 * length;
-			Type.VECTOR3: size += 12 * length;
-			Type.VECTOR4: size += 16 * length;
-			Type.QUATERNION: size += 16 * length;
-			Type.TANGENT: size += 16 * length;
-			Type.MAT3X4: size += 48 * length;
-			Type.EULER_VECTOR: size += 12 * length;
-			_: continue;
-
-	return size;
