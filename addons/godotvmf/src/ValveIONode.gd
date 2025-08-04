@@ -1,23 +1,26 @@
 @tool
 class_name ValveIONode extends Node3D;
 
-static var named_entities = {};
+static var named_entities := {};
 static var scene_instance: Node = null;
 
 ## Assigns global targetname for the node
 static func define_alias(name: String, value: Node):
-	if name == '!self' or name in aliases:
+	if name == '!self':
 		VMFLogger.error('The alias "' + name + '" is already defined');
 		return;
 
 	aliases[name] = value;
 
+static func remove_alias(name: String):
+	if name in aliases:
+		aliases.erase(name);
+
 @export var entity := {};
 @export var enabled := true;
 @export var flags: int = 0;
 
-var config:
-	get: return VMFConfig;
+var config := VMFConfig;
 
 static var aliases: Dictionary = {};
 
