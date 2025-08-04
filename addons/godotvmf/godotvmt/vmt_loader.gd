@@ -173,8 +173,9 @@ static func load(path: String):
 
 		if material is ShaderMaterial:
 			var mat: ShaderMaterial = material;
-			if uniforms.find(key) > -1:
-				var is_texture = value.has("/");
+			var uniform_index: int = uniforms.find_custom(func(uniform): return uniform.name == key);
+			if uniform_index > -1:
+				var is_texture = uniforms[uniform_index].hint_string == "Texture2D";
 				mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
 				continue;
 
