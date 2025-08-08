@@ -243,6 +243,7 @@ func assign_materials():
 	var materials = [];
 	var skin = 0;
 	var mesh = mesh_instance.mesh;
+	
 
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
@@ -260,7 +261,7 @@ func assign_materials():
 		for i in range(surfaces):
 			if i >= skin_family.size(): continue;
 			var material_index = skin_family[i];
-			if material_index >= materials.size() - 1: continue;
+			if material_index > materials.size() - 1: continue;
 			skin_materials.set(i, materials[material_index]);
 
 		mesh_instance.set_meta("skin_" + str(skin_id), skin_materials);
