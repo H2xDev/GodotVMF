@@ -31,6 +31,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 ## Installation and Usage
 - [Installation Guide](https://github.com/H2xDev/GodotVMF/wiki/Installation-guide)
 - [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
+- [Preparing a project tutorial](https://www.youtube.com/watch?v=QqeAfOaABUI)
 - [Materials Video Tutorial](https://www.youtube.com/watch?v=6anSX-sWgW0)
 
 ## Video demonstration
