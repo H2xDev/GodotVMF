@@ -248,6 +248,7 @@ func assign_materials():
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
 			var path = VMFUtils.normalize_path(dir + "/" + tex.name);
+			if not VMTLoader.has_material(path.to_lower()): continue;
 			var material = VMTLoader.get_material(path.to_lower());
 			if not material: continue;
 			materials.append(material);

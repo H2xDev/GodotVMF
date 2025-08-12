@@ -523,8 +523,9 @@ func _read_body_parts():
 
 func _read_texture_data():
 	file.seek(header.texturedir_offset);
+	file.seek(file.get_32());
 	for i in range(header.texturedir_count):
-		textureDirs.append(ByteReader.read_string(file, file.get_32()));
+		textureDirs.append(ByteReader.read_string(file));
 
 	textures = ByteReader.read_array(file, header, "texture_offset", "texture_count", MDLTexture);
 	for texture in textures:

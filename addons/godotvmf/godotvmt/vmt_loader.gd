@@ -173,9 +173,8 @@ static func load(path: String):
 
 		if material is ShaderMaterial:
 			var mat: ShaderMaterial = material;
-			var uniform_index: int = uniforms.find_custom(func(uniform): return uniform.name == key);
-			if uniform_index > -1:
-				var is_texture = uniforms[uniform_index].hint_string == "Texture2D";
+			if uniforms.find(key) > -1:
+				var is_texture = value.has("/");
 				mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
 				continue;
 
@@ -198,6 +197,17 @@ static var cached_materials: Dictionary;
 static func clear_cache():
 	cached_materials = {};
 
+static func has_material(material: String) -> bool:
+	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
+
+	if not ResourceLoader.exists(material_path):
+		material_path = material_path.replace(".tres", ".vmt");
+
+	if not ResourceLoader.exists(material_path):
+		return false;
+
+	return true;
+
 static func get_material(material: String):
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
@@ -205,17 +215,11 @@ static func get_material(material: String):
 		material_path = material_path.replace(".tres", ".vmt");
 
 	if not ResourceLoader.exists(material_path):
-		VMFLogger.warn("Material not found: " + material);
+		VMFLogger.warn("Material not found: " + material_path);
 		material_path = VMFConfig.materials.fallback_material
 	
-		if not material_path or not ResourceLoader.exists(material_path): return null;
-
-	cached_materials = cached_materials if cached_materials else {};
-
-	if material in cached_materials:
-		return cached_materials[material];
+		if not ResourceLoader.exists(material_path): return null;
 
 	var res = ResourceLoader.load(material_path);
-	cached_materials[material] = res;
 
 	return res;
