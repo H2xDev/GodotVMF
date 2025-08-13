@@ -9,6 +9,7 @@ var mdl_import_plugin;
 var vtf_import_plugin;
 var vmt_import_plugin;
 var vmt_context_plugin: VMTContextMenu;
+var entity_context_plugin: VMFEntityContextMenu;
 
 func _enter_tree() -> void:
 	dock = preload("res://addons/godotvmf/plugin.tscn").instantiate();
@@ -34,6 +35,9 @@ func _enter_tree() -> void:
 	vmt_context_plugin = VMTContextMenu.new();
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_context_plugin);
 
+	entity_context_plugin = VMFEntityContextMenu.new();
+	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, entity_context_plugin);
+
 func _exit_tree():
 	remove_autoload_singleton("VMFConfig");
 	remove_custom_type("VMFNode");
@@ -46,11 +50,13 @@ func _exit_tree():
 	remove_import_plugin(vmt_import_plugin);
 	remove_import_plugin(vtf_import_plugin);
 	remove_context_menu_plugin(vmt_context_plugin);
+	remove_context_menu_plugin(entity_context_plugin);
 
 	mdl_import_plugin = null;
 	vmt_import_plugin = null;
 	vtf_import_plugin = null;
 	vmt_context_plugin = null;
+	entity_context_plugin = null;
 
 func GetExistingVMFNodes() -> Array[VMFNode]:
 	var nodes: Array[VMFNode] = [];
