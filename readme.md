@@ -33,6 +33,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - [Installation Guide Video](https://www.youtube.com/watch?v=QqeAfOaABUI)
 - [Documentation](https://github.com/H2xDev/GodotVMF/wiki)
 - [Materials Video Tutorial](https://www.youtube.com/watch?v=6anSX-sWgW0)
+- [Implemented entities](https://github.com/H2xDev/GodotVMF-Entities)
 
 ## Video demonstration
 [![Click to open Youtube video](https://github.com/user-attachments/assets/d9b421e6-69c0-499e-8ccf-0390ddb1f548)](https://www.youtube.com/watch?v=5XYfvbIAlJU)
