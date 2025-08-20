@@ -385,7 +385,7 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 			else:
 				disp_data = VMFDispTool.new(side, side_data.brush);
 				vertices.assign(disp_data.get_vertices());
-				
+
 			if vertices.size() < 3:
 				VMFLogger.error("Side corrupted: " + str(side.id));
 				continue;
@@ -455,9 +455,13 @@ static func create_mesh(vmf_structure: Dictionary, _offset: Vector3 = Vector3(0,
 						sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
 						sf.add_index(base_index + x + 1 + y * verts_count);
 
+		# NOTE: In case no mesh were generated just skip commiting
+		if index == 0: continue;
+
 		var material = get_material(sides[0].side.material);
 		if material: sf.set_material(material);
-				
+		
+		var c = sf.commit_to_arrays();
 		sf.optimize_indices_for_cache();
 		sf.generate_normals();
 		sf.commit(mesh);
