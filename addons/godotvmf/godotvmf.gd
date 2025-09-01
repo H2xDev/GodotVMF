@@ -48,9 +48,9 @@ func _enter_tree() -> void:
 
 	VMFConfig.load_config()
 
+
 func _exit_tree():
 	VMFConfig.detach_signals()
-
 	remove_custom_type("VMFNode");
 	remove_custom_type("ValveIONode");
 	
