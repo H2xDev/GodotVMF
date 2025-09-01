@@ -15,7 +15,7 @@ func assign_instance(instance_scene):
 		queue_free();
 		return;
 
-	var node = instance_scene.instantiate() as VMFNode;
+	var node = instance_scene.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED) as VMFNode;
 
 	var i = 1
 	for child: Node in get_parent().get_children():
