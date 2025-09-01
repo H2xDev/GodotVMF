@@ -38,9 +38,8 @@ func _enter_tree() -> void:
 	entity_context_plugin = VMFEntityContextMenu.new();
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, entity_context_plugin);
 
-	VMFConfig.load_config()
-
 func _exit_tree():
+	remove_autoload_singleton("VMFConfig");
 	remove_custom_type("VMFNode");
 	remove_custom_type("ValveIONode");
 	
