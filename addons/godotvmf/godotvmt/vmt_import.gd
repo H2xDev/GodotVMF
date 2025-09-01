@@ -4,7 +4,7 @@ class_name VMTImporter extends EditorImportPlugin
 func _get_importer_name(): return "VMT";
 func _get_visible_name(): return "VMT Importer";
 func _get_recognized_extensions(): return ["vmt"];
-func _get_save_extension(): return "vmt.tres";
+func _get_save_extension(): return "vmt.res";
 func _get_resource_type(): return "Material";
 func _get_preset_count(): return 0;
 func _get_import_order(): return 1;
