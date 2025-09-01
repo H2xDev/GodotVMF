@@ -389,7 +389,7 @@ func import_entities(is_reimport := false) -> void:
 		var tscn = get_entity_scene(ent.classname);
 		if not tscn: continue;
 
-		var node = tscn.instantiate();
+		var node = tscn.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
 		if "is_runtime" in node:
 			node.is_runtime = is_runtime;
 

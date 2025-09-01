@@ -4,7 +4,7 @@ class_name MDLImporter extends EditorImportPlugin
 func _get_importer_name(): return "MDL"
 func _get_visible_name(): return "MDL"
 func _get_recognized_extensions(): return ["mdl"];
-func _get_save_extension(): return "tscn";
+func _get_save_extension(): return "scn";
 func _get_resource_type(): return "PackedScene";
 func _get_priority(): return 1;
 func _get_preset_count(): return 0;
