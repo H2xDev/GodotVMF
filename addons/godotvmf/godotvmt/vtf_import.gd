@@ -4,7 +4,7 @@ class_name VTFImporter extends EditorImportPlugin
 func _get_importer_name(): return "VTF";
 func _get_visible_name(): return "VTF Importer";
 func _get_recognized_extensions(): return ["vtf"];
-func _get_save_extension(): return "vtf.tres";
+func _get_save_extension(): return "vtf.res";
 func _get_resource_type(): return "Texture";
 func _get_preset_count(): return 0;
 func _get_import_order(): return 0;
