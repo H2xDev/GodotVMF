@@ -122,15 +122,10 @@ func import_geometry(_reimport := false) -> void:
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
 
-	var navmesh_preset_path = VMFConfig.import.navigation_mesh_preset;
-	var navmesh_preset = null;
-
-	if ResourceLoader.exists(navmesh_preset_path):
-		navmesh_preset = ResourceLoader.load(navmesh_preset_path);
-		assert(navmesh_preset is NavigationMesh, "vmf.config.json -> import.navigationMeshPreset has wrong type. Expected NavigationMesh, got %s" % navmesh_preset.get_class());
+	var navmesh_preset := VMFConfig.import.navigation_mesh_preset;
 
 	var navreg := NavigationRegion3D.new();
-	navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset.duplicate();
+	navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset;
 	navreg.name = "NavigationMesh";
 
 	add_child(navreg);
