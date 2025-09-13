@@ -1,15 +1,16 @@
 @tool
-class_name FuncDetail extends ValveIONode
+class_name func_detail extends ValveIONode
 
-func _apply_entity(entityData):
-	super._apply_entity(entityData);
+func _apply_entity(entity_data: Dictionary) -> void:
+	super._apply_entity(entity_data);
 	
 	var mesh = get_mesh();
-	$MeshInstance3D.cast_shadow = entityData.get("disableshadows", 0) == 0;
+	$mesh.cast_shadow = entity_data.get("disableshadows", 0) == 0;
 
 	if !mesh or mesh.get_surface_count() == 0:
 		queue_free();
 		return;
 
-	$MeshInstance3D.set_mesh(get_mesh());
-	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = $MeshInstance3D.mesh.create_trimesh_shape();
+	mesh.lightmap_unwrap(global_transform, config.import.lightmap_texel_size);
+	$mesh.set_mesh(mesh);
+	$mesh/body/collision.shape = mesh.create_trimesh_shape();

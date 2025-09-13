@@ -1,15 +1,17 @@
 @tool
-class_name trigger_once
-extends ValveIONode
+class_name trigger_once extends ValveIONode
 
-func _entity_ready():
-	$area.body_entered.connect.call_deferred(func(_node):
-		if ValveIONode.aliases.get("!player") == _node: 
-			trigger_output("OnTrigger");
-			queue_free();
-	);
+@onready var area: Area3D = $area;
 
-func _apply_entity(e):
+func on_body_entered(_body: Node) -> void:
+	if ValveIONode.aliases.get("!player") == _body: 
+		trigger_output("OnTrigger");
+		queue_free();
+
+func _entity_ready() -> void:
+	area.body_entered.connect.call_deferred(on_body_entered);
+
+func _apply_entity(e: Dictionary) -> void:
 	super._apply_entity(e);
 	
-	$area/collision.shape = get_entity_shape();
+	($area/collision as CollisionShape3D).shape = get_entity_shape();
