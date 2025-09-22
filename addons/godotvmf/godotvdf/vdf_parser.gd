@@ -60,7 +60,11 @@ static func parse_value(line: String) -> Variant:
 			push_error('ValveFormatParser: Failed to create plane from: ' + line);
 			return null;
 		
-		return {"value": v, "points": plane, "vecsum": plane[0] + plane[1] + plane[2]};
+		return {
+			"value": v, 
+			"points": plane, 
+			"vecsum": plane[0] + plane[1] + plane[2],
+		};
 	if line.is_valid_int():
 		return int(line);
 	if line.is_valid_float():

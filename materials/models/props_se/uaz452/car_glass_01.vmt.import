@@ -3,12 +3,12 @@
 importer="VMT"
 type="Material"
 uid="uid://br21j1xph3bd2"
-path="res://.godot/imported/car_glass_01.vmt-c291e7c61ae28a153b89aad877418826.vmt.tres"
+path="res://.godot/imported/car_glass_01.vmt-c291e7c61ae28a153b89aad877418826.vmt.res"
 
 [deps]
 
 source_file="res://materials/models/props_se/uaz452/car_glass_01.vmt"
-dest_files=["res://.godot/imported/car_glass_01.vmt-c291e7c61ae28a153b89aad877418826.vmt.tres"]
+dest_files=["res://.godot/imported/car_glass_01.vmt-c291e7c61ae28a153b89aad877418826.vmt.res"]
 
 [params]
 

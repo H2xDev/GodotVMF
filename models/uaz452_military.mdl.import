@@ -3,12 +3,12 @@
 importer="MDL"
 type="PackedScene"
 uid="uid://byj6op3xh15oi"
-path="res://.godot/imported/uaz452_military.mdl-2e983e6306a75a3affa06fd41a3deada.tscn"
+path="res://.godot/imported/uaz452_military.mdl-2e983e6306a75a3affa06fd41a3deada.scn"
 
 [deps]
 
 source_file="res://models/uaz452_military.mdl"
-dest_files=["res://.godot/imported/uaz452_military.mdl-2e983e6306a75a3affa06fd41a3deada.tscn"]
+dest_files=["res://.godot/imported/uaz452_military.mdl-2e983e6306a75a3affa06fd41a3deada.scn"]
 
 [params]
 

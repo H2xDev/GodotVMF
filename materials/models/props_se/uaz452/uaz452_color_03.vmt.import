@@ -3,12 +3,12 @@
 importer="VMT"
 type="Material"
 uid="uid://b6sik8kxidn4p"
-path="res://.godot/imported/uaz452_color_03.vmt-e2a54db998a0772d3391e10b00ff383a.vmt.tres"
+path="res://.godot/imported/uaz452_color_03.vmt-e2a54db998a0772d3391e10b00ff383a.vmt.res"
 
 [deps]
 
 source_file="res://materials/models/props_se/uaz452/uaz452_color_03.vmt"
-dest_files=["res://.godot/imported/uaz452_color_03.vmt-e2a54db998a0772d3391e10b00ff383a.vmt.tres"]
+dest_files=["res://.godot/imported/uaz452_color_03.vmt-e2a54db998a0772d3391e10b00ff383a.vmt.res"]
 
 [params]
 
