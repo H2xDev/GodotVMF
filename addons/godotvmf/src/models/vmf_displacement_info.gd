@@ -1,4 +1,4 @@
-class_name VMFDispTool extends RefCounted;
+class_name VMFDisplacementInfo extends RefCounted
 
 var normals: Array[Vector3] = [];
 var distances: Array[float] = [];
@@ -6,31 +6,28 @@ var offsets: Array[Vector3] = [];
 var offset_normals: Array[Vector3] = [];
 var alphas: Array[float] = [];
 
-var verts_count: float = 0;
-var edges_count: float = 0;
+var verts_count: float = 0.0;
+var edges_count: float = 0.0;
 var disp_info = null;
 var start_point := Vector3(0, 0, 0);
-var side: Dictionary;
-var brush: Dictionary;
+var side: VMFSide;
+var brush: VMFSolid;
+var vertices: PackedVector3Array;
 
-static func has_displacement(brush: Dictionary) -> bool:
-	for side in brush.side:
-		if "dispinfo" in side:
-			return true;
+func _to_string() -> String:
+	return "VMFDisplacementInfo(verts_count=%d, edges_count=%d, start_point=%s, side_id=%d, brush_id=%d)" % [verts_count, edges_count, start_point, side.id, brush.id];
 
-	return false;
-
-func _init(side: Dictionary, brush: Dictionary) -> void:
-	self.disp_info = side.dispinfo;
+func _init(raw: Dictionary, side: VMFSide, brush: VMFSolid) -> void:
+	self.disp_info = raw;
 	self.side = side;
 	self.brush = brush;
 
-	var start_numbers: Array[float]
-	start_numbers.assign(disp_info.startposition.trim_suffix(']').trim_prefix('[').split_floats(" "));
+	var start_numbers: Array[float];
+	start_numbers.assign(raw.startposition.trim_suffix(']').trim_prefix('[').split_floats(" "));
 
 	start_point = Vector3(start_numbers[0], start_numbers[1], start_numbers[2]);
 
-	verts_count = pow(2, disp_info.power) + 1;
+	verts_count = pow(2, raw.power) + 1;
 	edges_count = verts_count - 1;
 
 	normals = _parse_vectors('normals');
@@ -38,6 +35,8 @@ func _init(side: Dictionary, brush: Dictionary) -> void:
 	offsets = _parse_vectors('offsets');
 	offset_normals = _parse_vectors('offset_normals');
 	alphas = _parse_floats('alphas');
+	vertices = PackedVector3Array(get_vertices());
+	disp_info = null;
 
 func get_normal(x: float, y: float) -> Vector3:
 	var index = y + x * verts_count;
@@ -69,24 +68,22 @@ func get_color(x: float, y: float) -> Color:
 	return Color8(int(alphas[index]), 0, 0);
 
 func get_vertices() -> Array[Vector3]:
-	var vertices := VMFTool.calculate_vertices(side, brush);
-	
-	if vertices.size() < 3:
+	if side.vertices.size() < 3:
 		return [];
 
 	var res: Array[Vector3] = [];
 	var start_index := 1;
 
-	for v in vertices:
+	for v in side.vertices:
 		if v.distance_to(start_point) < 0.2:
 			break;
 
 		start_index += 1;
 
-	var tl := vertices[(0 + start_index) % 4];
-	var tr := vertices[(1 + start_index) % 4];
-	var br := vertices[(2 + start_index) % 4];
-	var bl := vertices[(3 + start_index) % 4];
+	var tl := side.vertices[(0 + start_index) % 4];
+	var tr := side.vertices[(1 + start_index) % 4];
+	var br := side.vertices[(2 + start_index) % 4];
+	var bl := side.vertices[(3 + start_index) % 4];
 
 	for i: int in range(0, pow(verts_count, 2)):
 		var x := i / int(verts_count);
@@ -99,7 +96,7 @@ func get_vertices() -> Array[Vector3]:
 		var vr := tr.lerp(br, rblend);
 		var vert := vl.lerp(vr, cblend);
 
-		vert += get_distance(x, y) + get_offset(x, y) + side.plane.value.normal * disp_info.elevation;
+		vert += get_distance(x, y) + get_offset(x, y) + side.plane.normal * disp_info.elevation;
 
 		res.append(vert);
 	
@@ -137,4 +134,3 @@ func _parse_floats(key: String) -> Array[float]:
 		floats.append_array(vals);
 
 	return floats;
-

@@ -4,15 +4,16 @@ class_name prop_studio extends ValveIONode
 ## @exposed
 ## @type studio
 var model: String = "":
-	get: return entity.get("model", "");
+	get: return reference.data.get("model", "");
 
 var model_instance: MeshInstance3D:
 	get: return get_node_or_null("model") as MeshInstance3D;
 
-func _apply_entity(e: Dictionary) -> void:
-	super._apply_entity(e);
+var model_name: String = "":
+	get: return reference.data.get('model', 'prop_static').get_file().get_basename();
 
-	var model_path = (VMFConfig.models.target_folder + "/" + e.get('model')) \
+func _entity_setup(entity: VMFEntity) -> void:
+	var model_path = (VMFConfig.models.target_folder + "/" + model) \
 		.replace("\\", "/") \
 		.replace("//", "/") \
 		.replace("res:/", "res://");

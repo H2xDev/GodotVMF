@@ -18,3 +18,8 @@ static func set_owner_recursive(node: Node, owner: Node):
 	node.set_owner(owner);
 	for child in node.get_children():
 		set_owner_recursive(child, owner);
+
+static func object_assign(target: Object, source: Dictionary) -> void:
+	for key in source.keys():
+		if key in target:
+			target[key] = source[key];

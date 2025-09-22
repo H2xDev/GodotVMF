@@ -1,7 +1,8 @@
 @tool
-class_name ValveIONode extends Node3D;
+class_name ValveIONode extends Node3D
 
 static var named_entities := {};
+static var aliases: Dictionary = {};
 static var scene_instance: Node = null;
 
 ## Assigns global targetname for the node
@@ -21,8 +22,7 @@ static func remove_alias(name: String):
 @export var flags: int = 0;
 
 var config := VMFConfig;
-
-static var aliases: Dictionary = {};
+var reference: VMFEntity;
 
 var is_runtime = false;
 var activator = null;
@@ -59,7 +59,11 @@ func _ready():
 	if ename: add_to_group(entity.targetname);
 
 	if is_runtime:
-		_apply_entity(entity);
+		_entity_pre_setup(reference);
+
+		## Workaround to support deprecated method
+		if _apply_entity(reference.data) == -1:
+			_entity_setup(reference);
 	else:
 		set_process(false);
 		set_physics_process(false);
@@ -78,13 +82,22 @@ func _ready():
 	call_deferred("_entity_ready");
 	scene_instance = get_tree().current_scene;
 
-func _apply_entity(ent) -> void:
-	self.entity = ent;
-	self.flags = ent.get("spawnflags", 0);
-	self.transform = get_entity_transform(ent);
-	self.enabled = ent.get("StartDisabled", 0) == 0;
+func _apply_entity(entity_structure: Dictionary):
+	return -1;
+
+## Called during import process to setup the entity
+func _entity_setup(vmf_entity: VMFEntity) -> void: pass;
+
+func _entity_pre_setup(ent: VMFEntity) -> void:
+	self.reference = ent;
+	self.entity = ent.data;
+	self.flags = ent.data.get("spawnflags", 0);
+	self.transform = get_entity_transform(ent.data);
+	self.enabled = ent.data.get("StartDisabled", 0) == 0;
 
 	assign_name();
+
+	_entity_setup(ent);
 
 func assign_name() -> void:
 	self.name = str(entity.get("id", "no_name"));
@@ -212,10 +225,10 @@ func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 
-	var struct := {
+	var struct := VMFStructure.new({
 		'source': entity.classname + '_' + str(entity.id),
 		'world': { 'solid': solids },
-	};
+	});
 	
 	var mesh = VMFTool.cleanup_mesh(VMFTool.create_mesh(struct, global_position)) \
 			if cleanup \
@@ -267,11 +280,11 @@ func get_entity_convex_shape():
 		return;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
-	var struct := {
+	var struct := VMFStructure.new({
 		'world': {
 			'solid': solids,
 		},
-	};
+	});
 
 	var mesh = VMFTool.create_mesh(struct, global_position);
 

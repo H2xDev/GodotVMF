@@ -7,14 +7,6 @@ enum MaterialImportMode {
 	IMPORT_FROM_MOD_FOLDER,
 }
 
-const MATERIAL_KEYS_TO_IMPORT = [
-	"$basetexture",
-	"$basetexture2",
-	"$bumpmap",
-	"$bumpmap2",
-	"$selfillummask",
-];
-
 @export_category("VMF File")
 
 ## Allow the file picker to select an external file
@@ -37,6 +29,7 @@ var vmf: String = '';
 		import = false;
 
 @export_category("Resource Generation")
+
 ## Save the resulting geometry mesh as a resource (saves to the geometryFolder in vmf.config.json)
 @export var save_geometry: bool = true;
 
@@ -46,7 +39,8 @@ var vmf: String = '';
 ## Set this to true before import if you're goint to use this node in runtime
 var is_runtime = false;
 
-var _structure: Dictionary = {};
+var vmf_structure: VMFStructure;
+
 var _owner:
 	get: 
 		var o = get_owner();
@@ -80,18 +74,20 @@ func _validate_property(property: Dictionary) -> void:
 func _ready() -> void:
 	add_to_group("vmfnode_group");
 
-func import_geometry(_reimport := false) -> void:
-	if _reimport:
-		VMFConfig.load_config();
-		_structure = {};
-		read_vmf();
-		import_materials();
-		await for_resource_import();
+func reimport_geometry() -> void:
+	VMFConfig.load_config();
+	read_vmf();
+	VMFResourceManager.import_materials(vmf_structure, is_runtime);
 
+	await VMFResourceManager.for_resource_import();
+
+	import_geometry();
+
+func import_geometry() -> void:
 	if navmesh: navmesh.free();
 	if geometry: geometry.free();
 
-	var mesh: ArrayMesh = VMFTool.create_mesh(_structure);
+	var mesh: ArrayMesh = VMFTool.create_mesh(vmf_structure);
 	if not mesh: return;
 
 	var geometry_mesh := MeshInstance3D.new()
@@ -172,172 +168,27 @@ func save_collision_file() -> void:
 		if error:
 			VMFLogger.error("Failed to save collision resource: %s" % error);
 			continue;
+
 		shape.take_over_path(save_path);
 		collision.shape = load(save_path);
 
 func _vmf_identifer() -> String:
 	return vmf.split('/')[-1].replace('.', '_');
 
-func import_models():
-	if not VMFConfig.models.import: return;
-	if not "entity" in _structure: return;
-
-	for entity in _structure.entity:
-		if not "model" in entity: continue;
-		if entity.classname != "prop_static": continue;
-
-		var model_path = entity.get("model", "").to_lower().get_basename();
-		if not model_path: continue;
-
-		var mdl_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".mdl");
-		var vtx_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".vtx");
-		var vtx_dx90_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".dx90.vtx");
-		var vvd_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".vvd");
-		var phy_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".phy");
-		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
-
-		if ResourceLoader.exists(target_path + ".mdl"): continue;
-
-		if not FileAccess.file_exists(mdl_path): continue;
-		if not FileAccess.file_exists(vtx_path): vtx_path = vtx_dx90_path;
-		if not FileAccess.file_exists(vtx_path): continue;
-		if not FileAccess.file_exists(vvd_path): continue;
-
-		var model_materials = MDLReader.new(mdl_path).get_possible_material_paths();
-
-		for material_path in model_materials:
-			import_textures(material_path);
-			import_material(material_path);
-
-		DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
-		DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
-		DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
-		if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
-		DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
-
-		has_imported_resources = true;
-
-
-func import_materials() -> void:
-	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
-		return;
-
-	var list: Array[String] = [];
-	var ignore_list: Array[String];
-	ignore_list.assign(VMFConfig.materials.ignore);
-	
-	var elapsed_time := Time.get_ticks_msec();
-
-	if "solid" in _structure.world:
-		for brush in _structure.world.solid:
-			for side in brush.side:
-				var isIgnored = ignore_list.any(func(rx: String) -> bool: return side.material.match(rx));
-				if isIgnored: continue;
-
-				if not list.has(side.material):
-					list.append(side.material);
-
-	if "entity" in _structure:
-		for entity in _structure.entity:
-			if not "solid" in entity:
-				continue;
-
-			entity.solid = [entity.solid] if entity.solid is Dictionary else entity.solid;
-
-			for brush in entity.solid:
-				if not brush is Dictionary: continue;
-
-				for side in brush.side:
-					var isIgnored = ignore_list.any(func(rx): return side.material.match(rx));
-					if isIgnored: continue;
-
-					if not list.has(side.material):
-						list.append(side.material);
-
-	if not is_runtime and editor_interface:
-		var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
-
-		for material in list:
-			import_textures(material);
-
-		for material in list:
-			import_material(material);
-
-	elapsed_time = Time.get_ticks_msec() - elapsed_time;
-
-	if elapsed_time > 1000:
-		VMFLogger.warn("Imported " + str(len(list)) + " materials in " + str(elapsed_time) + "ms");
-
-func import_material(material: String):
-	material = material.to_lower();
-
-	var vmt_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
-	var target_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + material + ".vmt");
-
-	if ResourceLoader.exists(target_path): return;
-	if not FileAccess.file_exists(vmt_path): return;
-
-	DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
-	var has_error = DirAccess.copy_absolute(vmt_path, target_path);
-
-	if not has_error: has_imported_resources = true;
-
-func import_textures(material: String):
-	material = material.to_lower();
-
-	var target_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
-	if not FileAccess.file_exists(target_path): 
-		VMFLogger.error("Material not found: " + target_path);
-		return;
-
-	var details  = VDFParser.parse(target_path, true).values()[0];
-
-	# NOTE: CS:GO/L4D
-	if "insert" in details:
-		details.merge(details["insert"]);
-
-	for key in MATERIAL_KEYS_TO_IMPORT:
-		if key not in details: continue;
-		var vtf_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + details[key].to_lower() + ".vtf");
-		var target_vtf_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + details[key].to_lower() + ".vtf");
-
-		if not FileAccess.file_exists(vtf_path): continue;
-		if ResourceLoader.exists(target_vtf_path): continue;
-
-		DirAccess.make_dir_recursive_absolute(target_vtf_path.get_base_dir());
-		var has_error = DirAccess.copy_absolute(vtf_path, target_vtf_path);
-
-		if not has_error: 
-			has_imported_resources = true;
-			continue;
-		VMFLogger.error("Failed to copy texture: " + str(has_error));
-
 func clear_structure() -> void:
-	_structure = {};
-
+	vmf_structure = null;
 	for n in get_children():
 		remove_child(n);
 		n.queue_free();
 
 func read_vmf() -> void:
-	var t = Time.get_ticks_msec();
-	_structure = VDFParser.parse(vmf);
-
-	## NOTE: In case if "entity" or "solid" fields are Dictionary,
-	##		 we need to convert them to Array
-
-	if "entity" in _structure:
-		_structure.entity = [_structure.entity] if not _structure.entity is Array else _structure.entity;
-
-	if "solid" in _structure.world:
-		_structure.world.solid = [_structure.world.solid] if not _structure.world.solid is Array else _structure.world.solid;
-
-	t = Time.get_ticks_msec() - t;
-	if t > 1000:
-		VMFLogger.warn("Read vmf in " + str(t) + "ms");
+	VMFLogger.measure_call(5000, "VMF reading took %f ms", func():
+		vmf_structure = VMFStructure.new(VDFParser.parse(vmf))
+	);
 
 func get_entity_scene(clazz: String):
 	var res_path: String = (VMFConfig.import.entities_folder + '/' + clazz + '.tscn').replace('//', '/').replace('res:/', 'res://');
+
 	# NOTE: In case when custom entity wasn't found - use aliases from config
 	if not ResourceLoader.exists(res_path):
 		res_path = VMFConfig.import.entity_aliases.get(clazz, "");
@@ -374,27 +225,24 @@ func reset_entities_node():
 	add_child(enode);
 	enode.set_owner(_owner);
 
-func import_entities(is_reimport := false) -> void:
-	var elapsed_time := Time.get_ticks_msec();
+func reimport_entities():
+	read_vmf();
+	import_entities();
 
-	if is_reimport: read_vmf();
+func import_entities() -> void:
 	reset_entities_node();
 
-	if not "entity" in _structure: return;
-
-	for ent: Dictionary in _structure.entity:
-		ent = ent.duplicate(true);
+	for ent in vmf_structure.entities:
 		ent.vmf = vmf;
 
 		var tscn = get_entity_scene(ent.classname);
 		if not tscn: continue;
 
 		var node = tscn.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
-		if "is_runtime" in node:
-			node.is_runtime = is_runtime;
 
-		if "entity" in node:
-			node.entity = ent;
+		if node is ValveIONode:
+			node.is_runtime = is_runtime;
+			node.reference = ent;
 
 		push_entity_to_group(ent.classname, node);
 		set_editable_instance(node, true);
@@ -402,13 +250,12 @@ func import_entities(is_reimport := false) -> void:
 		var clazz = node.get_script();
 		if clazz and "setup" in clazz: clazz.setup(ent, node);
 
-		if not is_runtime and "_apply_entity" in node:
-			node._apply_entity(ent);
-
-	elapsed_time = Time.get_ticks_msec() - elapsed_time;
-
-	if elapsed_time > 2000:
-		VMFLogger.warn("Imported entities in " + str(elapsed_time) + "ms");
+		if not is_runtime:
+			node._entity_pre_setup(ent);
+			if "_apply_entity" in node:
+				node._apply_entity(ent.data);
+			else:
+				node._entity_setup(ent);
 
 func generate_occluder(complex: bool = false):
 	var mesh: MeshInstance3D = geometry
@@ -463,16 +310,6 @@ func generate_occluder(complex: bool = false):
 	add_child(occluder);
 	occluder.set_owner(_owner);
 
-func for_resource_import():
-	var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
-	if not has_imported_resources: return;
-
-	if fs: 
-		fs.scan();
-		await fs.resources_reimported;
-
-	has_imported_resources = false;
-
 func import_map() -> void:
 	if not vmf: return;
 
@@ -481,10 +318,10 @@ func import_map() -> void:
 	clear_structure();
 	read_vmf();
 
-	import_materials();
-	import_models();
+	VMFResourceManager.import_materials(vmf_structure, is_runtime);
+	VMFResourceManager.import_models(vmf_structure);
 
-	await for_resource_import();
+	await VMFResourceManager.for_resource_import();
 
 	import_geometry();
 	import_entities();
