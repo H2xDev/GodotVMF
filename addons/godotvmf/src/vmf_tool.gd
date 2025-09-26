@@ -1,4 +1,5 @@
-class_name VMFTool
+@static_unload
+class_name VMFTool extends RefCounted
 
 static func clear_caches() -> void:
 	VMTLoader.clear_cache();
@@ -9,9 +10,8 @@ static func generate_collisions(mesh_instance: MeshInstance3D):
 	var surface_props = {};
 	var mesh = mesh_instance.mesh;
 	var corrector := VMFGeometryCorrector.new();
-	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
+	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector");
 
-	# NOTE: If the mesh is too small then we don't need to generate SteamAudioGeometry for this mesh;
 	for surface_idx in range(mesh.get_surface_count()):
 		var material = mesh.surface_get_material(surface_idx);
 		var material_name = mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
