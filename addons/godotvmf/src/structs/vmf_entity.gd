@@ -6,7 +6,7 @@ var has_solid: bool = false;
 var solids: Array[VMFSolid] = [];
 var vmf: String = "";
 var classname: String = "";
-var connections: Dictionary[String, Array] = {};
+var connections: Array[VMFConnection] = [];
 
 func _init(raw: Dictionary) -> void:
 	id = int(raw.get("id", -1));
@@ -30,13 +30,13 @@ func _to_string() -> String:
 
 func _define_connections(raw: Dictionary) -> void:
 	for output in raw.connections.keys():
-		var connections = raw.connections[output];
-		if connections is Dictionary:
-			connections = [connections];
+		var raw_connections = raw.connections[output];
+		if raw_connections is Dictionary:
+			raw_connections = [raw_connections];
 
 		if not output in self.connections:
-			self.connections[output] = [];
+			connections[output] = [];
 
-		for connection in connections:
-			self.connections[output].append(VMFConnection.new(output, connection));
+		for connection in raw_connections:
+			connections.append(VMFConnection.new(output, raw_connection));
 

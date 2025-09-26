@@ -22,3 +22,7 @@ godotvmf_mod
 
 addons/godotvmf/texture_checksums.json
 tools
+
+.editorconfig
+.DS_Store
+
