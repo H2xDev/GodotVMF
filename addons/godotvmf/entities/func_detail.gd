@@ -1,11 +1,10 @@
 @tool
-class_name FuncDetail extends ValveIONode
+class_name func_detail extends VMFEntityNode
 
-func _apply_entity(entityData):
-	super._apply_entity(entityData);
-	
+func _entity_setup(entity: VMFEntity):
+	print("func_detail");
 	var mesh = get_mesh();
-	$MeshInstance3D.cast_shadow = entityData.get("disableshadows", 0) == 0;
+	$MeshInstance3D.cast_shadow = entity.data.get("disableshadows", 0) == 0;
 
 	if !mesh or mesh.get_surface_count() == 0:
 		queue_free();

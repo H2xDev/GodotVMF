@@ -251,6 +251,9 @@ func import_entities() -> void:
 		if clazz and "setup" in clazz: clazz.setup(ent, node);
 
 		if not is_runtime:
+			if not "_entity_pre_setup" in node:
+				print(node.get_class());
+
 			node._entity_pre_setup(ent);
 			if "_apply_entity" in node:
 				node._apply_entity(ent.data);

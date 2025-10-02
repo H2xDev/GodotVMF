@@ -12,7 +12,6 @@ func _init(raw: Dictionary) -> void:
 	for solid in raw_solids:
 		solids.append(VMFSolid.new(solid));
 
-	
 	var raw_entities: Variant = raw.get("entity", []);
 	if raw_entities is not Array:
 		raw_entities = [raw_entities];

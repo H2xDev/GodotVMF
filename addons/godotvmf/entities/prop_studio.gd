@@ -1,5 +1,5 @@
 @tool
-class_name prop_studio extends ValveIONode
+class_name prop_studio extends VMFEntityNode
 
 ## @exposed
 ## @type studio

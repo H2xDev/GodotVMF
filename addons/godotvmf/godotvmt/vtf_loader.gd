@@ -276,5 +276,3 @@ static func get_texture(texture: String):
 		return null;
 
 	return ResourceLoader.load(texture_path);
-
-

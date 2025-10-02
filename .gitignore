@@ -16,6 +16,7 @@ mono_crash.*.json
 
 *.vmx
 *.uid
+*.vmf
 
 test.tscn
 godotvmf_mod
@@ -25,4 +26,5 @@ tools
 
 .editorconfig
 .DS_Store
+project.godot
 

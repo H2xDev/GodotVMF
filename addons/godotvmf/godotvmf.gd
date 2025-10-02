@@ -31,6 +31,7 @@ func _enter_tree() -> void:
 	add_import_plugin(vtf_import_plugin);
 	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/vmf_node.gd"), preload("res://addons/godotvmf/hammer.png"));
 	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/valve_io_node.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("VMFEntityNode", "Node3D", preload("res://addons/godotvmf/src/vmf_entity_node.gd"), preload("res://addons/godotvmf/hammer.png"));
 
 	vmt_context_plugin = VMTContextMenu.new();
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_context_plugin);

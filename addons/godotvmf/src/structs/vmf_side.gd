@@ -44,35 +44,23 @@ func _define_vertices_plus() -> void:
 	vertices = PackedVector3Array(solid.calculate_vertices(self));
 
 func get_uv(vertex: Vector3) -> Vector2:
-	var ux: float = uaxis.x;
-	var uy: float = uaxis.y;
-	var uz: float = uaxis.z;
 	var uscale: float = uaxis.scale;
 	var ushift: float = uaxis.shift * uscale;
-	
-	var vx: float = vaxis.x;
-	var vy: float = vaxis.y;
-	var vz: float = vaxis.z;
+
 	var vscale: float = vaxis.scale;
 	var vshift: float = vaxis.shift * vscale;
 
-	# FIXME Add texture scale from VMF metadata
 	var tscale = Vector2.ONE;
 	var tsize := VMTLoader.get_texture_size(material);
 
-	var tsx: float = 1;
-	var tsy: float = 1;
-	var tw := tsize.x;
-	var th := tsize.y;
-	var aspect := tw / th;
+	var aspect := tsize.x / tsize.y;
 
-	var uv := Vector3(ux, uy, uz);
-	var vv := Vector3(vx, vy, vz);
+	var uv := Vector3(uaxis.x, uaxis.y, uaxis.z);
+	var vv := Vector3(vaxis.x, vaxis.y, vaxis.z);
 	var v2 := Vector3(vertex.x, vertex.y, vertex.z);
 	var normal = plane.normal;
 
-	var u := (v2.dot(uv) + ushift) / tw / uscale;
-	var v := (v2.dot(vv) + vshift) / th / vscale;
+	var u := (v2.dot(uv) + ushift) / tsize.x / uscale;
+	var v := (v2.dot(vv) + vshift) / tsize.y / vscale;
 
 	return Vector2(u, v);
-
