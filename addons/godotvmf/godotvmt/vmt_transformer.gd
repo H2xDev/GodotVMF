@@ -1,5 +1,18 @@
 class_name VMTTransformer extends RefCounted
 
+func texturefilter(material: Material, value: Variant):
+	if material is not BaseMaterial3D:
+		return;
+
+	var enum_field: String = "TEXTURE_FILTER_" + value;
+	var base_material: BaseMaterial3D = material;
+
+	if not enum_field in BaseMaterial3D:
+		VMFLogger.error("VMT: Unknown texturefilter value: " + value);
+		return;
+
+	base_material.texture_filter = BaseMaterial3D[enum_field];
+
 func basetexture(material: Material, value: Variant):
 	if "albedo_texture" in material:
 		material.set("albedo_texture", VTFLoader.get_texture(value));
