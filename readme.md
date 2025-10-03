@@ -70,7 +70,7 @@ If you are going to use Hammer Editor for commercial purpose it's worth to askin
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
 - If you've added a new feature please add the relevant documentation.
-- Follow the common Godot codestyle (yea-yea i'll fix the existing code in upcoming updates).
+- Add yourself to the contributors section below
 
 ### How to test the addon after adding new features or fixing some bugs
 1. Install any of Source Engine Games (L4D, HL2, TF2)
@@ -83,9 +83,14 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  
 [Ambiabstract](https://github.com/Ambiabstract) - tech help and inspiration  
-[MyCbEH](https://github.com/MyCbEH) - level design for [example project](https://github.com/H2xDev/GodotVMF-Project-Template), UAZ model  
-[Lachrymogenic](https://github.com/Lachrymogenic) - Linux test, performance test  
+[Lachrymogenic](https://github.com/Lachrymogenic) - linux test, performance test  
 [SharkPetro](https://github.com/SharkPetro) - materials test  
+
+### Contributors
+[Mickeon](https://github.com/Mickeon)
+[URAKOLOUY5](https://github.com/URAKOLOUY5)
+[ckaiser](https://github.com/ckaiser)
+[jamop4](https://github.com/jamop4)
 
 ## License
 MIT
