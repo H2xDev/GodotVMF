@@ -1,8 +1,0 @@
-"VertexlitGeneric" //gener 2311
-{
-	"$basetexture" "models/props_se/uaz452/uaz452_base"
-	
-	"$envmap" "env_cubemap"
-	"$envmaptint" "[.6 .6 .6]"
-	"$envmapmask" "models/props_se/uaz452/uaz452_base_env"
-}

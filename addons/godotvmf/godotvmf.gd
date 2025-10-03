@@ -29,8 +29,9 @@ func _enter_tree() -> void:
 	add_import_plugin(mdl_import_plugin);
 	add_import_plugin(vmt_import_plugin);
 	add_import_plugin(vtf_import_plugin);
-	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
-	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/vmf_node.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/valve_io_node.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("VMFEntityNode", "Node3D", preload("res://addons/godotvmf/src/vmf_entity_node.gd"), preload("res://addons/godotvmf/hammer.png"));
 
 	vmt_context_plugin = VMTContextMenu.new();
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_context_plugin);
@@ -85,7 +86,7 @@ func ReimportEntities():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes: 
-		node.import_entities(true);
+		node.reimport_entities();
 	dock.get_node('ProgressBar').hide();
 
 func ReimportGeometry():
@@ -95,5 +96,5 @@ func ReimportGeometry():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes:
-		node.import_geometry(true);
+		node.reimport_geometry();
 	dock.get_node('ProgressBar').hide();

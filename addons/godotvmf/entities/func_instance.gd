@@ -1,11 +1,8 @@
 @tool
-class_name FuncInstance extends ValveIONode;
+class_name func_instance extends VMFEntityNode
 
-func _apply_entity(e):
-	super._apply_entity(e);
-	
-	var instance_scene = VMFInstanceManager.import_instance(e);
-
+func _entity_setup(entity: VMFEntity):
+	var instance_scene = VMFInstanceManager.import_instance(entity.data);
 	assign_instance(instance_scene);
 
 func assign_instance(instance_scene):
