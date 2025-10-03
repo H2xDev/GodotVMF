@@ -16,9 +16,15 @@ mono_crash.*.json
 
 *.vmx
 *.uid
+*.vmf
 
 test.tscn
 godotvmf_mod
 
 addons/godotvmf/texture_checksums.json
 tools
+
+.editorconfig
+.DS_Store
+project.godot
+

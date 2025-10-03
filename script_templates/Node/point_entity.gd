@@ -8,7 +8,7 @@
 ## @base Targetname, Origin, Angles
 ## @appearance iconsprite('editor/obsolete.vmt')
 ## Entity's description
-class_name _CLASS_ extends ValveIONode
+class_name _CLASS_ extends VMFEntityNode
 
 ## @exposed
 var float_property: float = 1.0:

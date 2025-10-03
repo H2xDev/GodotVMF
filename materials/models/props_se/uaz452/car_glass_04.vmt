@@ -1,7 +1,0 @@
-"VertexlitGeneric" //gener 2311
-{
-$baseTexture "models/props_se/zaz968/car_glass_04"
-$translucent 1
-$nocull 1
-$model 1
-}

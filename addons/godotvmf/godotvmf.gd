@@ -9,7 +9,9 @@ var mdl_import_plugin;
 var vtf_import_plugin;
 var vmt_import_plugin;
 var vmt_context_plugin: VMTContextMenu;
+var vmt_material_conversion_context_plugin: VMFMaterialConversionContextMenu;
 var entity_context_plugin: VMFEntityContextMenu;
+
 
 func _enter_tree() -> void:
 	dock = preload("res://addons/godotvmf/plugin.tscn").instantiate();
@@ -29,8 +31,9 @@ func _enter_tree() -> void:
 	add_import_plugin(mdl_import_plugin);
 	add_import_plugin(vmt_import_plugin);
 	add_import_plugin(vtf_import_plugin);
-	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/VMFNode.gd"), preload("res://addons/godotvmf/hammer.png"));
-	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/ValveIONode.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("VMFNode", "Node3D", preload("res://addons/godotvmf/src/vmf_node.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("ValveIONode", "Node3D", preload("res://addons/godotvmf/src/valve_io_node.gd"), preload("res://addons/godotvmf/hammer.png"));
+	add_custom_type("VMFEntityNode", "Node3D", preload("res://addons/godotvmf/src/vmf_entity_node.gd"), preload("res://addons/godotvmf/hammer.png"));
 
 	vmt_context_plugin = VMTContextMenu.new();
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_context_plugin);
@@ -39,6 +42,9 @@ func _enter_tree() -> void:
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, entity_context_plugin);
 
 	VMFConfig.define_project_settings()
+	vmt_material_conversion_context_plugin = VMFMaterialConversionContextMenu.new();
+	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM, vmt_material_conversion_context_plugin);
+
 	VMFConfig.load_config()
 
 func _exit_tree():
@@ -55,12 +61,14 @@ func _exit_tree():
 	remove_import_plugin(vtf_import_plugin);
 	remove_context_menu_plugin(vmt_context_plugin);
 	remove_context_menu_plugin(entity_context_plugin);
+	remove_context_menu_plugin(vmt_material_conversion_context_plugin);
 
 	mdl_import_plugin = null;
 	vmt_import_plugin = null;
 	vtf_import_plugin = null;
 	vmt_context_plugin = null;
 	entity_context_plugin = null;
+	vmt_material_conversion_context_plugin = null;
 
 func GetExistingVMFNodes() -> Array[VMFNode]:
 	var nodes: Array[VMFNode] = [];
@@ -88,7 +96,7 @@ func ReimportEntities():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes: 
-		node.import_entities(true);
+		node.reimport_entities();
 	dock.get_node('ProgressBar').hide();
 
 func ReimportGeometry():
@@ -98,5 +106,5 @@ func ReimportGeometry():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes:
-		node.import_geometry(true);
+		node.reimport_geometry();
 	dock.get_node('ProgressBar').hide();

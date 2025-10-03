@@ -7,7 +7,7 @@
 ## @entity SolidClass
 ## @base Targetname, Origin
 ## Entity's description
-class_name _CLASS_ extends ValveIONode
+class_name _CLASS_ extends VMFEntityNode
 
 # Use @exposed tag to make them appear in the FGD file
 
