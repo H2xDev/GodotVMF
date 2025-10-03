@@ -36,6 +36,8 @@ func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 	if is_displacement:
 		dispinfo = VMFDisplacementInfo.new(raw.dispinfo, self, solid);
 	
+## Internal method. Calculates the vertices of this side if they are not already calculated.
+## Called automatically from VMFSolid
 func calculate_vertices() -> void:
 	if vertices.size() > 0: return; # Already calculated
 
@@ -71,6 +73,7 @@ func calculate_vertices() -> void:
 
 	vertices = PackedVector3Array(raw_vertices);
 
+## Retrns the UV coordinates for the given vertex on this side
 func get_uv(vertex: Vector3) -> Vector2:
 	var uscale: float = uaxis.scale;
 	var ushift: float = uaxis.shift * uscale;
@@ -92,3 +95,55 @@ func get_uv(vertex: Vector3) -> Vector2:
 	var v := (v2.dot(vv) + vshift) / tsize.y / vscale;
 
 	return Vector2(u, v);
+
+## Returns true if the given point is inside this side (assuming the point is coplanar)
+func is_point_inside(point: Vector3) -> bool:
+	if vertices.size() < 3: return false
+
+	var prev_sign := 0;
+	var vertices_count := vertices.size();
+
+	for i in range(vertices_count):
+		var a := vertices[i];
+		var b := vertices[(i + 1) % vertices_count];
+		var edge := (b - a).normalized();
+		var to_point := (point - a).normalized();
+		var sign := signf(edge.cross(to_point).dot(plane.normal));
+		if sign == 0: continue;
+
+		if prev_sign == 0:
+			prev_sign = sign;
+			continue
+
+		if sign != prev_sign:
+			return false;
+
+	return true
+
+## Returns true if this side is completely inside the other side
+func is_inside_of_face(other: VMFSide) -> bool:
+	if vertices.size() < 3 or other.vertices.size() < 3: return false;
+	if plane.get_center().distance_to(other.plane.get_center()) > 0.01: return false;
+
+	for vertex in vertices:
+		if not other.is_point_inside(vertex):
+			return false;
+
+	return true;
+
+## Returns true if this side is equal to the other side (same vertices, regardless of order)
+func is_equal_to(other: VMFSide) -> bool:
+	if vertices.size() != other.vertices.size(): return false;
+
+	var merged_vertices = 0;
+
+	for va in vertices:
+		for vb in other.vertices:
+			if va.distance_to(vb) < 0.1:
+				merged_vertices += 1;
+				break;
+	
+	if merged_vertices != vertices.size(): return false;
+
+	return true;
+

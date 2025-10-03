@@ -127,6 +127,31 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 
 	return duplicated_mesh if not is_44 else original_mesh;
 
+static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> void:
+	for brush_b in brushes:
+		if brush_a == brush_b: continue;
+
+		for side_a in brush_a.sides:
+			var a_removed = false;
+
+			for side_b in brush_b.sides:
+				if side_a.plane.normal.dot(side_b.plane.normal) > -0.99: continue;
+				if side_a.plane.get_center().distance_to(side_b.plane.get_center()) > 0.01: continue;
+
+				if side_a.is_equal_to(side_b):
+					brush_b.sides.erase(side_b);
+					brush_a.sides.erase(side_a);
+					a_removed = true;
+					break;
+
+				if side_a.is_inside_of_face(side_b):
+					brush_a.sides.erase(side_a);
+					a_removed = true;
+					break;
+
+			if a_removed: break;
+
+
 ## Returns MeshInstance3D from parsed VMF structure
 static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3(0, 0, 0)) -> ArrayMesh:
 	clear_caches();
@@ -135,11 +160,13 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3(0
 	if vmf_structure.solids.size() == 0:
 		return null;
 
-	var brushes = vmf_structure.solids;
+	var brushes := vmf_structure.solids;
 	var material_sides: Dictionary = {};
 	var mesh := ArrayMesh.new();
 
 	for brush in brushes:
+		remove_merged_faces(brush, brushes);
+
 		for side: VMFSide in brush.sides:
 			var material: String = side.material.to_upper();
 
@@ -194,10 +221,10 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3(0
 				for i: int in range(0, side.dispinfo.vertices.size()):
 					var x := i / verts_count;
 					var y := i % verts_count;
-					var v = side.dispinfo.vertices[i];
-					var normal = disp.get_normal(x, y);
-					var dist = disp.get_distance(x, y);
-					var voffset = disp.get_offset(x, y);
+					var v := side.dispinfo.vertices[i];
+					var normal := disp.get_normal(x, y);
+					var dist := disp.get_distance(x, y);
+					var voffset := disp.get_offset(x, y);
 					var uv := side.get_uv(v - dist - voffset);
 
 					sf.set_uv(uv);
