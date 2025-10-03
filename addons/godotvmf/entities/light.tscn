@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://bdg014m5mhqjt"]
+
+[ext_resource type="Script" path="res://addons/godotvmf/entities/light.gd" id="1_6y2p0"]
+
+[node name="Light" type="Node3D"]
+script = ExtResource("1_6y2p0")
+
+[node name="light" type="OmniLight3D" parent="."]
+light_energy = 0.0
+light_volumetric_fog_energy = 2.0
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_shadow = 20.0
+distance_fade_length = 5.0

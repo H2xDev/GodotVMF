@@ -48,7 +48,6 @@ Or for those who just want to port their map from Source Engine to Godot and see
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Entities support
 - Hammer's Input/Output  system support
-- Automatically generates SteamAudioGeometry in case [godot-steam-audio](https://github.com/stechyo/godot-steam-audio) plugin detected
 - Surface props support
 - Material's compile properties support
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
