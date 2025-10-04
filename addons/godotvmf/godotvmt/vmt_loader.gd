@@ -107,6 +107,11 @@ static func has_material(material: String) -> bool:
 	return true;
 
 static func get_material(material: String):
+	cached_materials = cached_materials if cached_materials else {};
+
+	if material in cached_materials:
+		return cached_materials[material];
+
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
 	if not ResourceLoader.exists(material_path):
@@ -118,9 +123,9 @@ static func get_material(material: String):
 	
 		if not material_path or not ResourceLoader.exists(material_path): return null;
 
-	var res = ResourceLoader.load(material_path);
+	cached_materials[material] = ResourceLoader.load(material_path);
 
-	return res;
+	return cached_materials[material];
 
 static func get_texture_size(side_material: String) -> Vector2:
 	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};

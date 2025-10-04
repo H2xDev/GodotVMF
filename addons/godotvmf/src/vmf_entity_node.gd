@@ -29,6 +29,8 @@ var reference: VMFEntity;
 
 var is_runtime = false;
 var activator = null;
+var targetname: String:
+	get: return entity.get("targetname", "") if entity else "";
 
 func Toggle(_param = null):
 	enabled = !enabled;
@@ -40,7 +42,7 @@ func Disable(_param = null):
 	enabled = false;
 
 func Kill(_param = null):
-	if entity.get("targetname", "") in ValveIONode.named_entities:
+	if entity.get("targetname", "") in VMFEntityNode.named_entities:
 		named_entities.erase(entity.targetname);
 
 	get_parent().remove_child(self);
@@ -58,8 +60,6 @@ func _reparent():
 	if parentNode: reparent(parentNode, true);
 
 func _ready():
-	if entity.get("targetname", null): add_to_group(entity.targetname);
-
 	if is_runtime:
 		_entity_pre_setup(reference);
 
@@ -97,6 +97,9 @@ func _entity_pre_setup(ent: VMFEntity) -> void:
 	self.transform = get_entity_transform(ent);
 	self.enabled = ent.data.get("StartDisabled", 0) == 0;
 
+	if ent.data.get("targetname", null):
+		add_named_entity(ent.data.targetname, self);
+
 	assign_name();
 	_entity_setup(ent);
 
@@ -110,11 +113,12 @@ func assign_name() -> void:
 	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
 
 static func add_named_entity(name: String, node: Node):
-	node.add_to_group(name);
-	if not name in ValveIONode.named_entities:
-		ValveIONode.named_entities[name] = [];
+	node.add_to_group.call_deferred(name, true);
 
-	ValveIONode.named_entities[name].append(node);
+	if not name in VMFEntityNode.named_entities:
+		VMFEntityNode.named_entities[name] = [];
+
+	VMFEntityNode.named_entities[name].append(node);
 
 static func call_target_input(target, input, param, delay, caller) -> void:
 	if "enabled" in caller and not caller.enabled:
@@ -139,15 +143,15 @@ static func call_target_input(target, input, param, delay, caller) -> void:
 
 ## Returns the first node with the targetname
 static func get_target(n, caller = null) -> Node3D:
-	if n in ValveIONode.aliases:
-		return ValveIONode.aliases[n];
+	if n in VMFEntityNode.aliases:
+		return VMFEntityNode.aliases[n];
 
 	var nodes = get_all_targets(n, caller);
 	var node = nodes[0] if nodes.size() > 0 else null;
 
 	if node == null: return null;
 	if not is_instance_valid(node):
-		ValveIONode.named_entities[n].erase(node);
+		VMFEntityNode.named_entities[n].erase(node);
 		return get_target(n, caller);
 
 	return node;
@@ -306,7 +310,7 @@ func get_entity_trimesh_shape() -> ConcavePolygonShape3D:
 	var combiner = CSGCombiner3D.new();
 
 	for solid in solids:
-		var struct = { 'world': { 'solid': [solid] } };
+		var struct = VMFStructure.new({ 'world': { 'solid': [solid] } });
 		var csgmesh = CSGMesh3D.new();
 		var mesh = VMFTool.create_mesh(struct, global_position);
 

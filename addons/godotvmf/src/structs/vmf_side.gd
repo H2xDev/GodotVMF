@@ -23,6 +23,7 @@ func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 	id = raw.get("id", -1);
 	material = raw.get("material", "");
 	is_displacement = "dispinfo" in raw;
+	smoothing_groups = raw.get("smoothing_groups", 0);
 	solid = _solid;
 	plane = raw.plane.value;
 
@@ -39,7 +40,8 @@ func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 ## Internal method. Calculates the vertices of this side if they are not already calculated.
 ## Called automatically from VMFSolid
 func calculate_vertices() -> void:
-	if vertices.size() > 0: return; # Already calculated
+	# Already calculated
+	if vertices.size() > 0: return; 
 
 	var raw_vertices: Array[Vector3] = [];
 	var cache = {};
