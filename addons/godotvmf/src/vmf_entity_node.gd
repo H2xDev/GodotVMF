@@ -112,21 +112,21 @@ func assign_name() -> void:
 
 	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
 
-static func add_named_entity(name: String, node: Node):
-	node.add_to_group.call_deferred(name, true);
+static func add_named_entity(_name: String, node: Node):
+	node.add_to_group.call_deferred(_name, true);
 
-	if not name in VMFEntityNode.named_entities:
-		VMFEntityNode.named_entities[name] = [];
+	if not _name in VMFEntityNode.named_entities:
+		VMFEntityNode.named_entities[_name] = [];
 
-	VMFEntityNode.named_entities[name].append(node);
+	VMFEntityNode.named_entities[_name].append(node);
 
 static func call_target_input(target, input, param, delay, caller) -> void:
 	if "enabled" in caller and not caller.enabled:
 		return;
 
-	var targets = get_all_targets(target, caller) \
+	var targets = get_all_targets(target) \
 			if not target.begins_with("!") \
-			else [get_target(target, caller)];
+			else [get_target(target)];
 
 	for node in targets:
 		if not is_instance_valid(node): continue;
@@ -142,34 +142,23 @@ static func call_target_input(target, input, param, delay, caller) -> void:
 			node.call(input, param);
 
 ## Returns the first node with the targetname
-static func get_target(n, caller = null) -> Node3D:
+static func get_target(n) -> Node3D:
 	if n in VMFEntityNode.aliases:
 		return VMFEntityNode.aliases[n];
 
-	var nodes = get_all_targets(n, caller);
+	var nodes = get_all_targets(n);
 	var node = nodes[0] if nodes.size() > 0 else null;
 
 	if node == null: return null;
 	if not is_instance_valid(node):
 		VMFEntityNode.named_entities[n].erase(node);
-		return get_target(n, caller);
+		return get_target(n);
 
 	return node;
 
 ## Returns all nodes with the targetname
-static func get_all_targets(target_name: String, caller = null) -> Array:
-
-	if target_name.ends_with("*"):
-		var entities: Array[VMFEntityNode] = []
-		for key: String in VMFEntityNode.named_entities.keys():
-			
-			if key.begins_with(target_name.left(-1)):
-				for named_entity: VMFEntityNode in VMFEntityNode.named_entities[key]:
-					entities.push_back(named_entity)
-				
-		return entities
-
-	if scene_instance.get_tree().has_group(target_name):
+static func get_all_targets(target_name: String) -> Array:
+	if scene_instance and scene_instance.get_tree().has_group(target_name):
 		return scene_instance.get_tree().get_nodes_in_group(target_name);
 
 	return VMFEntityNode.named_entities.get(target_name, []);
@@ -192,7 +181,7 @@ static func parse_connections(caller: Node) -> void:
 			var input = arr[1] if arr.size() > 1 else "";
 			var param = arr[2] if arr.size() > 2 else "";
 			var delay = float(arr[3]) if arr.size() > 3 else 0.0;
-			var times = arr[4] if arr.size() > 4 else 1;
+			var _times = arr[4] if arr.size() > 4 else 1;
 
 			if not input or not target: continue;
 

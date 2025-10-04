@@ -3,13 +3,13 @@ class_name prop_static
 extends prop_studio
 
 var model_scale: float = 1.0:
-	get: return reference.data.get('modelscale', 1.0)
+	get: return entity.get('modelscale', 1.0)
 
 var skin: int = 0:
-	get: return reference.data.get('skin', 0)
+	get: return entity.get('skin', 0)
 
 var screen_space_fade: bool = false:
-	get: return reference.data.get('screenspacefade', 0) == 1
+	get: return entity.get('screenspacefade', 0) == 1
 
 var fade_min: float = 0.0:
 	get: return entity.get('fademindist', 0.0) * VMFConfig.import.scale

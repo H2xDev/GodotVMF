@@ -26,9 +26,9 @@ func call_target_input(target: String, input: String, param: Variant, delay: flo
 	if "enabled" in node and not node.enabled:
 		return;
 
-	var targets = ValveIONode.get_all_targets(target) \
+	var targets = VMFEntityNode.get_all_targets(target) \
 		if not target.begins_with("!") \
-		else [ValveIONode.get_target(target, node)];
+		else [VMFEntityNode.get_target(target)];
 
 
 	if delay > 0.0:

@@ -18,7 +18,7 @@ func _init(raw: Dictionary) -> void:
 	data = raw;
 	has_solid = "solid" in raw and raw.solid is Dictionary;
 	angles = raw.get("angles", Vector3.ZERO);
-	origin = raw.origin;
+	origin = raw.get("origin", Vector3.ZERO);
 
 	if has_solid:
 		var raw_solids: Variant = raw.get("solid", []);
