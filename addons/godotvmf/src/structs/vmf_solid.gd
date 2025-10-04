@@ -11,18 +11,6 @@ func _init(raw: Dictionary) -> void:
 	if not raw.is_empty():
 		id = int(raw.get("id", -1));
 		define_sides(raw)
-		define_bounding_box();
-
-func define_bounding_box() -> void:
-	for side in sides:
-		for vertex in side.plane_points:
-			min.x = min(min.x, vertex.x);
-			min.y = min(min.y, vertex.y);
-			min.z = min(min.z, vertex.z);
-
-			max.x = max(max.x, vertex.x);
-			max.y = max(max.y, vertex.y);
-			max.z = max(max.z, vertex.z);
 
 func _to_string() -> String:
 	var line1 = "VMFSolid(id=%d, sides=%d, has_displacement=%s)\n\t" % [id, sides.size(), has_displacement];

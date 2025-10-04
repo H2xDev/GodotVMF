@@ -44,7 +44,7 @@ static func get_subinstances(structure: Dictionary, entity_source: Dictionary) -
 static func get_imported_instance_path(instance_name: String):
 	var folder: String = VMFConfig.import.instances_folder;
 	var dir := ProjectSettings.globalize_path(folder);
-	return dir + "/" + instance_name + ".tscn";
+	return dir + "/" + instance_name + ".scn";
 
 static func load_instance(instance_name: String):
 	if not is_instance_exists(instance_name):
@@ -87,7 +87,7 @@ static func import_instance(entity: Dictionary):
 
 	var filename := file.get_file().get_basename();
 	var dir := ProjectSettings.globalize_path(instances_folder);
-	var path := dir + "/" + filename + ".tscn";
+	var path := dir + "/" + filename + ".scn";
 	var is_instance_already_imported := FileAccess.file_exists(path);
 
 	if is_instance_already_imported: return load_instance(filename);
@@ -117,7 +117,7 @@ static func import_instance(entity: Dictionary):
 	if not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir);
 
-	var err := ResourceSaver.save(scn, path);
+	var err := ResourceSaver.save(scn, path, ResourceSaver.FLAG_COMPRESS);
 	if err:
 		VMFLogger.error("Failed to save instance resource: %s" % err);
 		return;

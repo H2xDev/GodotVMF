@@ -84,7 +84,7 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 	var ignored_textures = VMFConfig.materials.ignore;
 	var duplicated_mesh = ArrayMesh.new() if not is_44 else null;
 	var corrector := VMFGeometryCorrector.new();
-	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMFExtendTransformer");
+	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector");
 	var mt = MeshDataTool.new() if not is_44 else null;
 
 	var surface_removed = 0;
@@ -107,8 +107,8 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 
 		for key in compilekeys:
 			if is_ignored: break;
-			if extend_transformer and "norender" in extend_transformer.norender:
-				is_norender = extend_transformer.norender.has(key);
+			if extend_corrector and "norender" in extend_corrector.norender:
+				is_norender = extend_corrector.norender.has(key);
 				break;
 
 			is_norender = corrector.norender.has(key);
@@ -127,6 +127,14 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 
 	return duplicated_mesh if not is_44 else original_mesh;
 
+static func is_material_transparent(material: Material) -> bool:
+	if material is ShaderMaterial: return true;
+	if material is BaseMaterial3D:
+		var bm := material as BaseMaterial3D;
+
+		return bm.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED;
+	return false;
+
 static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> void:
 	for brush_b in brushes:
 		if brush_a == brush_b: continue;
@@ -137,6 +145,11 @@ static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> 
 			for side_b in brush_b.sides:
 				if side_a.plane.normal.dot(side_b.plane.normal) > -0.99: continue;
 				if side_a.plane.get_center().distance_to(side_b.plane.get_center()) > 0.01: continue;
+
+				var material_a: Material = VMTLoader.get_material(side_a.material);
+				var material_b: Material = VMTLoader.get_material(side_b.material);
+				if is_material_transparent(material_a): continue;
+				if is_material_transparent(material_b): continue;
 
 				if side_a.is_equal_to(side_b):
 					brush_b.sides.erase(side_b);
@@ -194,18 +207,15 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3(0
 
 			if not side.is_displacement:
 				var normal = side.plane.normal;
+				var sg := -1 if side.smoothing_groups == 0 else side.smoothing_groups;
+
 				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+				sf.set_color(Color(1, 1, 1));
+				sf.set_smooth_group(sg);
 	
 				for v: Vector3 in side.vertices:
-					var uv := side.get_uv(v);
-					sf.set_uv(uv);
-	
-					var vt := Vector3(v.x, v.z, -v.y) * import_scale - offset;
-					var sg := -1 if side.smoothing_groups == 0 else int(side.smoothing_groups);
-					
-					sf.set_smooth_group(sg);
-					sf.set_color(Color8(0, 0, 0));
-					sf.add_vertex(vt);
+					sf.set_uv(side.get_uv(v));
+					sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
 					index += 1;
 
 				for i: int in range(1, side.vertices.size() - 1):
@@ -262,6 +272,7 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3(0
 		if material: sf.set_material(material);
 		
 		sf.optimize_indices_for_cache();
+		sf.generate_normals();
 		sf.generate_tangents();
 		sf.commit(mesh);
 

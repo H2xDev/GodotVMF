@@ -235,7 +235,7 @@ func import_entities() -> void:
 
 		var node = tscn.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
 
-		if node is ValveIONode:
+		if node is VMFEntityNode:
 			node.is_runtime = is_runtime;
 			node.reference = ent;
 
@@ -246,14 +246,10 @@ func import_entities() -> void:
 		if clazz and "setup" in clazz: clazz.setup(ent, node);
 
 		if not is_runtime:
-			if not "_entity_pre_setup" in node:
-				print(node.get_class());
-
 			node._entity_pre_setup(ent);
+
 			if "_apply_entity" in node:
 				node._apply_entity(ent.data);
-			else:
-				node._entity_setup(ent);
 
 func generate_occluder(complex: bool = false):
 	var mesh: MeshInstance3D = geometry
