@@ -156,11 +156,11 @@ static func get_target(n, caller = null) -> Node3D:
 static func get_all_targets(target_name: String, caller = null) -> Array:
 
 	if target_name.ends_with("*"):
-		var entities: Array[ValveIONode] = []
-		for key: String in ValveIONode.named_entities.keys():
+		var entities: Array[VMFEntityNode] = []
+		for key: String in VMFEntityNode.named_entities.keys():
 			
 			if key.begins_with(target_name.left(-1)):
-				for named_entity: ValveIONode in ValveIONode.named_entities[key]:
+				for named_entity: VMFEntityNode in VMFEntityNode.named_entities[key]:
 					entities.push_back(named_entity)
 				
 		return entities
@@ -168,7 +168,7 @@ static func get_all_targets(target_name: String, caller = null) -> Array:
 	if scene_instance.get_tree().has_group(target_name):
 		return scene_instance.get_tree().get_nodes_in_group(target_name);
 
-	return ValveIONode.named_entities.get(target_name, []);
+	return VMFEntityNode.named_entities.get(target_name, []);
 
 static func parse_connections(caller: Node) -> void:
 	if not "entity" in caller or not "connections" in caller.entity: return;
