@@ -56,7 +56,7 @@ class MaterialsConfig:
 	var ignore: Array = ProjectSettings.get_setting("godot_vmf/materials/ignore", []);
 
 	## A material that will be used as a fallback for missing materials
-	var fallback_material: Variant = ProjectSettings.get_setting("godot_vmf/materials/fallback_material", "");
+	var fallback_material: String = ProjectSettings.get_setting("godot_vmf/materials/fallback_material", "");
 
 	## Fallback texture size for missing textures
 	var default_texture_size: int = ProjectSettings.get_setting("godot_vmf/materials/default_texture_size", 512);
@@ -95,7 +95,7 @@ class ImportConfig:
 	var use_navigation_mesh: bool = ProjectSettings.get_setting("godot_vmf/import/generate_navigation_mesh", false);
 
 	## If specified, the importer will use this preset for the navigation mesh
-	var navigation_mesh_preset: Variant = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset");
+	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset");
 
 static var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
 
@@ -266,7 +266,7 @@ static func define_project_settings():
 
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/import/navigation_mesh_preset",
-		"type": TYPE_OBJECT,
+		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_RESOURCE_TYPE,
 		"hint_string": "NavigationMesh",
 		"default_value": "",
@@ -363,7 +363,7 @@ static func define_project_settings():
 
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/materials/fallback_material",
-		"type": TYPE_OBJECT,
+		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_RESOURCE_TYPE,
 		"hint_string": "Material",
 		"default_value": "",

@@ -2,7 +2,6 @@
 class_name func_detail extends VMFEntityNode
 
 func _entity_setup(entity: VMFEntity):
-	print("func_detail");
 	var mesh = get_mesh();
 	$MeshInstance3D.cast_shadow = entity.data.get("disableshadows", 0) == 0;
 

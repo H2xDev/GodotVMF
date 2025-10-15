@@ -118,10 +118,26 @@ func import_geometry() -> void:
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
 
+	var navreg := NavigationRegion3D.new();
+
 	var navmesh_preset := VMFConfig.import.navigation_mesh_preset;
 
-	var navreg := NavigationRegion3D.new();
-	navreg.navigation_mesh = NavigationMesh.new() if not navmesh_preset else navmesh_preset;
+	if navmesh_preset == "":
+		navreg.navigation_mesh = NavigationMesh.new();
+		return;
+
+	if ResourceLoader.exists(navmesh_preset):
+		var res := load(navmesh_preset);
+
+		if res is not NavigationMesh:
+			VMFLogger.error("Navigation mesh preset \"%s\" is not a NavigationMesh resource. Falling back to default." % navmesh_preset);
+			navreg.navigation_mesh = NavigationMesh.new();
+		else:
+			navreg.navigation_mesh = load(navmesh_preset);
+	else:
+		VMFLogger.error("Navigation mesh preset \"%s\" is not found. Falling back to default." % navmesh_preset);
+		navreg.navigation_mesh = NavigationMesh.new();
+
 	navreg.name = "NavigationMesh";
 
 	add_child(navreg);
