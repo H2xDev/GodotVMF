@@ -1,2 +1,8 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+/**        export-ignore
+/addons    !export-ignore
+/addons/** !export-ignore
+/script_templates    !export-ignore
+/script_templates/** !export-ignore
