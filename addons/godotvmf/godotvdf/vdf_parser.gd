@@ -10,8 +10,9 @@ static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+
 static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)');
 static var _commentRegex := RegEx.create_from_string('\\s+?\\/\\/.+');
 
-# Cache the results of regex searches when possible
-static func parse(file_path: String, keys_to_lower := false):
+## Returns Dictionary representation of the Valve Data Format file located at [file_path].
+## Returns null and prints an error if the file could not be read or parsed.
+static func parse(file_path: String, keys_to_lower := false) -> Variant:
 	if not file_path:
 		push_error('ValveFormatParser: No file path provided');
 		return null;

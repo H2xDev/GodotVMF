@@ -1,109 +1,8 @@
+@static_unload
 class_name VMTLoader extends RefCounted
 
-class VMTTransformer:
-	func basetexture(material: Material, value: Variant):
-		if "albedo_texture" in material:
-			material.set("albedo_texture", VTFLoader.get_texture(value));
-	
-	func basetexture2(material: Material, value: Variant):
-		if "albedo_texture2" in material:
-			material.set("albedo_texture2", VTFLoader.get_texture(value));
-
-	func bumpmap(material: Material, value: Variant):
-		if "normal_texture" in material:
-			material.set("normal_texture", VTFLoader.get_texture(value));
-		if "normal_enabled" in material:
-			material.normal_enabled = true;
-	
-	func bumpmap2(material: Material, value: Variant):
-		if "normal_texture2" in material:
-			material.set("normal_texture2", VTFLoader.get_texture(value));
-
-	func selfillum(material: Material, value: Variant):
-		if "emission_enabled" in material:
-			material.emission_enabled = value == 1;
-
-	func selfillummask(material: Material, value: Variant):
-		if "emission_texture" in material:
-			material.set("emission_texture", VTFLoader.get_texture(value));
-			material.emission_enabled = true;
-
-	func emissioncolor(material: Material, value: Variant):
-		if "emission" in material:
-			material.set("emission", value);
-
-	func emissionenergy(material: Material, value: Variant):
-		if "emission_energy_multiplier" in material:
-			material.set("emission_energy_multiplier", value);
-
-	func emissionoperator(material: Material, value: Variant):
-		if "emission_operator" in material:
-			material.set("emission_operator", value);
-	
-	func roughnesstexture(material: Material, value: Variant):
-		if "roughness_texture" in material:
-			material.set("roughness_texture", VTFLoader.get_texture(value));
-	
-	func roughnessfactor(material: Material, value: Variant):
-		if "roughness" in material:
-			material.set("roughness", value);
-	
-	func metalnesstexture(material: Material, value: Variant):
-		if "metallic_texture" in material:
-			material.set("metallic_texture", VTFLoader.get_texture(value));
-	
-	func ambientocclusiontexture(material: Material, value: Variant):
-		if "ao_texture" in material:
-			material.set("ao_texture", VTFLoader.get_texture(value));
-			material.ao_enabled = true;
-	
-	func bumpmapscale(material: Material, value: Variant):
-		if "normal_scale" in material:
-			material.set("normal_scale", value);
-	
-	func nocull(material: Material, value: Variant):
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED \
-				if value == 1 else BaseMaterial3D.CULL_BACK;
-
-	func translucent(material: Material, value: Variant):
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA \
-				if value == 1 else BaseMaterial3D.TRANSPARENCY_DISABLED;
-
-	func alphatest(material: Material, value: Variant):
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR \
-				if value == 1 else BaseMaterial3D.TRANSPARENCY_DISABLED;
-
-	func alphatestreference(material: Material, value: Variant):
-		material.alpha_scissor_threshold = value;
-
-	func nextpass(material: Material, value: Variant):
-		var shader_material = VMTShaderBasedMaterial.load("res://" + value + ".gdshader");
-		material.next_pass = shader_material;
-	
-	func detail(material: Material, value: Variant):
-		return;
-		if "detail_mask" in material:
-			var texture = VTFLoader.get_texture(value);
-			if not texture: return;
-			material.set("detail_mask", texture);
-			material.detail_enabled = true;
-
-	func detailblendmode(material: Material, value: Variant):
-		if "detail_blend_mode" in material:
-			material.set("detail_blend_mode", value);
-
-	func surfaceprop(material: Material, value: Variant):
-		material.set_meta("surfaceprop", value);
-
-	func basetexturetransform(material: Material, value: Variant):
-		if "uv1_scale" not in material:
-			return;
-		if "uv1_offset" not in material:
-			return;
-
-		var transform = VMTLoader.parse_transform(value);
-		material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
-		material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
+static var texture_sizes_cache: Dictionary = {};
+static var cached_materials: Dictionary = {};
 
 static func is_file_valid(path: String):
 	var import_path = path + ".import";
@@ -192,10 +91,9 @@ static func load(path: String):
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
-static var cached_materials: Dictionary;
-
 static func clear_cache():
 	cached_materials = {};
+	texture_sizes_cache = {};
 
 static func has_material(material: String) -> bool:
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
@@ -209,6 +107,11 @@ static func has_material(material: String) -> bool:
 	return true;
 
 static func get_material(material: String):
+	cached_materials = cached_materials if cached_materials else {};
+
+	if material in cached_materials:
+		return cached_materials[material];
+
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
 	if not ResourceLoader.exists(material_path):
@@ -220,6 +123,40 @@ static func get_material(material: String):
 	
 		if not material_path or not ResourceLoader.exists(material_path): return null;
 
-	var res = ResourceLoader.load(material_path);
+	cached_materials[material] = ResourceLoader.load(material_path);
 
-	return res;
+	return cached_materials[material];
+
+static func get_texture_size(side_material: String) -> Vector2:
+	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};
+
+	var default_texture_size: int = VMFConfig.materials.default_texture_size;
+	var has_cached_value = side_material in texture_sizes_cache;
+
+	if has_cached_value and texture_sizes_cache[side_material]:
+		return texture_sizes_cache[side_material];
+
+	var material = get_material(side_material) \
+		if not has_cached_value \
+		else texture_sizes_cache[side_material];
+	
+	if not material:
+		texture_sizes_cache[side_material] = Vector2(default_texture_size, default_texture_size);
+		return texture_sizes_cache[side_material];
+
+	var texture = material.albedo_texture \
+		if material is BaseMaterial3D \
+		else material.get_shader_parameter('albedo_texture');
+
+	if not texture and (material is ShaderMaterial):
+		texture = material.get_shader_parameter('basetexture');
+	
+	if not texture: return Vector2(default_texture_size, default_texture_size);
+
+	var tsize: Vector2 = texture.get_size() \
+		if texture \
+		else Vector2(default_texture_size, default_texture_size);
+
+	texture_sizes_cache[side_material] = tsize;
+
+	return tsize;
