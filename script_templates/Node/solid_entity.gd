@@ -33,10 +33,8 @@ func _entity_ready() -> void:
 	pass;
 
 
-## Entity setup method. Called during the map import process. Do additional setup for the entity here.
-func _apply_entity(entity: Dictionary) -> void:
-	super._apply_entity(entity);
-
+## This method is called during the import process
+func _entity_setup(_e: VMFEntity) -> void:
 	# Applying mesh and collision shape for this entity
 	var mesh := MeshInstance3D.new();
 	mesh.mesh = get_mesh();

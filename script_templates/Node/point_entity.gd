@@ -31,11 +31,10 @@ signal OnSomeHappened();
 func _entity_ready() -> void:
 	pass;
 
-## Entity setup method
-func _apply_entity(entity: Dictionary) -> void:
-	super._apply_entity(entity);
-
+## This method is called during the import process
+func _entity_setup(e: VMFEntity) -> void:
 	## Do setup things here
+	pass;
 
 ## Inputs
 func DoSomething(_void = null): pass;
