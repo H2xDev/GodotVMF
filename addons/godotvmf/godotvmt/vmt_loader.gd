@@ -3,6 +3,7 @@ class_name VMTLoader extends RefCounted
 
 static var texture_sizes_cache: Dictionary = {};
 static var cached_materials: Dictionary = {};
+static var logged_materials: Array[String] = [];
 
 static func is_file_valid(path: String):
 	var import_path = path + ".import";
@@ -94,6 +95,7 @@ static func normalize_path(path: String) -> String:
 static func clear_cache():
 	cached_materials = {};
 	texture_sizes_cache = {};
+	logged_materials = [];
 
 static func has_material(material: String) -> bool:
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
@@ -108,6 +110,7 @@ static func has_material(material: String) -> bool:
 
 static func get_material(material: String):
 	cached_materials = cached_materials if cached_materials else {};
+	logged_materials = logged_materials if logged_materials else [];
 
 	if material in cached_materials:
 		return cached_materials[material];
@@ -118,7 +121,10 @@ static func get_material(material: String):
 		material_path = material_path.replace(".tres", ".vmt");
 
 	if not ResourceLoader.exists(material_path):
-		VMFLogger.warn("Material not found: " + material_path);
+		if not logged_materials.has(material_path):
+			VMFLogger.warn("Material not found: " + material_path);
+			logged_materials.append(material_path);
+
 		material_path = VMFConfig.materials.fallback_material
 	
 		if not material_path or not ResourceLoader.exists(material_path): return null;
