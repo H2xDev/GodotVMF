@@ -38,7 +38,7 @@ enum Flags
 	TEXTUREFLAGS_CLAMPT = 0x00000008,
 	TEXTUREFLAGS_ANISOTROPIC = 0x00000010,
 	TEXTUREFLAGS_HINT_DXT5 = 0x00000020,
-	TEXTUREFLAGS_PWL_CORRECTED = 0x00000040,
+	TEXTUREFLAGS_SRGB = 0x00000040,
 	TEXTUREFLAGS_NORMAL = 0x00000080,
 	TEXTUREFLAGS_NOMIP = 0x00000100,
 	TEXTUREFLAGS_NOLOD = 0x00000200,
@@ -266,6 +266,7 @@ func _init(path, duration):
 	self.frame_duration = duration;
 
 	file = FileAccess.open(path, FileAccess.READ);
+	prints('VTFFLAGS', flags);
 
 static func get_texture(texture: String):
 	texture = texture.to_lower();

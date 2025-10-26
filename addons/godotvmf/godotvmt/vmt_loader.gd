@@ -3,7 +3,7 @@ class_name VMTLoader extends RefCounted
 
 static var texture_sizes_cache: Dictionary = {};
 static var cached_materials: Dictionary = {};
-static var logged_materials: Array[String] = [];
+static var logged_materials: Array = [];
 
 static func is_file_valid(path: String):
 	var import_path = path + ".import";
