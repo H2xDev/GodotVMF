@@ -75,6 +75,9 @@ func calculate_vertices() -> void:
 
 	vertices = PackedVector3Array(raw_vertices);
 
+	if is_displacement:
+		dispinfo.calculate_vertices();
+
 ## Retrns the UV coordinates for the given vertex on this side
 func get_uv(vertex: Vector3) -> Vector2:
 	var uscale: float = uaxis.scale;

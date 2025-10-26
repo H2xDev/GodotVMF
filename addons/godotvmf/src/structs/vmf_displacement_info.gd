@@ -13,6 +13,7 @@ var start_point := Vector3(0, 0, 0);
 var side: VMFSide;
 var brush: VMFSolid;
 var vertices: PackedVector3Array;
+var elevation: float = 0.0;
 
 func _to_string() -> String:
 	return "VMFDisplacementInfo(verts_count=%d, edges_count=%d, start_point=%s, side_id=%d, brush_id=%d)" % [verts_count, edges_count, start_point, side.id, brush.id];
@@ -35,8 +36,12 @@ func _init(raw: Dictionary, side: VMFSide, brush: VMFSolid) -> void:
 	offsets = _parse_vectors('offsets');
 	offset_normals = _parse_vectors('offset_normals');
 	alphas = _parse_floats('alphas');
-	vertices = PackedVector3Array(get_vertices());
+	elevation = float(raw.get('elevation', 0.0));
 	disp_info = null;
+
+## Called from the VMFSide during the calculation of its vertices.
+func calculate_vertices() -> void:
+	vertices = PackedVector3Array(get_vertices());
 
 func get_normal(x: float, y: float) -> Vector3:
 	var index = y + x * verts_count;
@@ -96,7 +101,7 @@ func get_vertices() -> Array[Vector3]:
 		var vr := tr.lerp(br, rblend);
 		var vert := vl.lerp(vr, cblend);
 
-		vert += get_distance(x, y) + get_offset(x, y) + side.plane.normal * disp_info.elevation;
+		vert += get_distance(x, y) + get_offset(x, y) + side.plane.normal * elevation;
 
 		res.append(vert);
 	
