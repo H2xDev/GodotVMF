@@ -20,6 +20,20 @@ An importer of [VMF files](https://developer.valvesoftware.com/wiki/VMF_(Valve_M
 
 Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it supports precised vertex data.
 
+### Features
+- Brushes geometry import (including UVs, materials IDs and smoothing groups)
+- Instances support
+- Native MDL support
+- Native VMT support
+- Native VTF support (only DXT1, DXT3, DXT5 supported)
+- Displacements import (with vertex data)
+	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
+- Entities support
+- Hammer's Input/Output  system support
+- Surface props support
+- Material's compile properties support
+- FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
+
 <img src="https://github.com/user-attachments/assets/21084c3e-3530-45e5-8e05-d669d2a3ecf1" width="100%" />
 
 ## Why?
@@ -36,23 +50,6 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - [Implemented entities](https://github.com/H2xDev/GodotVMF-Entities)
 - [Example Project](https://github.com/H2xDev/GodotVMF-Project-Template)
 
-## Video demonstration
-[![Click to open Youtube video](https://github.com/user-attachments/assets/d9b421e6-69c0-499e-8ccf-0390ddb1f548)](https://www.youtube.com/watch?v=5XYfvbIAlJU)
-
-## Features
-- Brushes geometry import (including UVs, materials IDs and smoothing groups)
-- Instances support
-- Native MDL support
-- Native VMT support
-- Native VTF support (only DXT1, DXT3, DXT5 supported)
-- Displacements import (with vertex data)
-	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
-- Entities support
-- Hammer's Input/Output  system support
-- Surface props support
-- Material's compile properties support
-- FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
-
 ## Made with this tool
 - [Echo Point](https://www.youtube.com/watch?v=z7LcKb0XRzY) by Lazy
 - [Vampire Bloodlines map example](https://www.youtube.com/watch?v=dV3nllCZYNM)  by Rendara
@@ -63,10 +60,10 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
     - Use `Additional Rotation` property in the MDL import options
-- Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issues with threaded import in the engine.
+- Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issue with threaded import in the engine.
 
 ## Legality of use
-If you are going to use Hammer Editor for commercial purpose it's worth to asking Valve for permission to use their tool. There shouldn't be any problems if you are using this tool for non-commercial projects.
+If you would like to use the Source Engine SDK or other Valve Developer Tools for commercial use, please contact Valve at sourceengine@valvesoftware.com. There shouldn’t be any issues if you’re using it for non-commercial projects.  
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
@@ -79,7 +76,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 3. Decompile most complex maps
 4. Try to import decompiled maps in Godot
 5. Check for errors if they appear
-
 
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  

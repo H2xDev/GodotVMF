@@ -41,7 +41,10 @@ func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 ## Called automatically from VMFSolid
 func calculate_vertices() -> void:
 	# Already calculated
-	if vertices.size() > 0: return; 
+	if vertices.size() > 0: 
+		if is_displacement:
+			dispinfo.calculate_vertices();
+		return; 
 
 	var raw_vertices: Array[Vector3] = [];
 	var cache = {};

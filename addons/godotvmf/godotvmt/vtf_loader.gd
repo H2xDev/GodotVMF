@@ -1,4 +1,10 @@
 class_name VTFLoader extends RefCounted
+enum SRGBConversionMethod {
+	DISABLED,
+	DURING_IMPORT,
+	PROCESS_IN_SHADER
+}
+
 enum ImageFormat {
 	IMAGE_FORMAT_RGBA8888,
 	IMAGE_FORMAT_ABGR8888,
@@ -203,7 +209,7 @@ static func create(path: String, duration: float = 0):
 
 func done(): file.close();
 
-func compile_texture():
+func compile_texture(srgb_conversion_method: SRGBConversionMethod):
 	if width == 0 or height == 0:
 		push_error("Corrupted file: {0}".format([file.get_path()]));
 		return null;
@@ -215,11 +221,11 @@ func compile_texture():
 		tex.frames = frames;
 
 		for frame in range(0, frames):
-			tex.set_frame_texture(frame, _read_frame(frame));
+			tex.set_frame_texture(frame, _read_frame(frame, srgb_conversion_method));
 			tex.set_frame_duration(frame, frame_duration);
 
 	else:
-		tex = _read_frame(0);
+		tex = _read_frame(0, srgb_conversion_method);
 		
 	if not tex: 
 		push_error("Texture not loaded: {0}".format([path]));
@@ -230,13 +236,12 @@ func compile_texture():
 static var normal_conversion_shader: Shader;
 static var shader_material: ShaderMaterial;
 
-func _read_frame(frame):
+func _read_frame(frame, srgb_conversion_method: SRGBConversionMethod):
 	var data = PackedByteArray();
 	var byteRead = 0;
 	var is_dxt_1 = hires_image_format == ImageFormat.IMAGE_FORMAT_DXT1;
 	var format = format_map[str(hires_image_format)];
 	var use_mipmaps = not (flags & Flags.TEXTUREFLAGS_NOMIP);
-
 	frame = frames - 1 - frame;
 
 	for i in range(mipmap_count):
@@ -251,7 +256,11 @@ func _read_frame(frame):
 
 		byteRead += mip_size + mip_size * (frames - 1);
 
-	var img = Image.create_from_data(width, height, use_mipmaps, format, data);
+	var img := Image.create_from_data(width, height, use_mipmaps, format, data);
+	
+	if srgb_conversion_method == SRGBConversionMethod.DURING_IMPORT:
+		img.decompress();
+		img.compress(Image.COMPRESS_S3TC);
 
 	alpha = flags & Flags.TEXTUREFLAGS_ONEBITALPHA or flags & Flags.TEXTUREFLAGS_EIGHTBITALPHA;
 
@@ -266,7 +275,6 @@ func _init(path, duration):
 	self.frame_duration = duration;
 
 	file = FileAccess.open(path, FileAccess.READ);
-	prints('VTFFLAGS', flags);
 
 static func get_texture(texture: String):
 	texture = texture.to_lower();

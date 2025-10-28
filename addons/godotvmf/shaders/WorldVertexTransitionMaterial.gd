@@ -1,7 +1,19 @@
 @tool
 class_name WorldVertexTransitionMaterial extends ShaderMaterial
 
-@export_category("Albedo")
+@export var blend_modulate_texture: Texture = null:
+	set(value):
+		set_shader_parameter("blend_modulate_texture", value);
+		blend_modulate_texture = value;
+		emit_changed();
+
+@export var convert_to_srgb: bool = false:
+	set(value):
+		set_shader_parameter("convert_to_srgb", value);
+		convert_to_srgb = value;
+		emit_changed();
+
+@export_group("Albedo")
 @export var albedo_texture: Texture = null:
 	set(value):
 		set_shader_parameter("albedo_texture", value);
@@ -14,7 +26,7 @@ class_name WorldVertexTransitionMaterial extends ShaderMaterial
 		albedo_texture2 = value;
 		emit_changed();
 
-@export_category("Normal")
+@export_group("Normal")
 @export var normal_texture: Texture = null:
 	set(value):
 		set_shader_parameter("normal_texture", value);
@@ -27,7 +39,7 @@ class_name WorldVertexTransitionMaterial extends ShaderMaterial
 		normal_texture2 = value;
 		emit_changed();
 
-@export_category("Displacement")
+@export_group("Displacement")
 @export var displacement_texture: Texture = null:
 	set(value):
 		set_shader_parameter("displacement_texture", value);
@@ -40,8 +52,7 @@ class_name WorldVertexTransitionMaterial extends ShaderMaterial
 		displacement_texture2 = value;
 		emit_changed();
 
-@export_category("Metallic")
-
+@export_group("Metallic")
 @export_range(0, 1, 0.01) var metallic: float = 0.0:
 	set(value):
 		set_shader_parameter("metallic", value);
@@ -66,7 +77,7 @@ class_name WorldVertexTransitionMaterial extends ShaderMaterial
 		metallic_texture2 = value;
 		emit_changed();
 
-@export_category("Roughness")
+@export_group("Roughness")
 @export_range(0, 1, 0.01) var roughness: float = 0.0:
 	set(value):
 		set_shader_parameter("roughness", value);

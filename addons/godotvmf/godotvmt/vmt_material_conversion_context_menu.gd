@@ -150,4 +150,3 @@ func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 	bytes += image.get_data()
 
 	return bytes;
-

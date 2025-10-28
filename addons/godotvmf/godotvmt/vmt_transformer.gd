@@ -116,3 +116,13 @@ func basetexturetransform(material: Material, value: Variant):
 	var transform = VMTLoader.parse_transform(value);
 	material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
 	material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
+
+func blendmodulatetexture(material: Material, value: Variant):
+	if not "blend_modulate_texture" in material: return;
+	var texture: Texture = VTFLoader.get_texture(value);
+
+	if texture:
+		var process_srgb: bool = texture.get_meta("srgb_conversion_method", 0) == VTFLoader.SRGBConversionMethod.PROCESS_IN_SHADER;
+		material.set("convert_to_srgb", process_srgb);
+
+	material.set("blend_modulate_texture", VTFLoader.get_texture(value));

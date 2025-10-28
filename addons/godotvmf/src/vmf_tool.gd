@@ -20,7 +20,11 @@ static func generate_collisions(mesh_instance: MeshInstance3D):
 		if is_ignored: continue;
 
 		var compilekeys = material.get_meta("compile_keys", []) if material else [];
-		var surface_prop = (material.get_meta("surfaceprop", "default") if material else "default").to_lower();
+		var surface_prop = (material.get_meta("surfaceprop", "default") if material else "default");
+		
+		# NOTE: Blend textures can have more than one surface prop. In this case we'll choose the first one.
+		if surface_prop is Array:
+			surface_prop = surface_prop[0];
 
 		if compilekeys.size() > 0:
 			surface_prop = "tool_" + compilekeys[0];
