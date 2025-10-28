@@ -275,6 +275,7 @@ func _init(path, duration):
 	self.frame_duration = duration;
 
 	file = FileAccess.open(path, FileAccess.READ);
+	prints('VTFFLAGS', flags);
 
 static func get_texture(texture: String):
 	texture = texture.to_lower();
