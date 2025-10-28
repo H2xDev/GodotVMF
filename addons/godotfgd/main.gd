@@ -287,10 +287,9 @@ func get_prop_decorators(script: Script, property_name: String):
 	for line in lines:
 		line = line.trim_prefix(" ").trim_suffix(" ");
 		if not line.begins_with("@"): continue;
-		line = line.trim_prefix("@");
 
-		var name = line.split(" ")[0];
-		var value = line.split(name)[1].trim_prefix(" ").trim_suffix(" ");
+		var name = line.split(" ")[0].trim_prefix("@");
+		var value = line.split("@" + name)[1].trim_prefix(" ").trim_suffix(" ");
 
 		if name in decorators:
 			decorators[name] += "\n" + value;
