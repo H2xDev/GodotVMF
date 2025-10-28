@@ -63,8 +63,7 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issue with threaded import in the engine.
 
 ## Legality of use
-If you plan to use Hammer Editor for commercial purposes, it’s worth asking Valve for permission to use their tool. There shouldn’t be any issues if you’re using it for non-commercial projects.  
-If you would like to use the Source Engine SDK or other Valve Developer Tools for commercial use, please contact Valve at sourceengine@valvesoftware.com.  
+If you would like to use the Source Engine SDK or other Valve Developer Tools for commercial use, please contact Valve at sourceengine@valvesoftware.com. There shouldn’t be any issues if you’re using it for non-commercial projects.  
 
 ## Contribution
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
@@ -77,7 +76,6 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 3. Decompile most complex maps
 4. Try to import decompiled maps in Godot
 5. Check for errors if they appear
-
 
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  
