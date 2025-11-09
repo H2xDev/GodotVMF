@@ -111,7 +111,7 @@ func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 	bytes += int_to_short(image.get_width()); # width
 	bytes += int_to_short(image.get_height()); # height
 
-	bytes += int_to_int32(VTFLoader.Flags.TEXTUREFLAGS_SRGB | VTFLoader.Flags.TEXTUREFLAGS_NOMIP);
+	bytes += int_to_int32(VTFLoader.Flags.TEXTUREFLAGS_NOMIP | VTFLoader.Flags.TEXTUREFLAGS_SRGB);
 	bytes += int_to_short(1); # frames
 	bytes += int_to_short(0); # first frame
 	bytes += PackedByteArray([0, 0, 0, 0]); # padding
@@ -130,7 +130,6 @@ func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 	bytes += int_to_int32(format); # high res image format
 	bytes += int_to_byte(1) # mipmap count
 	bytes += int_to_int32(13) # low res image format
-	bytes += PackedByteArray([0]); # padding
 
 	var lowres_image := image.duplicate() as Image;
 	var lowres_width := 16;
@@ -145,6 +144,7 @@ func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 
 	bytes += int_to_byte(lowres_width); # low res image width
 	bytes += int_to_byte(lowres_height); # low res image height
+	bytes += PackedByteArray([0]); # padding
 
 	bytes += lowres_image.get_data(); # low res image data
 	bytes += image.get_data()

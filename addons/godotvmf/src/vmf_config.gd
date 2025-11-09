@@ -95,7 +95,7 @@ class ImportConfig:
 	var use_navigation_mesh: bool = ProjectSettings.get_setting("godot_vmf/import/generate_navigation_mesh", false);
 
 	## If specified, the importer will use this preset for the navigation mesh
-	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset");
+	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset", "");
 
 static var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
 
@@ -172,11 +172,9 @@ static func define_project_settings():
 		ProjectSettings.set_setting("godot_vmf/import/generate_navigation_mesh", false);
 	ProjectSettings.set_initial_value("godot_vmf/import/generate_navigation_mesh", false);
 
-
 	if not ProjectSettings.has_setting("godot_vmf/import/navigation_mesh_preset"):
 		ProjectSettings.set_setting("godot_vmf/import/navigation_mesh_preset", "");
 	ProjectSettings.set_initial_value("godot_vmf/import/navigation_mesh_preset", "");
-
 
 	if not ProjectSettings.has_setting("godot_vmf/import/lightmap_texel_size"):
 		ProjectSettings.set_setting("godot_vmf/import/lightmap_texel_size", 0.2);
