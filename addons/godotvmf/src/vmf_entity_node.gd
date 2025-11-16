@@ -101,7 +101,6 @@ func _entity_pre_setup(ent: VMFEntity) -> void:
 		add_named_entity(ent.data.targetname, self);
 
 	assign_name();
-	_entity_setup(ent);
 
 func assign_name() -> void:
 	self.name = str(entity.get("id", "no_name"));
@@ -142,7 +141,7 @@ static func call_target_input(target, input, param, delay, caller) -> void:
 			node.call(input, param);
 
 ## Returns the first node with the targetname
-static func get_target(n) -> Node3D:
+static func get_target(n: String) -> Node3D:
 	if n in VMFEntityNode.aliases:
 		return VMFEntityNode.aliases[n];
 

@@ -28,8 +28,5 @@ func _import(path: String, save_path: String, _a, _b, _c):
 
 	return error;
 
-static var cached_materials = {};
-static var last_cache_changed = 0;
-
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
