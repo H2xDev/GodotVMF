@@ -9,6 +9,12 @@ static func error(msg: String):
 static func warn(msg: String):
 	push_warning('[GodotVMF] ' + msg);
 
+static func trace(msg: String):
+	print("\n", msg, "\n\n");
+	get_stack().map(func(info):
+		print("{0} -> {1}:{2}".format([info.function, info.source.get_file(), info.line]));
+	);
+
 static func measure_call(breakpoint_time: float, message: String, function: Callable) -> Variant:
 	var start_time = Time.get_ticks_msec();
 	var result = function.call();

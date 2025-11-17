@@ -1,10 +1,6 @@
 @static_unload
 class_name VMTLoader extends RefCounted
 
-static var texture_sizes_cache: Dictionary = {};
-static var cached_materials: Dictionary = {};
-static var logged_materials: Array = [];
-
 static func is_file_valid(path: String):
 	var import_path = path + ".import";
 
@@ -92,11 +88,6 @@ static func load(path: String):
 static func normalize_path(path: String) -> String:
 	return path.replace('\\', '/').replace('//', '/').replace('res:/', 'res://');
 
-static func clear_cache():
-	cached_materials = {};
-	texture_sizes_cache = {};
-	logged_materials = [];
-
 static func has_material(material: String) -> bool:
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
@@ -108,12 +99,10 @@ static func has_material(material: String) -> bool:
 
 	return true;
 
-static func get_material(material: String):
-	cached_materials = cached_materials if cached_materials else {};
-	logged_materials = logged_materials if logged_materials else [];
-
-	if material in cached_materials:
-		return cached_materials[material];
+static func get_material(material: String) -> Material:
+	var cached_material = VMFCache.get_cached(material);
+	if cached_material:
+		return cached_material as Material;
 
 	var material_path = normalize_path(VMFConfig.materials.target_folder + "/" + material + ".tres").to_lower();
 
@@ -121,34 +110,33 @@ static func get_material(material: String):
 		material_path = material_path.replace(".tres", ".vmt");
 
 	if not ResourceLoader.exists(material_path):
-		if not logged_materials.has(material_path):
+		if not VMFCache.is_file_logged(material_path):
 			VMFLogger.warn("Material not found: " + material_path);
-			logged_materials.append(material_path);
+			VMFCache.add_logged_file(material_path);
 
 		material_path = VMFConfig.materials.fallback_material
 	
 		if not material_path or not ResourceLoader.exists(material_path): return null;
 
-	cached_materials[material] = ResourceLoader.load(material_path);
+	cached_material = ResourceLoader.load(material_path);
+	VMFCache.add_cached(material, cached_material);
 
-	return cached_materials[material];
+	return cached_material as Material;
 
 static func get_texture_size(side_material: String) -> Vector2:
-	texture_sizes_cache = texture_sizes_cache if texture_sizes_cache else {};
-
 	var default_texture_size: int = VMFConfig.materials.default_texture_size;
-	var has_cached_value = side_material in texture_sizes_cache;
+	var cache_key = "texture_size_" + side_material;
+	var cached_value = VMFCache.get_cached(cache_key);
 
-	if has_cached_value and texture_sizes_cache[side_material]:
-		return texture_sizes_cache[side_material];
+	if cached_value:
+		return cached_value as Vector2;
 
-	var material = get_material(side_material) \
-		if not has_cached_value \
-		else texture_sizes_cache[side_material];
+	var material = get_material(side_material);
 	
 	if not material:
-		texture_sizes_cache[side_material] = Vector2(default_texture_size, default_texture_size);
-		return texture_sizes_cache[side_material];
+		cached_value = Vector2(default_texture_size, default_texture_size);
+		VMFCache.add_cached(cache_key, cached_value);
+		return cached_value;
 
 	var texture = material.albedo_texture \
 		if material is BaseMaterial3D \
@@ -157,12 +145,15 @@ static func get_texture_size(side_material: String) -> Vector2:
 	if not texture and (material is ShaderMaterial):
 		texture = material.get_shader_parameter('basetexture');
 	
-	if not texture: return Vector2(default_texture_size, default_texture_size);
+	if not texture: 
+		cached_value = Vector2(default_texture_size, default_texture_size);
+		VMFCache.add_cached(cache_key, cached_value);
+		return cached_value;
 
-	var tsize: Vector2 = texture.get_size() \
+	cached_value = texture.get_size() \
 		if texture \
 		else Vector2(default_texture_size, default_texture_size);
 
-	texture_sizes_cache[side_material] = tsize;
+	VMFCache.add_cached(cache_key, cached_value);
 
-	return tsize;
+	return cached_value;

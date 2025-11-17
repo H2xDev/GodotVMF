@@ -1,9 +1,6 @@
 @static_unload
 class_name VMFTool extends RefCounted
 
-static func clear_caches() -> void:
-	VMTLoader.clear_cache();
-
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
 static func generate_collisions(mesh_instance: MeshInstance3D):
 	var bodies: Array[StaticBody3D] = [];
@@ -171,7 +168,6 @@ static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> 
 
 ## Returns MeshInstance3D from parsed VMF structure
 static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.ZERO, optimized: bool = true) -> ArrayMesh:
-	clear_caches();
 	var import_scale := VMFConfig.import.scale;
 
 	if vmf_structure.solids.size() == 0:
@@ -285,6 +281,8 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.Z
 	return mesh;
 
 static func generate_lods(mesh: ArrayMesh) -> ArrayMesh:
+	if not mesh.get_surface_count(): return mesh;
+
 	var importer_mesh := ImporterMesh.new();
 	for surface_idx in range(mesh.get_surface_count()):
 		importer_mesh.add_surface(

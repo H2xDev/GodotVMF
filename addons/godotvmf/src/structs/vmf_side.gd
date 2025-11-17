@@ -154,4 +154,3 @@ func is_equal_to(other: VMFSide) -> bool:
 	if merged_vertices != vertices.size(): return false;
 
 	return true;
-

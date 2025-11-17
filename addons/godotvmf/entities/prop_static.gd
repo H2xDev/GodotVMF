@@ -2,9 +2,6 @@
 class_name prop_static
 extends prop_studio
 
-var model_scale: float = 1.0:
-	get: return entity.get('modelscale', 1.0)
-
 var skin: int = 0:
 	get: return entity.get('skin', 0)
 

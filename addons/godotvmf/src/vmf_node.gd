@@ -268,65 +268,14 @@ func import_entities() -> void:
 		if not is_runtime:
 			node._entity_pre_setup(ent);
 
-			if "_apply_entity" in node:
-				node._apply_entity(ent.data);
-
-func generate_occluder(complex: bool = false):
-	var mesh: MeshInstance3D = geometry
-	var mesh_center = Vector3.ZERO;
-	var vertices = mesh.mesh.get_faces();
-
-	for v in vertices:
-		mesh_center += v;
-
-	mesh_center /= vertices.size();
-
-	var occluder := OccluderInstance3D.new();
-
-	if not complex:
-		var box := BoxOccluder3D.new();
-
-		box.size = mesh.get_aabb().size / 1.5;
-		occluder.occluder = box;
-		occluder.position = mesh_center;
-	else:
-		var box := ArrayOccluder3D.new();
-		var colliders = VMFUtils.get_children_recursive(mesh).filter(func(n): return n is CollisionShape3D);
-		var st = SurfaceTool.new();
-
-		var begin_vid = 0;
-
-		st.begin(Mesh.PRIMITIVE_TRIANGLES);
-
-		for child in colliders:
-			var s: ConcavePolygonShape3D = child.shape;
-			var points = s.get_faces();
-
-			for p in points:
-				st.add_vertex(p);
-
-			for i in range(points.size()):
-				st.add_index(begin_vid + i);
-
-			begin_vid += points.size();
-
-		st.optimize_indices_for_cache();
-
-		var arrays = st.commit_to_arrays();
-		var simplified = st.generate_lod(0.1);
-
-		box.set_arrays(arrays[Mesh.ARRAY_VERTEX], simplified);
-
-		occluder.occluder = box;
-
-	occluder.name = vmf.get_file().get_basename() + "_occluder";
-
-	add_child(occluder);
-	occluder.set_owner(_owner);
+			## Workaround to support deprecated method
+			if node._apply_entity(ent.data) == -1:
+				node._entity_setup(ent);
 
 func import_map() -> void:
 	if not vmf: return;
 
+	VMFCache.clear();
 	VMFConfig.load_config();
 
 	clear_structure();
