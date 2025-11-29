@@ -48,8 +48,13 @@ static func load(path: String):
 
 	if "$shader" in details:
 		var extension = ".gdshader" if not details["$shader"].get_extension() else "";
-		var shader_path = "res://" + details["$shader"] + extension;
-		material = VMTShaderBasedMaterial.load(shader_path);
+		var shader_path = "res://" + details["$shader"].replace("res://", "") + extension;
+
+		if ResourceLoader.exists(shader_path):
+			material = ShaderMaterial.new();
+			material.shader = ResourceLoader.load(shader_path);
+		else:
+			VMFLogger.warn("Shader %s doesn't exists for %s" % [shader_path, path]);
 	else:
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
@@ -69,10 +74,12 @@ static func load(path: String):
 
 		if material is ShaderMaterial:
 			var mat: ShaderMaterial = material;
-			if uniforms.find(key) > -1:
-				var is_texture = value.has("/");
-				mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
-				continue;
+			var uniform_index = uniforms.find_custom(func(field): return field.name == key);
+			if uniform_index == -1: continue;
+
+			var is_texture = uniforms[uniform_index].hint_string == "Texture2D";
+			mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
+			continue;
 
 		if extend_transformer and key in extend_transformer:
 			extend_transformer[key].call(material, value);
