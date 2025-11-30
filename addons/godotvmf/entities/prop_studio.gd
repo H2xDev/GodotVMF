@@ -37,5 +37,7 @@ func _entity_setup(_entity: VMFEntity) -> void:
 	instance.name = "model";
 	instance.scale *= model_scale;
 
+	MDLCombiner.apply_skin(instance, skin);
+
 	add_child(instance);
 	model_instance.set_owner(get_owner());
