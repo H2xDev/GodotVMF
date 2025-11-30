@@ -23,6 +23,7 @@ func _entity_setup(e: VMFEntity):
 
 	model_instance.set_owner(get_owner());
 	model_instance.scale *= model_scale;
+	model_instance.gi_mode = GeometryInstance3D.GI_MODE_STATIC;
 	MDLCombiner.apply_skin(model_instance, skin);
 
 	var fade_margin = fade_max - fade_min;
