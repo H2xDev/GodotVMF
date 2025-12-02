@@ -78,10 +78,16 @@ class_name WorldVertexTransitionMaterial extends ShaderMaterial
 		emit_changed();
 
 @export_group("Roughness")
-@export_range(0, 1, 0.01) var roughness: float = 0.0:
+@export_range(0, 1, 0.01) var roughness: float = 1.0:
 	set(value):
 		set_shader_parameter("roughness", value);
 		roughness = value;
+		emit_changed();
+
+@export_range(0, 1, 0.01) var roughness2: float = 1.0:
+	set(value):
+		set_shader_parameter("roughness2", value);
+		roughness2 = value;
 		emit_changed();
 
 @export var roughness_texture1: Texture = null:
