@@ -60,6 +60,10 @@ func roughnessfactor(material: Material, value: Variant):
 	if "roughness" in material:
 		material.set("roughness", value);
 
+func roughnessfactor2(material: Material, value: Variant):
+	if "roughness2" in material:
+		material.set("roughness2", value);
+
 func metalnesstexture(material: Material, value: Variant):
 	if "metallic_texture" in material:
 		material.set("metallic_texture", VTFLoader.get_texture(value));
