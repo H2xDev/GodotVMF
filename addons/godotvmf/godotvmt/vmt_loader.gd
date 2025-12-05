@@ -72,7 +72,7 @@ static func load(path: String):
 			compile_keys.append(key);
 			material.set_meta("compile_keys", compile_keys);
 
-		if material is ShaderMaterial:
+		if material is ShaderMaterial && not is_blend_texture:
 			var mat: ShaderMaterial = material;
 			var uniform_index = uniforms.find_custom(func(field): return field.name == key);
 			if uniform_index == -1: continue;
