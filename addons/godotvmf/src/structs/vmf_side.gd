@@ -33,10 +33,32 @@ func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 
 	if "vertices_plus" in raw:
 		vertices = PackedVector3Array(raw.vertices_plus.v);
+		filter_existing_vertices(_solid);
 
 	if is_displacement:
 		dispinfo = VMFDisplacementInfo.new(raw.dispinfo, self, solid);
-	
+
+## Internal method. Filters out existing vertices from the solid to avoid duplicates and "micro-seams".
+func filter_existing_vertices(solid: VMFSolid) -> void:
+	var defined_vertices = solid.vertices
+	var new_vertices: Array[Vector3] = [];
+	const EPSILON = 0.01;
+
+	for vertex in vertices:
+		var exists = false;
+
+		for defined_vertex in defined_vertices:
+			if vertex.distance_to(defined_vertex) < EPSILON:
+				new_vertices.append(defined_vertex);
+				exists = true;
+				break;
+
+		if not exists:
+			solid.vertices.append(vertex);
+			new_vertices.append(vertex);
+
+	vertices = PackedVector3Array(new_vertices);
+
 ## Internal method. Calculates the vertices of this side if they are not already calculated.
 ## Called automatically from VMFSolid
 func calculate_vertices() -> void:

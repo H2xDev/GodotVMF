@@ -109,9 +109,6 @@ static func import_instance(entity: Dictionary):
 	node.save_collision = false;
 	node.import_map();
 
-	if node.geometry:
-		node.geometry.visibility_range_end = 40.0;
-
 	scn.pack(node);
 
 	if not DirAccess.dir_exists_absolute(dir):

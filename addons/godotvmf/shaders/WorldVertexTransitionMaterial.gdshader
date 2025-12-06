@@ -12,6 +12,7 @@ uniform sampler2D albedo_texture2: source_color,filter_linear_mipmap,repeat_enab
 
 uniform float point_size : hint_range(0, 128);
 uniform float roughness : hint_range(0, 1);
+uniform float roughness2 : hint_range(0, 1);
 
 uniform float metallic;
 uniform sampler2D metallic_texture : hint_default_white,filter_linear_mipmap,repeat_enable;
@@ -75,8 +76,8 @@ void fragment() {
 	float roughness_tex1 = dot(texture(roughness_texture, UV), roughness_texture_channel);
 	float roughness_tex2 = dot(texture(roughness_texture2, UV), roughness_texture_channel);
 
-	float roughness_tex = mix(roughness_tex1, roughness_tex2, COLOR.r);
+	float roughness_tex = mix(roughness_tex1 * roughness, roughness_tex2 * roughness2, COLOR.r);
 
-	ROUGHNESS = roughness_tex * roughness;
+	ROUGHNESS = roughness_tex;
 	SPECULAR = specular;
 }

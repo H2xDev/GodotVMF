@@ -111,7 +111,7 @@ func _entity_setup(entity: VMFEntity) -> void:
 		var omni_light: OmniLight3D = light; # To avoid further warnings
 
 		# TODO: implement constant linear quadratic calculation the right way
-		var radius := (1 / config.import.scale) * sqrt(light.light_energy);
+		var radius := (1 / config.import.scale) * sqrt(light.light_energy * config.import.scale);
 		var attenuation := 1.44;
 
 		var fifty_percent_distance: float = entity_data._fifty_percent_distance;
