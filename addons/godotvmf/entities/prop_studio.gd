@@ -15,6 +15,9 @@ var model_name: String = "":
 var model_scale: float = 1.0:
 	get: return entity.get("modelscale", 1.0);
 
+var skin: int = 0:
+	get: return entity.get('skin', 0)
+
 func _entity_setup(_entity: VMFEntity) -> void:
 	var model_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model);
 	var model_scene: PackedScene = VMFCache.get_cached(model);

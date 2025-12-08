@@ -2,9 +2,6 @@
 class_name prop_static
 extends prop_studio
 
-var skin: int = 0:
-	get: return entity.get('skin', 0)
-
 var screen_space_fade: bool = false:
 	get: return entity.get('screenspacefade', 0) == 1
 
