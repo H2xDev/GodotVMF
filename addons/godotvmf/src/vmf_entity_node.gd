@@ -21,6 +21,8 @@ static func remove_alias(name: String):
 @export var enabled := true;
 @export var flags: int = 0;
 
+const GROUP_PREFIX = 'vmf:';
+
 var has_solid: bool:
 	get: return "solid" in entity;
 
@@ -75,7 +77,7 @@ func _ready():
 
 	if entity.get("targetname", null): add_named_entity(entity.targetname, self);
 
-	parse_connections(self);
+	parse_connections();
 
 	set_process(true);
 	set_physics_process(true);
@@ -111,15 +113,23 @@ func assign_name() -> void:
 
 	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
 
-static func add_named_entity(_name: String, node: Node):
-	node.add_to_group.call_deferred(_name, true);
 
-	if not _name in VMFEntityNode.named_entities:
-		VMFEntityNode.named_entities[_name] = [];
+## Returns the first node with the targetname
+func get_target(n: String) -> Node3D:
+	if n in VMFEntityNode.aliases:
+		return VMFEntityNode.aliases[n];
 
-	VMFEntityNode.named_entities[_name].append(node);
+	var nodes = get_all_targets(n);
+	var node = nodes[0] if nodes.size() > 0 else null;
 
-static func call_target_input(target, input, param, delay, caller) -> void:
+	if node == null: return null;
+	if not is_instance_valid(node):
+		VMFEntityNode.named_entities[n].erase(node);
+		return get_target(n);
+
+	return node;
+
+func call_target_input(target, input, param, delay, caller) -> void:
 	if "enabled" in caller and not caller.enabled:
 		return;
 
@@ -140,39 +150,27 @@ static func call_target_input(target, input, param, delay, caller) -> void:
 			node.set("activator", caller);
 			node.call(input, param);
 
-## Returns the first node with the targetname
-static func get_target(n: String) -> Node3D:
-	if n in VMFEntityNode.aliases:
-		return VMFEntityNode.aliases[n];
-
-	var nodes = get_all_targets(n);
-	var node = nodes[0] if nodes.size() > 0 else null;
-
-	if node == null: return null;
-	if not is_instance_valid(node):
-		VMFEntityNode.named_entities[n].erase(node);
-		return get_target(n);
-
-	return node;
 
 ## Returns all nodes with the targetname
-static func get_all_targets(target_name: String) -> Array:
-	if scene_instance and scene_instance.get_tree().has_group(target_name):
-		return scene_instance.get_tree().get_nodes_in_group(target_name);
+func get_all_targets(target_name: String) -> Array:
+	var group_name := GROUP_PREFIX + target_name;
 
-	return VMFEntityNode.named_entities.get(target_name, []);
+	if scene_instance and scene_instance.get_tree().has_group(group_name):
+		return scene_instance.get_tree().get_nodes_in_group(group_name);
 
-static func parse_connections(caller: Node) -> void:
-	if not "entity" in caller or not "connections" in caller.entity: return;
+	return VMFEntityNode.named_entities.get(group_name, []);
 
-	var outputs = caller.entity.connections.keys();
+func parse_connections() -> void:
+	if not "entity" in self or not "connections" in entity: return;
+
+	var outputs = entity.connections.keys();
 
 	for output in outputs:
-		var connections = caller.entity.connections[output];
+		var connections = entity.connections[output];
 		connections = connections if connections is Array else [connections];
 
-		if not caller.has_signal(output):
-			caller.add_user_signal(output);
+		if not has_signal(output):
+			add_user_signal(output);
 
 		for connectionData in connections:
 			var arr = connectionData.split(",");
@@ -184,7 +182,7 @@ static func parse_connections(caller: Node) -> void:
 
 			if not input or not target: continue;
 
-			caller.connect(output, func(): call_target_input(target, input, param, delay, caller));
+			connect(output, func(): call_target_input(target, input, param, delay, self));
 
 ## Returns the VMFNode where the entity placed
 func get_vmfnode():
@@ -234,6 +232,15 @@ func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
 	if not mesh: return null;
 
 	return VMFTool.generate_lods(mesh) if lods else mesh;
+
+static func add_named_entity(_name: String, node: Node):
+	var group_name := GROUP_PREFIX + _name;
+	node.add_to_group.call_deferred(group_name, true);
+
+	if not group_name in VMFEntityNode.named_entities:
+		VMFEntityNode.named_entities[group_name] = [];
+
+	VMFEntityNode.named_entities[group_name].append(node);
 
 ## Converts the vector from Z-up to Y-up
 static func convert_vector(vector: Vector3) -> Vector3:
