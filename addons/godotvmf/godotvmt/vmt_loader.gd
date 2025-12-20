@@ -57,6 +57,11 @@ static func load(path: String):
 	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMTExtend");
 	var uniforms: Array = material.shader.get_shader_uniform_list() if material is ShaderMaterial else [];
 
+	if shader_name == "unlitgeneric":
+		material.shading_mode = 0
+	elif shader_name == "vertexlitgeneric":
+		material.shading_mode = 2
+
 	for key in details.keys():
 		var value = details[key];
 		var is_compile_key = key.begins_with("%");
