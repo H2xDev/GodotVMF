@@ -1,9 +1,10 @@
 @tool
 class_name VMFEntityNode extends Node3D
 
+const GROUP_PREFIX = 'vmf:';
+
 static var named_entities := {};
 static var aliases: Dictionary = {};
-static var scene_instance: Node = null;
 
 ## Assigns global targetname for the node
 static func define_alias(name: String, value: Node):
@@ -20,8 +21,6 @@ static func remove_alias(name: String):
 @export var entity := {};
 @export var enabled := true;
 @export var flags: int = 0;
-
-const GROUP_PREFIX = 'vmf:';
 
 var has_solid: bool:
 	get: return "solid" in entity;
@@ -84,7 +83,6 @@ func _ready():
 
 	call_deferred("_reparent");
 	call_deferred("_entity_ready");
-	scene_instance = get_tree().current_scene;
 
 func _apply_entity(entity_structure: Dictionary):
 	return -1;
@@ -113,6 +111,21 @@ func assign_name() -> void:
 
 	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
 
+static func add_named_entity(_name: String, node: Node):
+	var group_name := GROUP_PREFIX + _name;
+	node.add_to_group.call_deferred(group_name, true);
+
+	if not group_name in VMFEntityNode.named_entities:
+		VMFEntityNode.named_entities[group_name] = [];
+
+	VMFEntityNode.named_entities[group_name].append(node);
+
+func call_target_input(target, input, param, delay, caller) -> void:
+	if "enabled" in caller and not caller.enabled: return;
+
+	var executor := VMFOutputExecutor.new(target, input, param, delay, 1);
+	executor.caller = caller;
+	get_tree().get_root().add_child(executor);
 
 ## Returns the first node with the targetname
 func get_target(n: String) -> Node3D:
@@ -129,34 +142,13 @@ func get_target(n: String) -> Node3D:
 
 	return node;
 
-func call_target_input(target, input, param, delay, caller) -> void:
-	if "enabled" in caller and not caller.enabled:
-		return;
-
-	var targets = get_all_targets(target) \
-			if not target.begins_with("!") \
-			else [get_target(target)];
-
-	for node in targets:
-		if not is_instance_valid(node): continue;
-		if input not in node: continue;
-
-		if delay > 0.0:
-			caller.get_tree().create_timer(delay).timeout.connect(func():
-				node.set("activator", caller);
-				node.call(input, param)
-			);
-		else:
-			node.set("activator", caller);
-			node.call(input, param);
-
-
 ## Returns all nodes with the targetname
 func get_all_targets(target_name: String) -> Array:
 	var group_name := GROUP_PREFIX + target_name;
+	var tree := get_tree();
 
-	if scene_instance and scene_instance.get_tree().has_group(group_name):
-		return scene_instance.get_tree().get_nodes_in_group(group_name);
+	if tree and tree.has_group(group_name):
+		return tree.get_nodes_in_group(group_name);
 
 	return VMFEntityNode.named_entities.get(group_name, []);
 
@@ -232,15 +224,6 @@ func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
 	if not mesh: return null;
 
 	return VMFTool.generate_lods(mesh) if lods else mesh;
-
-static func add_named_entity(_name: String, node: Node):
-	var group_name := GROUP_PREFIX + _name;
-	node.add_to_group.call_deferred(group_name, true);
-
-	if not group_name in VMFEntityNode.named_entities:
-		VMFEntityNode.named_entities[group_name] = [];
-
-	VMFEntityNode.named_entities[group_name].append(node);
 
 ## Converts the vector from Z-up to Y-up
 static func convert_vector(vector: Vector3) -> Vector3:
