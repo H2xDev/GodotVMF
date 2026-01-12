@@ -1,13 +1,100 @@
 class_name VMFMaterialConversionContextMenu extends EditorContextMenuPlugin
 
+const VMT_TEMPLATE := ("\"LightmappedGeneric\" {\n"\
+	+ "\t$basetexture \"%s\" \n" \
++ "}");
+
+const VMT_BLEND_TEMPLATE := ("\"WorldVertexTransition\" {\n"\
+	+ "\t$basetexture \"%s\" \n" \
+	+ "\t$bumpmap \"%s\" \n" \
+	+ "\t$roughnesstexture \"%s\" \n" \
+	+ "\t$ambientocclusiontexture \"%s\" \n" \
+
+	+ "\t$basetexture2 \"%s\" \n" \
+	+ "\t$bumpmap2 \"%s\" \n" \
+	+ "\t$roughnesstexture2 \"%s\" \n" \
+	+ "\t$ambientocclusiontexture2 \"%s\" \n" \
++ "}");
+	
 func is_resource(p: String) -> bool: 
 	return p.ends_with(".tres");
 
+func is_texture(p: String) -> bool:
+	return ['png', 'jpg', 'tga'].has(p.get_extension());
+
+func is_vmt(p: String) -> bool:
+	return p.get_extension() == 'vmt';
+
 func _popup_menu(paths: PackedStringArray):
 	var has_resources = Array(paths).filter(is_resource).size() > 0;
-	if not has_resources: return;
+	if has_resources: add_context_menu_item("Convert to VMT", convert_resource_to_vmt);
+	
+	var has_textures = Array(paths).filter(is_texture).size() > 0;
+	if has_textures: add_context_menu_item("Create VMT materials", create_vmts_from_textures);
+	
+	var able_to_blend = Array(paths).filter(is_vmt).size() > 1;
+	if able_to_blend: add_context_menu_item("Create VMT Blend Material", create_blend_material);
 
-	add_context_menu_item("Convert to VMT", convert_resource_to_vmt);
+func create_blend_material(paths: PackedStringArray):
+	var vmts = Array(paths).filter(is_vmt);
+	var vmt1 = ResourceLoader.load(vmts[0]);
+	var vmt2 = ResourceLoader.load(vmts[1]);
+
+	var blend_file_name = vmts[0].get_basename().get_file() + '_' + vmts[1].get_basename().get_file() + '_blend.vmt';
+	var path1 = (vmts[0] as String).get_base_dir()
+	var path2 = (vmts[1] as String).get_base_dir()
+
+	var save_path = path1.get_base_dir() + '/' + blend_file_name;
+	print("Saving blended VMT to: " + save_path);
+
+	var file := FileAccess.open(save_path, FileAccess.WRITE);
+
+	var details_1 = vmt1.get_meta("details", {});
+	var details_2 = vmt2.get_meta("details", {});
+
+	var basetexture = details_1.get("$basetexture", "");
+	var bumpmap = details_1.get("$bumpmap", "");
+	var roughnesstexture = details_1.get("$roughnesstexture", "");
+	var ambientocclusiontexture = details_1.get("$ambientocclusiontexture", "");
+	var basetexture2 = details_2.get("$basetexture", "");
+	var bumpmap2 = details_2.get("$bumpmap", "");
+	var roughnesstexture2 = details_2.get("$roughnesstexture","");
+	var ambientocclusiontexture2 = details_2.get("$ambientocclusiontexture", "");
+
+	#file.store_string(VMT_BLEND_TEMPLATE % [basetexture, basetexture2]);
+	file.store_string(VMT_BLEND_TEMPLATE % [
+		basetexture,
+		bumpmap,
+		roughnesstexture,
+		ambientocclusiontexture,
+		basetexture2,
+		bumpmap2,
+		roughnesstexture2,
+		ambientocclusiontexture2
+	]);
+	file.close();
+	EditorInterface.get_resource_filesystem().scan();
+
+func create_vmts_from_textures(paths: PackedStringArray):
+	var only_textures := Array(paths).filter(func(path: String):
+		return ['png', 'jpg', 'tga'].has(path.get_extension())
+	);
+	
+	for path in only_textures:
+		var texture: Texture = ResourceLoader.load(path);
+		var basetexture := path.replace(VMFConfig.materials.target_folder, '').substr(1).replace('.' + path.get_extension(), '') as String;
+		var vmt_path := VMFUtils.normalize_path(VMFConfig.materials.target_folder + '/' + basetexture + '.vmt');
+
+		var file := FileAccess.open(vmt_path, FileAccess.WRITE);
+		file.store_string(VMT_TEMPLATE % basetexture);
+		file.close();
+
+		var bytes = generate_vtf_file(texture);
+		var vtf_file = FileAccess.open(vmt_path.replace('.vmt', '.vtf'), FileAccess.WRITE);
+		vtf_file.store_buffer(bytes);
+		vtf_file.close();
+
+	EditorInterface.get_resource_filesystem().scan();
 
 func convert_resource_to_vmt(paths: PackedStringArray):
 	var resources := Array(paths).filter(is_resource);
@@ -20,7 +107,7 @@ func convert_resource_to_vmt(paths: PackedStringArray):
 			continue;
 
 		create_vmt_file(resource);
-	
+
 	EditorInterface.get_resource_filesystem().scan();
 
 func create_vmt_file(material: BaseMaterial3D):
@@ -28,18 +115,22 @@ func create_vmt_file(material: BaseMaterial3D):
 	var vmt_path := material.resource_path.replace(".tres", ".vmt");
 	var vtf_path := base_texture.resource_path.get_basename() + ".vtf" if base_texture else "";
 
+	if ResourceLoader.exists(vmt_path):
+		VMFLogger.warn("VMT file already exists, skipping: " + vmt_path);
+		return;
+
 	var base_texture_path := vtf_path.replace(VMFConfig.materials.target_folder, "").replace(".vtf", "");
 
 	if base_texture_path.begins_with("/"):
 		base_texture_path = base_texture_path.substr(1, base_texture_path.length());
 
-	var vmt_string := ("\"LightmappedGeneric\" {\n"\
-		+ "\t\"$basetexture\" \"%s\" \n" \
-		+ "}") % base_texture_path;
-
 	var file := FileAccess.open(vmt_path, FileAccess.WRITE);
-	file.store_string(vmt_string);
+	file.store_string(VMT_TEMPLATE % base_texture_path);
 	file.close();
+
+	if ResourceLoader.exists(vtf_path):
+		VMFLogger.warn("VTF file already exists, skipping: " + vtf_path);
+		return;
 
 	var bytes = generate_vtf_file(base_texture);
 	var vtf_file = FileAccess.open(vtf_path, FileAccess.WRITE);
@@ -71,11 +162,13 @@ func int_to_byte(value: int) -> PackedByteArray:
 	return bytes;
 
 func float_to_bytes(value: float) -> PackedByteArray:
-	var byte_array := PackedByteArray();
-	byte_array.resize(4);
-	byte_array.encode_float(0, value);
-	return byte_array;
-
+	var bytes := PackedByteArray();
+	var int_value := int(value);
+	bytes.append(int_value & 0xFF);
+	bytes.append((int_value >> 8) & 0xFF);
+	bytes.append((int_value >> 16) & 0xFF);
+	bytes.append((int_value >> 24) & 0xFF);
+	return bytes;
 
 func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 	var image := texture.get_image().duplicate() as Image;
@@ -85,6 +178,9 @@ func generate_vtf_file(texture: Texture2D) -> PackedByteArray:
 	var is_dxt: bool = image.get_format() == Image.FORMAT_DXT1 \
 		or image.get_format() == Image.FORMAT_DXT5 \
 		or image.get_format() == Image.FORMAT_DXT3;
+	
+	if not image.is_compressed():
+		VMFLogger.warn("The albedo texture is not VRAM Compressed: %s" % texture.resource_path);
 
 	if not is_dxt:
 		image.decompress();
