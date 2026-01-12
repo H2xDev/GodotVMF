@@ -37,8 +37,8 @@ static func load(path: String):
 	var shader_name = structure.keys()[0];
 	var details = structure[shader_name];
 	var material = null; 
-	var is_blend_texture = shader_name == "worldvertextransition";
-	
+	var is_blend_texture = shader_name.trim_suffix(" ") == "worldvertextransition";
+
 	# NOTE: CS:GO/L4D
 	if "insert" in details:
 		details.merge(details["insert"]);
@@ -58,14 +58,16 @@ static func load(path: String):
 	else:
 		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
 
+
 	var transformer = VMTTransformer.new();
 	var extend_transformer = Engine.get_main_loop().root.get_node_or_null("VMTExtend");
 	var uniforms: Array = material.shader.get_shader_uniform_list() if material is ShaderMaterial else [];
 
-	if shader_name == "unlitgeneric":
-		material.shading_mode = 0
-	elif shader_name == "vertexlitgeneric":
-		material.shading_mode = 2
+	if material is StandardMaterial3D:
+		if shader_name == "unlitgeneric":
+			material.shading_mode = 0
+		elif shader_name == "vertexlitgeneric":
+			material.shading_mode = 2
 
 	for key in details.keys():
 		var value = details[key];
@@ -83,6 +85,9 @@ static func load(path: String):
 			if uniform_index == -1: continue;
 
 			var is_texture = uniforms[uniform_index].hint_string == "Texture2D";
+			var is_boolean = uniforms[uniform_index].type == TYPE_BOOL;
+			
+			value = value if not is_boolean else value == "true"
 			mat.set_shader_parameter(key, VTFLoader.get_texture(value) if is_texture else value);
 			continue;
 
