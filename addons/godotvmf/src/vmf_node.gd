@@ -28,6 +28,8 @@ var vmf: String = '';
 		import_map();
 		import = false;
 
+@export var double_sided_shadow_cast: bool = false;
+
 @export_category("Resource Generation")
 
 ## During import the importer will remove all invisible faces from the mesh.
@@ -106,6 +108,9 @@ func import_geometry() -> void:
 	var geometry_mesh := MeshInstance3D.new()
 	geometry_mesh.name = "Geometry";
 	geometry_mesh.set_display_folded(true);
+	
+	if double_sided_shadow_cast:
+		geometry_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED;
 	
 	add_child(geometry_mesh);
 	geometry_mesh.set_owner(_owner);
