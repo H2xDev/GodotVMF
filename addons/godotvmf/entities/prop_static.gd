@@ -2,9 +2,6 @@
 class_name prop_static
 extends prop_studio
 
-var skin: int = 0:
-	get: return entity.get('skin', 0)
-
 var screen_space_fade: bool = false:
 	get: return entity.get('screenspacefade', 0) == 1
 
@@ -23,7 +20,7 @@ func _entity_setup(e: VMFEntity):
 
 	model_instance.set_owner(get_owner());
 	model_instance.scale *= model_scale;
-	MDLCombiner.apply_skin(model_instance, skin);
+	model_instance.gi_mode = GeometryInstance3D.GI_MODE_STATIC;
 
 	var fade_margin = fade_max - fade_min;
 

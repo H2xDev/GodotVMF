@@ -15,6 +15,9 @@ var model_name: String = "":
 var model_scale: float = 1.0:
 	get: return entity.get("modelscale", 1.0);
 
+var skin: int = 0:
+	get: return entity.get('skin', 0)
+
 func _entity_setup(_entity: VMFEntity) -> void:
 	var model_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model);
 	var model_scene: PackedScene = VMFCache.get_cached(model);
@@ -36,6 +39,8 @@ func _entity_setup(_entity: VMFEntity) -> void:
 	var instance := model_scene.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
 	instance.name = "model";
 	instance.scale *= model_scale;
+
+	MDLCombiner.apply_skin(instance, skin);
 
 	add_child(instance);
 	model_instance.set_owner(get_owner());

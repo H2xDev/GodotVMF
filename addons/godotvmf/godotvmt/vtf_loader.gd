@@ -278,10 +278,11 @@ func _init(path, duration):
 
 static func get_texture(texture: String):
 	texture = texture.to_lower();
-	var texture_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + texture + ".vtf");
+	const extensions_priority = ['.vtf', '.tga', '.png', '.jpg'];
+	
+	for ext in extensions_priority:
+		var texture_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + texture + ext);
+		if ResourceLoader.exists(texture_path):
+			return ResourceLoader.load(texture_path);
 
-	if not ResourceLoader.exists(texture_path):
-		VMFLogger.warn("Texture not found: " + texture);
-		return null;
-
-	return ResourceLoader.load(texture_path);
+	VMFLogger.warn("Texture not found: %s" % texture);

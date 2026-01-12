@@ -1,9 +1,10 @@
 @tool
 class_name VMFEntityNode extends Node3D
 
+const GROUP_PREFIX = 'vmf:';
+
 static var named_entities := {};
 static var aliases: Dictionary = {};
-static var scene_instance: Node = null;
 
 ## Assigns global targetname for the node
 static func define_alias(name: String, value: Node):
@@ -75,14 +76,13 @@ func _ready():
 
 	if entity.get("targetname", null): add_named_entity(entity.targetname, self);
 
-	parse_connections(self);
+	parse_connections();
 
 	set_process(true);
 	set_physics_process(true);
 
 	call_deferred("_reparent");
 	call_deferred("_entity_ready");
-	scene_instance = get_tree().current_scene;
 
 func _apply_entity(entity_structure: Dictionary):
 	return -1;
@@ -112,36 +112,23 @@ func assign_name() -> void:
 	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
 
 static func add_named_entity(_name: String, node: Node):
-	node.add_to_group.call_deferred(_name, true);
+	var group_name := GROUP_PREFIX + _name;
+	node.add_to_group.call_deferred(group_name, true);
 
-	if not _name in VMFEntityNode.named_entities:
-		VMFEntityNode.named_entities[_name] = [];
+	if not group_name in VMFEntityNode.named_entities:
+		VMFEntityNode.named_entities[group_name] = [];
 
-	VMFEntityNode.named_entities[_name].append(node);
+	VMFEntityNode.named_entities[group_name].append(node);
 
-static func call_target_input(target, input, param, delay, caller) -> void:
-	if "enabled" in caller and not caller.enabled:
-		return;
+func call_target_input(target, input, param, delay, caller) -> void:
+	if "enabled" in caller and not caller.enabled: return;
 
-	var targets = get_all_targets(target) \
-			if not target.begins_with("!") \
-			else [get_target(target)];
-
-	for node in targets:
-		if not is_instance_valid(node): continue;
-		if input not in node: continue;
-
-		if delay > 0.0:
-			caller.get_tree().create_timer(delay).timeout.connect(func():
-				node.set("activator", caller);
-				node.call(input, param)
-			);
-		else:
-			node.set("activator", caller);
-			node.call(input, param);
+	var executor := VMFOutputExecutor.new(target, input, param, delay, 1);
+	executor.caller = caller;
+	get_tree().get_root().add_child(executor);
 
 ## Returns the first node with the targetname
-static func get_target(n: String) -> Node3D:
+func get_target(n: String) -> Node3D:
 	if n in VMFEntityNode.aliases:
 		return VMFEntityNode.aliases[n];
 
@@ -156,23 +143,26 @@ static func get_target(n: String) -> Node3D:
 	return node;
 
 ## Returns all nodes with the targetname
-static func get_all_targets(target_name: String) -> Array:
-	if scene_instance and scene_instance.get_tree().has_group(target_name):
-		return scene_instance.get_tree().get_nodes_in_group(target_name);
+func get_all_targets(target_name: String) -> Array:
+	var group_name := GROUP_PREFIX + target_name;
+	var tree := get_tree();
 
-	return VMFEntityNode.named_entities.get(target_name, []);
+	if tree and tree.has_group(group_name):
+		return tree.get_nodes_in_group(group_name);
 
-static func parse_connections(caller: Node) -> void:
-	if not "entity" in caller or not "connections" in caller.entity: return;
+	return VMFEntityNode.named_entities.get(group_name, []);
 
-	var outputs = caller.entity.connections.keys();
+func parse_connections() -> void:
+	if not "entity" in self or not "connections" in entity: return;
+
+	var outputs = entity.connections.keys();
 
 	for output in outputs:
-		var connections = caller.entity.connections[output];
+		var connections = entity.connections[output];
 		connections = connections if connections is Array else [connections];
 
-		if not caller.has_signal(output):
-			caller.add_user_signal(output);
+		if not has_signal(output):
+			add_user_signal(output);
 
 		for connectionData in connections:
 			var arr = connectionData.split(",");
@@ -184,7 +174,7 @@ static func parse_connections(caller: Node) -> void:
 
 			if not input or not target: continue;
 
-			caller.connect(output, func(): call_target_input(target, input, param, delay, caller));
+			connect(output, func(): call_target_input(target, input, param, delay, self));
 
 ## Returns the VMFNode where the entity placed
 func get_vmfnode():

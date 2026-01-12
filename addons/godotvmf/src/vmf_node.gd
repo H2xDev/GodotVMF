@@ -28,6 +28,8 @@ var vmf: String = '';
 		import_map();
 		import = false;
 
+@export var double_sided_shadow_cast: bool = false;
+
 @export_category("Resource Generation")
 
 ## During import the importer will remove all invisible faces from the mesh.
@@ -39,6 +41,8 @@ var vmf: String = '';
 
 ## Save the resulting collision shape as a resource (saves to the "Geometry folder" in Project Settings)
 @export var save_collision: bool = true;
+
+@export_flags_3d_physics var default_physics_mask: int = 1;
 
 ## Set this to true before import if you're goint to use this node in runtime
 var is_runtime: bool = false;
@@ -78,6 +82,13 @@ func _validate_property(property: Dictionary) -> void:
 func _ready() -> void:
 	add_to_group("vmfnode_group");
 
+func clear_scene_groups():
+	var groups := get_tree().edited_scene_root.get_groups();
+	for group in groups:
+		var nodes := get_tree().get_nodes_in_group(group);
+		for node in nodes:
+			node.remove_from_group(group);
+
 func reimport_geometry() -> void:
 	VMFConfig.load_config();
 	read_vmf();
@@ -98,6 +109,9 @@ func import_geometry() -> void:
 	geometry_mesh.name = "Geometry";
 	geometry_mesh.set_display_folded(true);
 	
+	if double_sided_shadow_cast:
+		geometry_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+	
 	add_child(geometry_mesh);
 	geometry_mesh.set_owner(_owner);
 
@@ -106,7 +120,7 @@ func import_geometry() -> void:
 
 	geometry_mesh.mesh = mesh;
 
-	VMFTool.generate_collisions(geometry_mesh);
+	VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
 	save_collision_file();
 
 	if not get_meta("instance", false):
@@ -128,18 +142,17 @@ func generate_navmesh(geometry_mesh: MeshInstance3D):
 
 	if navmesh_preset == "":
 		navreg.navigation_mesh = NavigationMesh.new();
-		return;
 
 	if ResourceLoader.exists(navmesh_preset):
 		var res := load(navmesh_preset);
 
 		if res is not NavigationMesh:
-			VMFLogger.error("Navigation mesh preset \"%s\" is not a NavigationMesh resource. Falling back to default." % navmesh_preset);
+			VMFLogger.warn("Navigation mesh preset \"%s\" is not a NavigationMesh resource. Falling back to default." % navmesh_preset);
 			navreg.navigation_mesh = NavigationMesh.new();
 		else:
 			navreg.navigation_mesh = load(navmesh_preset);
 	else:
-		VMFLogger.error("Navigation mesh preset \"%s\" is not found. Falling back to default." % navmesh_preset);
+		VMFLogger.warn("Navigation mesh preset \"%s\" is not found. Falling back to default." % navmesh_preset);
 		navreg.navigation_mesh = NavigationMesh.new();
 
 	navreg.name = "NavigationMesh";
@@ -279,6 +292,7 @@ func import_map() -> void:
 	VMFConfig.load_config();
 
 	clear_structure();
+	clear_scene_groups();
 	read_vmf();
 
 	VMFResourceManager.import_materials(vmf_structure, is_runtime);

@@ -56,17 +56,34 @@ func roughnesstexture(material: Material, value: Variant):
 	if "roughness_texture" in material:
 		material.set("roughness_texture", VTFLoader.get_texture(value));
 
+func roughnesstexture2(material: Material, value: Variant):
+	if "roughness_texture2" in material:
+		material.set("roughness_texture2", VTFLoader.get_texture(value));
+
 func roughnessfactor(material: Material, value: Variant):
 	if "roughness" in material:
 		material.set("roughness", value);
+
+func roughnessfactor2(material: Material, value: Variant):
+	if "roughness2" in material:
+		material.set("roughness2", value);
 
 func metalnesstexture(material: Material, value: Variant):
 	if "metallic_texture" in material:
 		material.set("metallic_texture", VTFLoader.get_texture(value));
 
+func metalnesstexture2(material: Material, value: Variant):
+	if "metallic_texture2" in material:
+		material.set("metallic_texture2", VTFLoader.get_texture(value));
+
 func ambientocclusiontexture(material: Material, value: Variant):
 	if "ao_texture" in material:
 		material.set("ao_texture", VTFLoader.get_texture(value));
+		material.ao_enabled = true;
+
+func ambientocclusiontexture2(material: Material, value: Variant):
+	if "ao_texture2" in material:
+		material.set("ao_texture2", VTFLoader.get_texture(value));
 		material.ao_enabled = true;
 
 func bumpmapscale(material: Material, value: Variant):
@@ -116,6 +133,16 @@ func basetexturetransform(material: Material, value: Variant):
 	var transform = VMTLoader.parse_transform(value);
 	material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
 	material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
+
+func basetexturetransform2(material: Material, value: Variant):
+	if "uv1_scale2" not in material:
+		return;
+	if "uv1_offset2" not in material:
+		return;
+
+	var transform = VMTLoader.parse_transform(value);
+	material.uv1_scale2 = Vector3(transform.scale.x, transform.scale.y, 1);
+	material.uv1_offset2 = Vector3(transform.translate.x, transform.translate.y, 0);
 
 func blendmodulatetexture(material: Material, value: Variant):
 	if not "blend_modulate_texture" in material: return;

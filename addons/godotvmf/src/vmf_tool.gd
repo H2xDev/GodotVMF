@@ -2,7 +2,7 @@
 class_name VMFTool extends RefCounted
 
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
-static func generate_collisions(mesh_instance: MeshInstance3D):
+static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int):
 	var bodies: Array[StaticBody3D] = [];
 	var surface_props = {};
 	var mesh = mesh_instance.mesh;
@@ -57,6 +57,8 @@ static func generate_collisions(mesh_instance: MeshInstance3D):
 		var static_body = StaticBody3D.new();
 		var collision = CollisionShape3D.new();
 		var compilekeys = surface_props[surface_prop].get_meta("compile_keys", []);
+
+		static_body.collision_layer = physics_mask;
 
 		for key in compilekeys:
 			if extend_corrector and key in extend_corrector:
