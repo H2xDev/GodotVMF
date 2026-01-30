@@ -22,6 +22,8 @@ const SETTINGS_TO_LOAD = [
 	"godot_vmf/import/entities_folder",
 	"godot_vmf/import/geometry_folder",
 	"godot_vmf/import/entity_aliases",
+	"godot_vmf/import/detail_props_chunk_size",
+	"godot_vmf/import/detail_props_draw_distance",
 ];
 
 class ModelsConfig:
@@ -97,9 +99,17 @@ class ImportConfig:
 	## If specified, the importer will use this preset for the navigation mesh
 	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset", "");
 
+	## Detail props are meshes instanced across the level geometry based on material metadata. 
+	## This field defines a size of one chunk of detail props. The bigger the chunk size, the less multimesh instances will be created, 
+	## but the more detail props will be in one chunk, which can lead to worse performance.
+	var detail_props_chunk_size: float = ProjectSettings.get_setting("godot_vmf/import/detail_props_chunk_size", 32.0);
+
+	## The maximum distance at which detail props will be visible. This is important for performance, as rendering too many detail props at long distances can be costly.
+	var detail_props_draw_distance: float = ProjectSettings.get_setting("godot_vmf/import/detail_props_draw_distance", 100.0);
+
 	var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
 
-		## NOTE: Support previous version of this config where this field wasn't a part of ImportConfig
+## NOTE: Support previous version of this config where this field wasn't a part of ImportConfig
 static var gameinfo_path: String:
 	get: return ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
 
@@ -315,6 +325,22 @@ static func define_project_settings():
 		"hint": PROPERTY_HINT_DICTIONARY_TYPE,
 		"hint_string": "%d:;%d/%d:*.tscn" % [TYPE_STRING, TYPE_STRING, PROPERTY_HINT_FILE],
 		"default_value": {},
+	})
+
+	ProjectSettings.add_property_info({
+		"name": "godot_vmf/import/detail_props_chunk_size",
+		"type": TYPE_FLOAT,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,1000.0,0.000001",
+		"default_value": 0.2,
+	})
+
+	ProjectSettings.add_property_info({
+		"name": "godot_vmf/import/detail_props_draw_distance",
+		"type": TYPE_FLOAT,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,1000.0,0.000001",
+		"default_value": 0.2,
 	})
 
 	## Models

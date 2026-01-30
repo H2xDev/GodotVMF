@@ -5,6 +5,7 @@ class_name VDFParser extends RefCounted;
 # Precompile the regular expressions only once
 static var _propRegex := RegEx.create_from_string('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$|(\\s\\[.+\\]))$');
 static var _vectorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
+static var _vector2Regex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');
 static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)');
@@ -31,6 +32,9 @@ static func parse_value(line: String) -> Variant:
 	var m = _vectorRegex.search(line)
 	if m:
 		return Vector3(m.get_string(1).to_float(), m.get_string(2).to_float(), m.get_string(3).to_float());
+	m = _vector2Regex.search(line)
+	if m:
+		return Vector2(m.get_string(1).to_float(), m.get_string(2).to_float());
 	m = _colorRegex.search(line)
 	if m:
 		return Color(
