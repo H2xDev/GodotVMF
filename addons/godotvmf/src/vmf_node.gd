@@ -95,6 +95,26 @@ func reimport_geometry() -> void:
 
 	import_geometry();
 
+func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
+	var detail_props := VMFDetailProps.generate(geometry_mesh.mesh);
+	if detail_props.size() == 0: return;
+
+	var detail_node := Node3D.new();
+
+	detail_node.name = "DetailProps";
+	detail_node.set_display_folded(true);
+	geometry_mesh.add_child(detail_node);
+	detail_node.set_owner(_owner);
+
+	for prop in detail_props:
+		var mmi := MultiMeshInstance3D.new();
+		mmi.multimesh = prop;
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.get_meta("cast_shadows", true) \
+			else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;
+
+		detail_node.add_child(mmi);
+		mmi.set_owner(_owner);
+
 func import_geometry() -> void:
 	if navmesh: navmesh.free();
 	if geometry: geometry.free();
@@ -124,6 +144,8 @@ func import_geometry() -> void:
 		generate_navmesh(geometry_mesh);
 
 	geometry_mesh.mesh = VMFTool.cleanup_mesh(geometry_mesh.mesh);
+
+	generate_detail_props(geometry_mesh);
 
 	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
 		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
