@@ -44,7 +44,7 @@ func create_blend_material(paths: PackedStringArray):
 	var path1 = (vmts[0] as String).get_base_dir()
 	var path2 = (vmts[1] as String).get_base_dir()
 
-	var save_path = path1.get_base_dir() + '/' + blend_file_name;
+	var save_path = path1 + '/' + blend_file_name;
 	print("Saving blended VMT to: " + save_path);
 
 	var file := FileAccess.open(save_path, FileAccess.WRITE);

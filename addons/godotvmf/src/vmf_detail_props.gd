@@ -22,7 +22,6 @@ static func generate(original_mesh: ArrayMesh) -> Array[MultiMesh]:
 			var density: float = material_details.get("$detailpropdensity" + index_postfix, 1.0);
 			var scale_range: Vector2 = material_details.get("$detailpropscale" + index_postfix, Vector2(1.0, 1.0)) as Vector2
 			var rotation_range: Vector2 = material_details.get("$detailproprotation" + index_postfix, Vector2(0.0, 360.0)) as Vector2
-			var offset_randomize: float = material_details.get("$detailpropoffsetrandomize" + index_postfix, 1.0)
 			var cast_shadows: bool = material_details.get("$detailpropshadows" + index_postfix, 1) == 1;
 
 			if not ResourceLoader.exists(detail_prop_path): 
