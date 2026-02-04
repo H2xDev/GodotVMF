@@ -56,9 +56,6 @@ var _owner:
 
 		return o;
 
-var editor_interface:
-	get: return Engine.get_singleton("EditorInterface");
-
 var geometry: Node3D:
 	get: 
 		var node = get_node_or_null("Geometry");

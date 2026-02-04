@@ -11,13 +11,16 @@ const MATERIAL_KEYS_TO_IMPORT = [
 
 static var has_imported_resources: bool = false;
 
-static func for_resource_import() -> void:
-	var editor_interface = Engine.get_singleton("EditorInterface") if Engine.is_editor_hint() else null;
-	if not editor_interface: return;
+static func get_editor_interface():
+	return Engine.get_singleton("EditorInterface") if Engine.has_singleton("EditorInterface") else null;
 
-	var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
+static func for_resource_import() -> void:
 	if not has_imported_resources: return;
 
+	var editor_interface = get_editor_interface();
+	if not editor_interface: return null;
+
+	var fs = editor_interface.get_resource_filesystem();
 	if not fs: return;
 
 	fs.scan();
@@ -84,7 +87,7 @@ static func import_material(material: String) -> bool:
 	return true;
 
 static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -> void:
-	var editor_interface = Engine.get_singleton("EditorInterface") if Engine.is_editor_hint() else null;
+	var editor_interface = get_editor_interface();
 
 	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
 		return;
@@ -114,8 +117,6 @@ static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -
 					list.append(side.material);
 
 	if not is_runtime and editor_interface:
-		var fs = editor_interface.get_resource_filesystem() if Engine.is_editor_hint() else null;
-
 		for material in list:
 			import_textures(material);
 
