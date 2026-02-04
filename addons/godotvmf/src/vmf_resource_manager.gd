@@ -15,12 +15,12 @@ static func get_editor_interface():
 	return Engine.get_singleton("EditorInterface") if Engine.has_singleton("EditorInterface") else null;
 
 static func for_resource_import() -> void:
-	var editor_interface = get_editor_interface();
-	if not editor_interface: return;
-
-	var fs = editor_interface.get_resource_filesystem() if editor_interface else null;
 	if not has_imported_resources: return;
 
+	var editor_interface = get_editor_interface();
+	if not editor_interface: return null;
+
+	var fs = editor_interface.get_resource_filesystem();
 	if not fs: return;
 
 	fs.scan();
