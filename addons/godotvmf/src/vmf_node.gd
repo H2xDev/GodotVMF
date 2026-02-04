@@ -115,6 +115,20 @@ func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 		detail_node.add_child(mmi);
 		mmi.set_owner(_owner);
 
+func generate_shadow_mesh(raw_geometry_mesh: ArrayMesh) -> void:
+	var shadow_mesh := VMFTool.generate_shadow_mesh(raw_geometry_mesh);
+	var shadow_mesh_instance := MeshInstance3D.new();
+	shadow_mesh_instance.name = "ShadowMesh";
+	shadow_mesh_instance.mesh = shadow_mesh;
+	shadow_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	geometry.add_child(shadow_mesh_instance);
+	shadow_mesh_instance.set_owner(_owner);
+
+func unwrap_lightmap(geometry_mesh: MeshInstance3D) -> void:
+	var texel_size = VMFConfig.import.lightmap_texel_size;
+	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
+		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
+
 func import_geometry() -> void:
 	if navmesh: navmesh.free();
 	if geometry: geometry.free();
@@ -133,27 +147,20 @@ func import_geometry() -> void:
 	geometry_mesh.set_owner(_owner);
 
 	var transform = geometry_mesh.global_transform;
-	var texel_size = VMFConfig.import.lightmap_texel_size;
-
 	geometry_mesh.mesh = mesh;
 
 	VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
 	save_collision_file();
-
-	if not get_meta("instance", false):
-		generate_navmesh(geometry_mesh);
-
-	geometry_mesh.mesh = VMFTool.cleanup_mesh(geometry_mesh.mesh);
-
+	generate_navmesh(geometry_mesh);
+	generate_shadow_mesh(geometry_mesh.mesh);
+	cleanup_geometry(geometry_mesh);
 	generate_detail_props(geometry_mesh);
-
-	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
-		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
-
-	geometry_mesh.mesh = save_geometry_file(geometry_mesh.mesh);
+	unwrap_lightmap(geometry_mesh);
+	save_geometry_file(geometry_mesh);
 
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
+	if get_meta("instance", false): return;
 
 	var navreg := NavigationRegion3D.new();
 
@@ -182,8 +189,12 @@ func generate_navmesh(geometry_mesh: MeshInstance3D):
 
 	navreg.bake_navigation_mesh.call_deferred();
 
-func save_geometry_file(target_mesh: Mesh):
-	if not save_geometry: return target_mesh;
+func cleanup_geometry(target_mesh_instance: MeshInstance3D) -> void:
+	target_mesh_instance.mesh = VMFTool.cleanup_mesh(target_mesh_instance.mesh);
+
+func save_geometry_file(target_mesh_instance: MeshInstance3D) -> void:
+	var target_mesh: Mesh = target_mesh_instance.mesh;
+	if not save_geometry: return;
 	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.import.geometry_folder, _vmf_identifer()];
 	
 	if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
@@ -195,7 +206,7 @@ func save_geometry_file(target_mesh: Mesh):
 		return;
 	
 	target_mesh.take_over_path(resource_path);
-	return target_mesh;
+	target_mesh_instance.mesh = load(resource_path);
 
 func save_collision_file() -> void:
 	if save_collision == false: return;

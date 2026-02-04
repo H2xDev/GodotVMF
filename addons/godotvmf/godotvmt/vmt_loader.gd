@@ -75,8 +75,8 @@ static func load(path: String):
 		key = key.replace('$', '').replace('%', '');
 
 		if is_compile_key and value and key != "keywords":
-			var compile_keys = material.get_meta("compile_keys", []);
-			compile_keys.append(key);
+			var compile_keys := material.get_meta("compile_keys", []) as Array;
+			compile_keys.append(key.to_lower());
 			material.set_meta("compile_keys", compile_keys);
 
 		if material is ShaderMaterial && not is_blend_texture:
@@ -115,6 +115,9 @@ static func has_material(material: String) -> bool:
 		return false;
 
 	return true;
+
+static func is_material_ignored(material_name: String) -> bool:
+	return VMFConfig.materials.ignore.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
 
 static func get_material(material: String) -> Material:
 	var cached_material = VMFCache.get_cached(material);
