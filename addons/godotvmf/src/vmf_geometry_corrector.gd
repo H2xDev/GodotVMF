@@ -1,17 +1,26 @@
 class_name VMFGeometryCorrector extends RefCounted
 
-const norender = [
+const SHADOW_MESH_KEYS = [
+	'compilenodraw',
+]
+
+const NO_COLLISION_KEYS = [
+	'compilesky',
+	'compilenonsolid'
+]
+
+const NO_RENDER_KEYS = [
 	'compileclip',
 	'compilenodraw',
 	'compilesky',
 	'npcclip',
 	'compileplayerclip',
 	'compilenpcclip',
-];
+]
 
-const nocollision = [
-	'compilesky',
-];
+func _get_norender_keys(): return NO_RENDER_KEYS;
+func _get_nocollision_keys(): return NO_COLLISION_KEYS;
+func _get_shadowmesh_keys(): return SHADOW_MESH_KEYS;
 
 func compileplayerclip(solid: StaticBody3D):
 	solid.collision_layer = 1 << 1
