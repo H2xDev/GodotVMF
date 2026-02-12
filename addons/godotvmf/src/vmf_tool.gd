@@ -1,6 +1,36 @@
 @static_unload
 class_name VMFTool extends RefCounted
 
+static func generate_shadow_mesh(source_mesh: ArrayMesh) -> ArrayMesh:
+	var shadow_mesh := ArrayMesh.new();
+	var extend_corrector := Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector") as VMFGeometryCorrector;
+	var corrector := VMFGeometryCorrector.new() if not extend_corrector else extend_corrector;
+
+	for surface_idx in range(source_mesh.get_surface_count()):
+		var material = source_mesh.surface_get_material(surface_idx);
+
+		if not material: 
+			shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
+			continue;
+
+		var material_compile_keys: Array = material.get_meta("compile_keys", []);
+		var is_shadowmesh := false;
+
+		for key in material_compile_keys:
+			if extend_corrector:
+				is_shadowmesh = extend_corrector._get_shadowmesh_keys().has(key);
+				if is_shadowmesh: break;
+				continue;
+
+			is_shadowmesh = corrector._get_shadowmesh_keys().has(key);
+			if is_shadowmesh: break;
+
+		if not is_shadowmesh: continue;
+
+		shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
+
+	return VMFUtils.merge_surfaces(shadow_mesh);
+
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
 static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int):
 	var bodies: Array[StaticBody3D] = [];
@@ -26,18 +56,16 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 		if compilekeys.size() > 0:
 			surface_prop = "tool_" + compilekeys[0];
 
-		var has_nocollision_extender = extend_corrector and "nocollision" in extend_corrector;
-		var is_no_collision = false;
+		var is_no_collision := false;
 
 		for key in compilekeys:
-			if has_nocollision_extender:
-				if extend_corrector.nocollision.has(key): 
-					is_no_collision = true;
-					break;
+			if extend_corrector and extend_corrector._get_nocollision_keys().has(key): 
+				is_no_collision = true;
+				break;
 
 			if is_no_collision: break;
 
-			if corrector.nocollision.has(key): 
+			if corrector._get_nocollision_keys().has(key): 
 				is_no_collision = true;
 				break;
 
@@ -81,13 +109,13 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 		VMFUtils.set_owner_recursive(static_body, mesh_instance.get_owner());
 
 ## Clear mesh from ignored textures and materials
-static func cleanup_mesh(original_mesh: ArrayMesh):
+static func cleanup_mesh(original_mesh: ArrayMesh) -> ArrayMesh:
 	var is_44 = Engine.get_version_info().minor >= 4;
 
 	var ignored_textures = VMFConfig.materials.ignore;
 	var duplicated_mesh = ArrayMesh.new() if not is_44 else null;
 	var corrector := VMFGeometryCorrector.new();
-	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector");
+	var extend_corrector := Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector") as VMFGeometryCorrector;
 	var mt = MeshDataTool.new() if not is_44 else null;
 
 	var surface_removed = 0;
@@ -100,8 +128,8 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 		var material = original_mesh.surface_get_material(surface_idx);
 		var compilekeys = material.get_meta("compile_keys", []) if material else [];
 
-		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
-		if is_ignored and is_44:
+		var is_material_ignored = VMTLoader.is_material_ignored(material_name);
+		if is_material_ignored and is_44:
 			original_mesh.surface_remove(surface_idx);
 			surface_removed += 1;
 			continue;
@@ -109,12 +137,12 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 		var is_norender = false;
 
 		for key in compilekeys:
-			if is_ignored: break;
-			if extend_corrector and "norender" in extend_corrector.norender:
-				is_norender = extend_corrector.norender.has(key);
+			if is_material_ignored: break;
+			if extend_corrector:
+				is_norender = extend_corrector._get_norender_keys().has(key);
 				break;
 
-			is_norender = corrector.norender.has(key);
+			is_norender = corrector._get_norender_keys().has(key);
 			if is_norender: break;
 
 		if is_norender and is_44:
