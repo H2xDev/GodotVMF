@@ -1,15 +1,18 @@
-class_name VMFInstanceManager extends RefCounted;
+class_name VMFInstanceManager extends RefCounted
 
 static var instances_cache = {};
 static var last_cache_changed = 0;
 
 static func get_instance_path(entity: Dictionary) -> String:
-	var instance_path = entity.file.get_file().get_basename() + '.vmf';
+	var instance_path = entity.file.replace(".vmf", "") + '.vmf'; # Ensure the path ends with .vmf
+	var intance_filename = instance_path.get_file(); 
 	var map_base_folder = entity.vmf.get_base_dir() if "vmf" in entity else "";
 	var maps_folder := str(VMFConfig.gameinfo_path).path_join('maps');
 	var mapsrc_folder := str(VMFConfig.gameinfo_path).path_join('mapsrc');
 
 	var instance_paths := [
+		map_base_folder.path_join('instances').path_join(intance_filename),
+		map_base_folder.path_join(intance_filename),
 		map_base_folder.path_join('instances').path_join(instance_path),
 		map_base_folder.path_join(instance_path),
 		maps_folder.path_join('instances').path_join(instance_path),
@@ -41,58 +44,41 @@ static func get_subinstances(structure: Dictionary, entity_source: Dictionary) -
 
 	return subinstances;
 
-static func get_imported_instance_path(instance_name: String):
-	var folder: String = VMFConfig.import.instances_folder;
-	var dir := ProjectSettings.globalize_path(folder);
-	return dir + "/" + instance_name + ".scn";
-
-static func load_instance(instance_name: String):
-	if not is_instance_exists(instance_name):
-		VMFLogger.error("Failed to find instance file: %s" % instance_name);
+static func load_instance(instance_path: String):
+	if not ResourceLoader.exists(instance_path):
+		VMFLogger.error("Failed to find instance file: %s" % instance_path);
 		return;
 
-	if last_cache_changed == null:
-		last_cache_changed = 0;
+	var cached_value := VMFCache.get_cached(instance_path);
+	if cached_value: return cached_value;
 
-	if Time.get_ticks_msec() - last_cache_changed > 10000:
-		instances_cache = {};
+	var scn := ResourceLoader.load(instance_path);
 
-	if instance_name in instances_cache:
-		return instances_cache[instance_name];
-
-	var path = get_imported_instance_path(instance_name);
-	var scn := ResourceLoader.load(path);
-
-	instances_cache[instance_name] = scn;
-	last_cache_changed = Time.get_ticks_msec();
+	VMFCache.add_cached(instance_path, scn);
 
 	if not scn:
-		VMFLogger.error("Failed to load instance resource: %s" % path);
+		VMFLogger.error("Failed to load instance resource: %s" % instance_path);
 		return;
 
 	return scn;
-	
-static func is_instance_exists(instance_name: String):
-	var path = get_imported_instance_path(instance_name);
-	
-	return FileAccess.file_exists(path);
 
 static func import_instance(entity: Dictionary):
 	var instances_folder: String = VMFConfig.import.instances_folder;
-	var file = get_instance_path(entity);
+	var instance_vmf_file = get_instance_path(entity);
 
-	if file == '':
+	if instance_vmf_file == '':
 		VMFLogger.error("Failed to find instance file for entity: %s" % entity.file);
 		return;
 
-	var filename := file.get_file().get_basename();
-	var dir := ProjectSettings.globalize_path(instances_folder);
-	var path := dir + "/" + filename + ".scn";
-	var is_instance_already_imported := FileAccess.file_exists(path);
+	var instance_name = instance_vmf_file.get_file().replace(".vmf", "");
+	var map_path = entity.vmf.get_base_dir() if "vmf" in entity else "unknown_map";
+	var relative_instance_path := instance_vmf_file.replace(".vmf", ".scn").replace(map_path + "/", "").replace("instances/", "") as String;
+	var instance_scene_path := VMFConfig.import.instances_folder.path_join(relative_instance_path);
 
-	if is_instance_already_imported: return load_instance(filename);
+	var is_instance_already_imported := FileAccess.file_exists(instance_scene_path);
+	if is_instance_already_imported: return load_instance(instance_scene_path);
 
-	var structure = VDFParser.parse(file);
+	var structure = VDFParser.parse(instance_vmf_file);
 	var subinstances = get_subinstances(structure, entity);
 
 	if subinstances.size() > 0:
@@ -103,22 +89,23 @@ static func import_instance(entity: Dictionary):
 	var node := VMFNode.new();
 
 	node.set_meta("instance", true);
-	node.vmf = file;
-	node.name = filename + '_instance';
+	node.vmf = instance_vmf_file;
+	node.name = instance_name + '_instance';
 	node.save_geometry = false;
 	node.save_collision = false;
 	node.import_map();
 
 	scn.pack(node);
 
+	var dir := instance_scene_path.get_base_dir();
 	if not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir);
 
-	var err := ResourceSaver.save(scn, path, ResourceSaver.FLAG_COMPRESS);
+	var err := ResourceSaver.save(scn, instance_scene_path, ResourceSaver.FLAG_COMPRESS);
 	if err:
 		VMFLogger.error("Failed to save instance resource: %s" % err);
 		return;
 	
 	node.queue_free();
 	
-	return load_instance(filename);
+	return load_instance(instance_scene_path);

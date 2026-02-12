@@ -80,7 +80,8 @@ func _ready() -> void:
 	add_to_group("vmfnode_group");
 
 func clear_scene_groups():
-	var groups := get_tree().edited_scene_root.get_groups();
+	var tree = get_tree();
+	var groups := get_tree().edited_scene_root.get_groups() if tree else self.get_groups();
 	for group in groups:
 		var nodes := get_tree().get_nodes_in_group(group);
 		for node in nodes:
@@ -258,7 +259,7 @@ func import_entities() -> void:
 	reset_entities_node();
 
 	for ent in vmf_structure.entities:
-		ent.vmf = vmf;
+		ent.data.vmf = vmf;
 
 		var tscn = get_entity_scene(ent.classname);
 		if not tscn: continue;
