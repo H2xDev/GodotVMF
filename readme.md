@@ -25,7 +25,10 @@ Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-We
 - Instances support
 - Native MDL support
 - Native VMT support
-- Native VTF support (only DXT1, DXT3, DXT5 supported)
+- Native VTF support
+    - DXT1, DXT3, DXT5
+    - RGB888, RGBA8888, BGR888, ABGR8888
+    - I8, IA88
 - Displacements import (with vertex data)
 	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
 - Entities support
