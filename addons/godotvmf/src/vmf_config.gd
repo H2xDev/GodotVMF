@@ -153,84 +153,100 @@ static func define_project_settings():
 	if not ProjectSettings.has_setting("godot_vmf/import/gameinfo_path"):
 		ProjectSettings.set_setting("godot_vmf/import/gameinfo_path", "res://");
 	ProjectSettings.set_initial_value("godot_vmf/import/gameinfo_path", "res://");
-
+	ProjectSettings.set_as_basic("godot_vmf/import/gameinfo_path", true);
 
 	## Import
 	if not ProjectSettings.has_setting("godot_vmf/import/scale"):
 		ProjectSettings.set_setting("godot_vmf/import/scale", 0.02);
 	ProjectSettings.set_initial_value("godot_vmf/import/scale", 0.02);
+	ProjectSettings.set_as_basic("godot_vmf/import/scale", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/generate_lightmap_uv2"):
 		ProjectSettings.set_setting("godot_vmf/import/generate_lightmap_uv2", true);
 	ProjectSettings.set_initial_value("godot_vmf/import/generate_lightmap_uv2", true);
+	ProjectSettings.set_as_basic("godot_vmf/import/generate_lightmap_uv2", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/generate_collision"):
 		ProjectSettings.set_setting("godot_vmf/import/generate_collision", true);
 	ProjectSettings.set_initial_value("godot_vmf/import/generate_collision", true);
+	ProjectSettings.set_as_basic("godot_vmf/import/generate_collision", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/generate_navigation_mesh"):
 		ProjectSettings.set_setting("godot_vmf/import/generate_navigation_mesh", false);
 	ProjectSettings.set_initial_value("godot_vmf/import/generate_navigation_mesh", false);
+	ProjectSettings.set_as_basic("godot_vmf/import/generate_navigation_mesh", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/navigation_mesh_preset"):
 		ProjectSettings.set_setting("godot_vmf/import/navigation_mesh_preset", "");
 	ProjectSettings.set_initial_value("godot_vmf/import/navigation_mesh_preset", "");
+	ProjectSettings.set_as_basic("godot_vmf/import/navigation_mesh_preset", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/lightmap_texel_size"):
 		ProjectSettings.set_setting("godot_vmf/import/lightmap_texel_size", 0.2);
 	ProjectSettings.set_initial_value("godot_vmf/import/lightmap_texel_size", 0.2);
+	ProjectSettings.set_as_basic("godot_vmf/import/lightmap_texel_size", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/instances_folder"):
 		ProjectSettings.set_setting("godot_vmf/import/instances_folder", "res://instances");
 	ProjectSettings.set_initial_value("godot_vmf/import/instances_folder", "res://instances");
+	ProjectSettings.set_as_basic("godot_vmf/import/instances_folder", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/entities_folder"):
 		ProjectSettings.set_setting("godot_vmf/import/entities_folder", "res://entities");
 	ProjectSettings.set_initial_value("godot_vmf/import/entities_folder", "res://entities");
+	ProjectSettings.set_as_basic("godot_vmf/import/entities_folder", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/geometry_folder"):
 		ProjectSettings.set_setting("godot_vmf/import/geometry_folder", "res://geometry");
 	ProjectSettings.set_initial_value("godot_vmf/import/geometry_folder", "res://geometry");
+	ProjectSettings.set_as_basic("godot_vmf/import/geometry_folder", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/import/entity_aliases"):
 		ProjectSettings.set_setting("godot_vmf/import/entity_aliases", {});
 	ProjectSettings.set_initial_value("godot_vmf/import/entity_aliases", {});
-
+	ProjectSettings.set_as_basic("godot_vmf/import/entity_aliases", true);
 
 	## Models
 	if not ProjectSettings.has_setting("godot_vmf/models/import"):
 		ProjectSettings.set_setting("godot_vmf/models/import", false);
 	ProjectSettings.set_initial_value("godot_vmf/models/import", false);
+	ProjectSettings.set_as_basic("godot_vmf/models/import", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/models/target_folder"):
 		ProjectSettings.set_setting("godot_vmf/models/target_folder", "res://");
 	ProjectSettings.set_initial_value("godot_vmf/models/target_folder", "res://");
+	ProjectSettings.set_as_basic("godot_vmf/models/target_folder", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/models/lightmap_texel_size"):
 		ProjectSettings.set_setting("godot_vmf/models/lightmap_texel_size", 0.4);
 	ProjectSettings.set_initial_value("godot_vmf/models/lightmap_texel_size", 0.4);
-
+	ProjectSettings.set_as_basic("godot_vmf/models/lightmap_texel_size", true);
 
 	## Materials
 	if not ProjectSettings.has_setting("godot_vmf/materials/import_mode"):
 		ProjectSettings.set_setting("godot_vmf/materials/import_mode", 0);
 	ProjectSettings.set_initial_value("godot_vmf/materials/import_mode", 0);
+	ProjectSettings.set_as_basic("godot_vmf/materials/import_mode", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/materials/target_folder"):
 		ProjectSettings.set_setting("godot_vmf/materials/target_folder", "res://materials");
 	ProjectSettings.set_initial_value("godot_vmf/materials/target_folder", "res://materials");
+	ProjectSettings.set_as_basic("godot_vmf/materials/target_folder", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/materials/ignore"):
 		ProjectSettings.set_setting("godot_vmf/materials/ignore", ["tools/toolsnodraw", "tools/toolsskybox", "tools/toolsinvisible"]);
 	ProjectSettings.set_initial_value("godot_vmf/materials/ignore", ["tools/toolsnodraw", "tools/toolsskybox", "tools/toolsinvisible"]);
+	ProjectSettings.set_as_basic("godot_vmf/materials/ignore", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/materials/fallback_material"):
 		ProjectSettings.set_setting("godot_vmf/materials/fallback_material", "");
 	ProjectSettings.set_initial_value("godot_vmf/materials/fallback_material", "");
+	ProjectSettings.set_as_basic("godot_vmf/materials/fallback_material", true);
 
 	if not ProjectSettings.has_setting("godot_vmf/materials/default_texture_size"):
 		ProjectSettings.set_setting("godot_vmf/materials/default_texture_size", 512);
 	ProjectSettings.set_initial_value("godot_vmf/materials/default_texture_size", 512);
+	ProjectSettings.set_as_basic("godot_vmf/materials/default_texture_size", true);
 	
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/import/gameinfo_path",
@@ -244,7 +260,8 @@ static func define_project_settings():
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/import/scale",
 		"type": TYPE_FLOAT,
-		"hint": PROPERTY_HINT_NONE,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,100.0,0.000001",
 		"default_value": 0.02,
 	})
 
@@ -280,7 +297,8 @@ static func define_project_settings():
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/import/lightmap_texel_size",
 		"type": TYPE_FLOAT,
-		"hint": PROPERTY_HINT_NONE,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,100.0,0.000001",
 		"default_value": 0.2,
 	})
 
@@ -331,7 +349,8 @@ static func define_project_settings():
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/models/lightmap_texel_size",
 		"type": TYPE_FLOAT,
-		"hint": PROPERTY_HINT_NONE,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,100.0,0.000001",
 		"default_value": 0.4,
 	})
 
