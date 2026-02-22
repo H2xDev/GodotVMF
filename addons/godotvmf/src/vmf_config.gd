@@ -433,3 +433,4 @@ static func load_config():
 	file.close();
 
 	assign(VMFConfig, json);
+	update_config_field();
