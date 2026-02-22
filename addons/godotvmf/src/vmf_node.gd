@@ -90,7 +90,10 @@ func clear_scene_groups():
 func reimport_geometry() -> void:
 	VMFConfig.load_config();
 	read_vmf();
+
+	VMFResourceManager.init_vpk_stack();
 	VMFResourceManager.import_materials(vmf_structure, is_runtime);
+	VMFResourceManager.free_vpk_stack();
 
 	await VMFResourceManager.for_resource_import();
 
@@ -291,6 +294,14 @@ func reset_entities_node():
 
 func reimport_entities():
 	read_vmf();
+
+	VMFResourceManager.init_vpk_stack();
+	VMFResourceManager.import_materials(vmf_structure, is_runtime);
+	VMFResourceManager.import_models(vmf_structure);
+	VMFResourceManager.free_vpk_stack();
+
+	await VMFResourceManager.for_resource_import();
+
 	import_entities();
 
 func import_entities() -> void:
@@ -331,8 +342,10 @@ func import_map() -> void:
 	clear_scene_groups();
 	read_vmf();
 
+	VMFResourceManager.init_vpk_stack();
 	VMFResourceManager.import_materials(vmf_structure, is_runtime);
 	VMFResourceManager.import_models(vmf_structure);
+	VMFResourceManager.free_vpk_stack();
 
 	await VMFResourceManager.for_resource_import();
 

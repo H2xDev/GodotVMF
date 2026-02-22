@@ -185,7 +185,8 @@ func generate_collision():
 				vertices.append_array([v1, v2, v3]);
 
 			collision.shape.set_faces(PackedVector3Array(vertices));
-			if skeleton and skeleton.find_bone("static_body") == -1:
+
+			if skeleton and skeleton.find_bone("static_prop") == -1:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
 				bone_attachment.bone_idx = max(0, solid.bone_index - 1);
