@@ -246,7 +246,13 @@ static var normal_conversion_shader: Shader;
 static var shader_material: ShaderMaterial;
 
 func read_frame(frame, srgb_conversion_method: SRGBConversionMethod):
-	var reader := frame_readers.get(hires_image_format, null) as VTFFrameReader;
+	var reader = VTFLoader.frame_readers.get(hires_image_format, null);
+
+	if not reader:
+		VMFLogger.error("Unsupported texture format: {0} in file {1}" \
+			  .format([VTFLoader.format_labels[hires_image_format], file.get_path()]));
+		return null;
+
 	var tex := reader.read(self, frame, srgb_conversion_method) as Texture;
 
 	if not tex: 

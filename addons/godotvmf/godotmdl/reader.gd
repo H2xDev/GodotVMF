@@ -76,6 +76,10 @@ static func read_by_structure(file: FileAccess, Clazz, read_from = -1):
 
 	return result;
 
+static func read_char(file: FileAccess):
+	var byte = file.get_8();
+	return char(byte) if byte != 0 else "";
+
 static func _read_data(file: FileAccess, type: Type):
 	match type:
 		Type.FLOAT: 					return file.get_float();
@@ -84,10 +88,10 @@ static func _read_data(file: FileAccess, type: Type):
 		Type.SHORT: 					return read_signed_short(file);
 		Type.LONG: 						return file.get_64() - 0x80000000;
 		Type.UNSIGNED_SHORT: 			return file.get_16();
-		Type.UNSIGNED_CHAR: 			return file.get_8();
+		Type.UNSIGNED_CHAR: 			return read_char(file);
 
-		Type.STRING: 					return char(file.get_8());
-		Type.CHAR: 						return char(file.get_8());
+		Type.STRING: 					return read_char(file);
+		Type.CHAR: 						return read_char(file);
 		Type.VECTOR2: 					return Vector2(file.get_float(), file.get_float());
 		Type.VECTOR4: 					return Vector4(file.get_float(), file.get_float(), file.get_float(), file.get_float());
 

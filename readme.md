@@ -36,6 +36,7 @@ Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-We
 - Surface props support
 - Material's compile properties support
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
+- Import from VPK support
 
 <img src="https://github.com/user-attachments/assets/21084c3e-3530-45e5-8e05-d669d2a3ecf1" width="100%" />
 
@@ -60,7 +61,6 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - [Team Fortress Jumper](https://github.com/Mickeon/team-fortress-jumper) by [Mickeon](https://github.com/Mickeon)
 
 ## Known issues
-- Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
     - Use `Additional Rotation` property in the MDL import options
 - Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issue with threaded import in the engine.
@@ -92,6 +92,7 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 [ckaiser](https://github.com/ckaiser)
 [jamop4](https://github.com/jamop4)
 [Catperson6](https://github.com/catperson6real-dev)
+[Withaust](https://github.com/Withaust)
 
 ## License
 MIT
