@@ -91,7 +91,6 @@ func ReimportEntities():
 	var nodes := GetExistingVMFNodes();
 
 	dock.get_node('ProgressBar').show();
-	dock.get_node('ProgressBar').show();
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes: 
