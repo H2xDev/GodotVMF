@@ -106,6 +106,7 @@ static func generate(original_mesh: ArrayMesh) -> Array[MultiMesh]:
 				mmi.transform_format = MultiMesh.TRANSFORM_3D;
 				mmi.mesh = prop_mesh;
 				mmi.instance_count = chunk.size();
+				mmi.set_meta("cast_shadows", cast_shadows);
 
 				for k in range(chunk.size()):
 					var data = chunk[k];
