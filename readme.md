@@ -93,6 +93,7 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 [jamop4](https://github.com/jamop4)
 [Catperson6](https://github.com/catperson6real-dev)
 [Withaust](https://github.com/Withaust)
+[Asrael](https://github.com/asraeldragon)
 
 ## License
 MIT
