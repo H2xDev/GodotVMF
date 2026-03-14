@@ -196,6 +196,115 @@ static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> 
 			if a_removed: break;
 
 
+## Builds a single material surface and commits it to the given mesh.
+## Extracted from create_mesh() to allow batched/chunked imports with yield points.
+static func build_surface(mesh: ArrayMesh, sides: Array, import_scale: float, offset: Vector3, optimized: bool) -> void:
+	var sf := SurfaceTool.new();
+	sf.begin(Mesh.PRIMITIVE_TRIANGLES);
+
+	var index: int = 0;
+	for side: VMFSide in sides:
+		var base_index := index;
+
+		if not side.is_displacement and side.solid.has_displacement:
+			continue;
+
+		if side.vertices.size() < 3:
+			VMFLogger.error("Side corrupted: " + str(side.id));
+			continue;
+
+		if not side.plane: continue;
+
+		if not side.is_displacement:
+			var normal = side.plane.normal;
+			var sg := -1 if side.smoothing_groups == 0 else side.smoothing_groups;
+
+			sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+			sf.set_color(Color(1, 1, 1));
+			sf.set_smooth_group(sg);
+
+			for v: Vector3 in side.vertices:
+				sf.set_uv(side.get_uv(v));
+				sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
+				index += 1;
+
+			for i: int in range(1, side.vertices.size() - 1):
+				sf.add_index(base_index);
+				sf.add_index(base_index + i);
+				sf.add_index(base_index + i + 1);
+		else:
+			var disp: VMFDisplacementInfo = side.dispinfo;
+			var edges_count := int(disp.edges_count);
+			var verts_count := int(disp.verts_count);
+			sf.set_smooth_group(1);
+
+			for i: int in range(0, side.dispinfo.vertices.size()):
+				var x := i / verts_count;
+				var y := i % verts_count;
+				var v := side.dispinfo.vertices[i];
+				var normal := disp.get_normal(x, y);
+				var dist := disp.get_distance(x, y);
+				var voffset := disp.get_offset(x, y);
+				var uv := side.get_uv(v - dist - voffset);
+
+				sf.set_uv(uv);
+				sf.set_color(disp.get_color(x, y));
+				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+				sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
+				index += 1;
+
+			for i: int in range(0, pow(edges_count, 2)):
+				var x := i / edges_count;
+				var y := i % edges_count;
+				var is_odd := (x + y) % 2 == 1;
+
+				if is_odd:
+					sf.add_index(base_index + x + 1 + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + y * verts_count);
+				else:
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + y * verts_count);
+
+	# NOTE: In case no mesh were generated just skip commiting
+	if index == 0: return;
+
+	var material = VMTLoader.get_material(sides[0].material);
+	if material: sf.set_material(material);
+
+	if optimized: sf.optimize_indices_for_cache();
+	sf.generate_normals();
+	sf.generate_tangents();
+	sf.commit(mesh);
+
+	mesh.set_meta("surface_material_" + str(mesh.get_surface_count() - 1), sides[0].material);
+
+## Collects brush sides grouped by material name. Used by both create_mesh() and batched import.
+static func collect_material_sides(brushes: Array[VMFSolid], optimized: bool) -> Dictionary:
+	var material_sides: Dictionary = {};
+
+	for brush in brushes:
+		if optimized: remove_merged_faces(brush, brushes);
+
+		for side: VMFSide in brush.sides:
+			var material: String = side.material.to_upper();
+
+			if not material in material_sides:
+				material_sides[material] = [];
+
+			material_sides[material].append(side);
+
+	return material_sides;
+
 ## Returns MeshInstance3D from parsed VMF structure
 static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.ZERO, optimized: bool = true) -> ArrayMesh:
 	var import_scale := VMFConfig.import.scale;
