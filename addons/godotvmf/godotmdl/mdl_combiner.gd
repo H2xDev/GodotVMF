@@ -203,8 +203,9 @@ func generate_collision():
 				static_body.set_owner(mesh_instance);
 			else:
 				# NOTE: We don't need bone attachment for static bodies since they has only one bone
-				mesh_instance.add_child(static_body);
-				static_body.set_owner(mesh_instance);
+				if static_body.get_parent() != mesh_instance:
+					mesh_instance.add_child(static_body);
+					static_body.set_owner(mesh_instance);
 
 			static_body.add_child(collision);
 			collision.set_owner(mesh_instance);

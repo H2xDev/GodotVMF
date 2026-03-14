@@ -21,13 +21,7 @@ func _get_static_props_node() -> Node3D:
 	
 	var static_props_node := geometry_node.get_node_or_null("StaticProps");
 
-	if not static_props_node:
-		static_props_node = Node3D.new();
-		static_props_node.name = "StaticProps";
-		geometry_node.add_child(static_props_node);
-		static_props_node.set_owner(geometry_node.owner);
-	
-	return static_props_node;
+	if not model_instance: return;
 
 func assign_model_properties() -> void:
 	model_instance.set_owner(get_owner());
