@@ -153,6 +153,9 @@ func create_occluder():
 func generate_collision():
 	var yup_to_zup = Basis().rotated(Vector3.RIGHT, PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
+	var is_static_prop = skeleton && skeleton.find_bone("static_prop") != -1;
+
+	var static_body: StaticBody3D = StaticBody3D.new() if is_static_prop else null;
 
 	var surface_index = 0;
 	for surface in phy.surfaces:
@@ -162,7 +165,7 @@ func generate_collision():
 			# NOTE: Skip the last solid since it's a fullbody collision shape
 			if solid_index == surface.solids.size() - 1 and surface.solids.size() > 1: break;
 
-			var static_body: StaticBody3D = StaticBody3D.new();
+			static_body = StaticBody3D.new() if not is_static_prop else static_body;
 			var collision: CollisionShape3D = CollisionShape3D.new();
 
 			# FIXME: Use ConvexPolygonShape3D instead of ConcavePolygonShape3D
@@ -186,7 +189,7 @@ func generate_collision():
 
 			collision.shape.set_faces(PackedVector3Array(vertices));
 
-			if skeleton and skeleton.find_bone("static_prop") == -1:
+			if not is_static_prop:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
 				bone_attachment.bone_idx = max(0, solid.bone_index - 1);
@@ -196,8 +199,9 @@ func generate_collision():
 				static_body.set_owner(mesh_instance);
 			else:
 				# NOTE: We don't need bone attachment for static bodies since they has only one bone
-				mesh_instance.add_child(static_body);
-				static_body.set_owner(mesh_instance);
+				if static_body.get_parent() != mesh_instance:
+					mesh_instance.add_child(static_body);
+					static_body.set_owner(mesh_instance);
 
 			static_body.add_child(collision);
 			collision.set_owner(mesh_instance);

@@ -14,9 +14,7 @@ var fade_max: float = 0.0:
 func _entity_setup(e: VMFEntity):
 	super._entity_setup(e);
 
-	if not model_instance:
-		VMFLogger.error("Corrupted prop_static: " + str(model));
-		return;
+	if not model_instance: return;
 
 	model_instance.set_owner(get_owner());
 	model_instance.scale *= model_scale;
