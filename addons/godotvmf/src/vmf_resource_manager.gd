@@ -41,79 +41,86 @@ static func for_resource_import() -> void:
 
 	has_imported_resources = false;
 
-## Returns true if any resources were imported
+## Imports a single entity's model files and associated materials.
+## Returns true if a model was actually imported.
+static func import_model_for_entity(entity: VMFEntity) -> bool:
+	if not "model" in entity.data: return false;
+	if entity.classname != "prop_static": return false;
+
+	var model_path = entity.data.get("model", "").to_lower().get_basename();
+	if not model_path: return false;
+
+	# Game directory paths
+	var gamedir_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path);
+	var mdl_path = VMFUtils.normalize_path(gamedir_path + ".mdl");
+	var vtx_path = VMFUtils.normalize_path(gamedir_path + ".vtx");
+	var vtx_dx90_path = VMFUtils.normalize_path(gamedir_path + ".dx90.vtx");
+	var vvd_path = VMFUtils.normalize_path(gamedir_path + ".vvd");
+	var phy_path = VMFUtils.normalize_path(gamedir_path + ".phy");
+
+	# VPK paths
+	var vpk_mdl_path = VMFUtils.normalize_path(model_path + ".mdl");
+	var vpk_vtx_path = VMFUtils.normalize_path(model_path + ".dx90.vtx");
+	var vpk_vvd_path = VMFUtils.normalize_path(model_path + ".vvd");
+	var vpk_phy_path = VMFUtils.normalize_path(model_path + ".phy");
+
+	var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
+
+	if ResourceLoader.exists(target_path + ".mdl"): return false;
+
+	var found_in_game_dir := FileAccess.file_exists(mdl_path) \
+		and FileAccess.file_exists(vtx_path) \
+		and FileAccess.file_exists(vvd_path);
+
+	var found_in_vpk := file_exists_in_vpk(vpk_mdl_path) \
+		and file_exists_in_vpk(vpk_vtx_path) \
+		and file_exists_in_vpk(vpk_vvd_path);
+
+	if not found_in_game_dir and not found_in_vpk:
+		VMFLogger.error("Model files not found for: " + vpk_mdl_path);
+		return false;
+
+	if found_in_game_dir:
+		DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
+		DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
+		DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
+		if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
+		DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
+
+	elif found_in_vpk:
+		if not vpk_stack.extract(vpk_vtx_path, target_path + '.dx90.vtx'):
+			VMFLogger.error("Failed to extract VTX from VPK: " + vpk_vtx_path);
+			return false;
+
+		if not vpk_stack.extract(vpk_vvd_path, target_path + ".vvd"):
+			VMFLogger.error("Failed to extract VVD from VPK: " + vpk_vvd_path);
+			return false;
+
+		if file_exists_in_vpk(vpk_phy_path):
+			if not vpk_stack.extract(vpk_phy_path, target_path + ".phy"):
+				VMFLogger.error("Failed to extract PHY from VPK: " + vpk_phy_path);
+
+		if not vpk_stack.extract(vpk_mdl_path, target_path + ".mdl"):
+			VMFLogger.error("Failed to extract MDL from VPK: " + vpk_mdl_path);
+			return false;
+
+	var model_materials = MDLReader.new(target_path + ".mdl").get_possible_material_paths();
+
+	for material_path in model_materials:
+		import_textures(material_path);
+		import_material(material_path);
+
+	has_imported_resources = true;
+	return true;
+
+## Imports all models from the VMF structure (non-batched, suitable for runtime).
+## Returns true if any resources were imported.
 static func import_models(vmf_structure: VMFStructure) -> bool:
 	if not VMFConfig.models.import: return false;
 	if vmf_structure.entities.size() == 0: return false;
 
 	for entity in vmf_structure.entities:
-		if not "model" in entity.data: continue;
-		if entity.classname != "prop_static": continue;
-
-		var model_path = entity.data.get("model", "").to_lower().get_basename();
-		if not model_path: continue;
-
-		# Game directory paths
-		var gamedir_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path);
-		var mdl_path = VMFUtils.normalize_path(gamedir_path + ".mdl");
-		var vtx_path = VMFUtils.normalize_path(gamedir_path + ".vtx");
-		var vtx_dx90_path = VMFUtils.normalize_path(gamedir_path + ".dx90.vtx");
-		var vvd_path = VMFUtils.normalize_path(gamedir_path + ".vvd");
-		var phy_path = VMFUtils.normalize_path(gamedir_path + ".phy");
-
-		# VPK paths
-		var vpk_mdl_path = VMFUtils.normalize_path(model_path + ".mdl");
-		var vpk_vtx_path = VMFUtils.normalize_path(model_path + ".dx90.vtx");
-		var vpk_vvd_path = VMFUtils.normalize_path(model_path + ".vvd");
-		var vpk_phy_path = VMFUtils.normalize_path(model_path + ".phy");
-
-		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
-
-		if ResourceLoader.exists(target_path + ".mdl"): continue;
-
-		var found_in_game_dir := FileAccess.file_exists(mdl_path) \
-			and FileAccess.file_exists(vtx_path) \
-			and FileAccess.file_exists(vvd_path);
-
-		var found_in_vpk := file_exists_in_vpk(vpk_mdl_path) \
-			and file_exists_in_vpk(vpk_vtx_path) \
-			and file_exists_in_vpk(vpk_vvd_path);
-
-		if not found_in_game_dir and not found_in_vpk:
-			VMFLogger.error("Model files not found for: " + vpk_mdl_path);
-			continue;
-
-		if found_in_game_dir:
-			DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
-			DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
-			DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
-			if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
-			DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
-
-		elif found_in_vpk:
-			if not vpk_stack.extract(vpk_vtx_path, target_path + '.dx90.vtx'):
-				VMFLogger.error("Failed to extract VTX from VPK: " + vpk_vtx_path);
-				continue;
-
-			if not vpk_stack.extract(vpk_vvd_path, target_path + ".vvd"):
-				VMFLogger.error("Failed to extract VVD from VPK: " + vpk_vvd_path);
-				continue;
-
-			if file_exists_in_vpk(vpk_phy_path):
-				if not vpk_stack.extract(vpk_phy_path, target_path + ".phy"):
-					VMFLogger.error("Failed to extract PHY from VPK: " + vpk_phy_path);
-
-			if not vpk_stack.extract(vpk_mdl_path, target_path + ".mdl"):
-				VMFLogger.error("Failed to extract MDL from VPK: " + vpk_mdl_path);
-				continue;
-
-		var model_materials = MDLReader.new(target_path + ".mdl").get_possible_material_paths();
-
-		for material_path in model_materials:
-			import_textures(material_path);
-			import_material(material_path);
-
-		has_imported_resources = true;
+		import_model_for_entity(entity);
 
 	return has_imported_resources;
 
@@ -151,12 +158,8 @@ static func import_material(material: String) -> bool:
 
 	return has_imported_resources;
 
-static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -> void:
-	var editor_interface = get_editor_interface();
-
-	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
-		return;
-
+## Collects unique material names from the VMF structure, excluding ignored materials.
+static func collect_material_list(vmf_structure: VMFStructure) -> Array[String]:
 	var list: Array[String] = [];
 	var ignore_list: Array[String];
 	ignore_list.assign(VMFConfig.materials.ignore);
@@ -179,6 +182,17 @@ static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -
 
 				if not list.has(side.material):
 					list.append(side.material);
+
+	return list;
+
+## Imports all materials from the VMF structure (non-batched, suitable for runtime).
+static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -> void:
+	var editor_interface = get_editor_interface();
+
+	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
+		return;
+
+	var list := collect_material_list(vmf_structure);
 
 	if not is_runtime and editor_interface:
 		for material in list:

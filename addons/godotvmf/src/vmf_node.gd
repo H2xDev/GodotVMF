@@ -2,6 +2,16 @@
 @icon("res://addons/godotvmf/icon.svg")
 class_name VMFNode extends Node3D;
 
+## Emitted during batched import to report progress. Connect to update UI.
+signal import_progress(phase: String, current: int, total: int)
+
+## Batch sizes for chunked import — controls how many items are processed per frame yield.
+const MATERIAL_BATCH_SIZE := 20
+const MODEL_BATCH_SIZE := 5
+const BRUSH_BATCH_SIZE := 50
+const SURFACE_BATCH_SIZE := 10
+const ENTITY_BATCH_SIZE := 10
+
 enum MaterialImportMode {
 	USE_EXISTING,
 	IMPORT_FROM_MOD_FOLDER,
@@ -25,7 +35,8 @@ var vmf: String = '';
 @export var import: bool = false:
 	set(value):
 		if not value: return;
-		import_map();
+		# Property setters cannot be async, so use a wrapper
+		_do_import();
 		import = false;
 
 @export var double_sided_shadow_cast: bool = false;
@@ -72,6 +83,21 @@ var navmesh: NavigationRegion3D:
 
 var has_imported_resources = false;
 
+## Async wrapper for property setter (which cannot use await)
+func _do_import() -> void:
+	await import_map();
+
+## Returns true if this node is in the scene tree and can yield frames.
+## Standalone nodes (e.g. created by VMFInstanceManager) cannot yield.
+func _can_yield() -> bool:
+	return get_tree() != null;
+
+## Yields one frame and emits progress. Skips yield if not in scene tree.
+func _yield_progress(phase: String, current: int, total: int) -> void:
+	import_progress.emit(phase, current, total);
+	if _can_yield():
+		await get_tree().process_frame;
+
 func _validate_property(property: Dictionary) -> void:
 	if property.name == "vmf":
 		property.hint = PROPERTY_HINT_GLOBAL_FILE if use_external_file else PROPERTY_HINT_FILE
@@ -92,12 +118,17 @@ func reimport_geometry() -> void:
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	VMFResourceManager.import_materials(vmf_structure, is_runtime);
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
-
-	import_geometry();
+	if is_runtime or not _can_yield():
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_geometry();
+	else:
+		await _import_materials_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_geometry_batched();
 
 func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 	var detail_props := VMFDetailProps.generate(geometry_mesh.mesh);
@@ -291,13 +322,19 @@ func reimport_entities():
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	VMFResourceManager.import_materials(vmf_structure, is_runtime);
-	VMFResourceManager.import_models(vmf_structure);
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
-
-	import_entities();
+	if is_runtime or not _can_yield():
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.import_models(vmf_structure);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_entities();
+	else:
+		await _import_materials_batched();
+		await _import_models_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_entities_batched();
 
 func import_entities() -> void:
 	reset_entities_node();
@@ -335,14 +372,170 @@ func import_map() -> void:
 
 	clear_structure();
 	clear_scene_groups();
+
+	await _yield_progress("Parsing VMF", 0, 1);
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	VMFResourceManager.import_materials(vmf_structure, is_runtime);
-	VMFResourceManager.import_models(vmf_structure);
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
+	if is_runtime or not _can_yield():
+		# Non-batched path for runtime and standalone nodes (no yields, no risk of broken scripts)
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.import_models(vmf_structure);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_geometry();
+		import_entities();
+	else:
+		# Batched path for editor (yields between chunks to keep editor responsive)
+		await _import_materials_batched();
+		await _import_models_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_geometry_batched();
+		await _import_entities_batched();
 
-	import_geometry();
-	import_entities();
+	import_progress.emit("Done", 1, 1);
+
+#region Batched import methods (editor only — yields between chunks)
+
+## Imports materials in batches, yielding between chunks to prevent editor freeze.
+## Uses VMFResourceManager for all import logic.
+func _import_materials_batched() -> void:
+	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
+		return;
+
+	var editor_interface = VMFResourceManager.get_editor_interface();
+	if not editor_interface: return;
+
+	var list := VMFResourceManager.collect_material_list(vmf_structure);
+	var total := list.size();
+
+	for i in range(total):
+		VMFResourceManager.import_textures(list[i]);
+		if i % MATERIAL_BATCH_SIZE == 0 and i > 0:
+			await _yield_progress("Importing textures", i, total);
+
+	for i in range(total):
+		VMFResourceManager.import_material(list[i]);
+		if i % MATERIAL_BATCH_SIZE == 0 and i > 0:
+			await _yield_progress("Importing materials", i, total);
+
+## Imports models in batches, yielding between chunks to prevent editor freeze.
+## Uses VMFResourceManager.import_model_for_entity() for per-entity import logic.
+func _import_models_batched() -> void:
+	if not VMFConfig.models.import: return;
+	if vmf_structure.entities.size() == 0: return;
+
+	var entities_list = vmf_structure.entities;
+	var total := entities_list.size();
+	var batch_count := 0;
+
+	for i in range(total):
+		var did_import := VMFResourceManager.import_model_for_entity(entities_list[i]);
+
+		if did_import:
+			batch_count += 1;
+			if batch_count % MODEL_BATCH_SIZE == 0:
+				await _yield_progress("Importing models", batch_count, total);
+
+## Imports geometry in batches, yielding between chunks to prevent editor freeze
+func _import_geometry_batched() -> void:
+	if navmesh: navmesh.free();
+	if geometry: geometry.free();
+
+	var brushes := vmf_structure.solids;
+	if brushes.size() == 0: return;
+
+	var import_scale := VMFConfig.import.scale;
+	var offset := Vector3.ZERO;
+
+	# Phase 1: Remove merged faces in batches
+	if remove_merged_faces:
+		var total := brushes.size();
+		for i in range(total):
+			VMFTool.remove_merged_faces(brushes[i], brushes);
+			if i % BRUSH_BATCH_SIZE == 0 and i > 0:
+				await _yield_progress("Optimizing faces", i, total);
+
+	# Phase 2: Collect sides by material
+	var material_sides: Dictionary = {};
+	for brush in brushes:
+		for side: VMFSide in brush.sides:
+			var material_key: String = side.material.to_upper();
+			if not material_key in material_sides:
+				material_sides[material_key] = [];
+			material_sides[material_key].append(side);
+
+	# Phase 3: Build mesh surfaces in batches
+	var mesh := ArrayMesh.new();
+	var keys := material_sides.keys();
+	var total_surfaces := keys.size();
+
+	for i in range(total_surfaces):
+		VMFTool.build_surface(mesh, material_sides[keys[i]], import_scale, offset, remove_merged_faces);
+		if i % SURFACE_BATCH_SIZE == 0 and i > 0:
+			await _yield_progress("Building surfaces", i, total_surfaces);
+
+	if mesh.get_surface_count() == 0: return;
+
+	# Phase 4: Post-processing (same as import_geometry)
+	var geometry_mesh := MeshInstance3D.new();
+	geometry_mesh.name = "Geometry";
+	geometry_mesh.set_display_folded(true);
+
+	if double_sided_shadow_cast:
+		geometry_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+
+	add_child(geometry_mesh);
+	geometry_mesh.set_owner(_owner);
+
+	var transform = geometry_mesh.global_transform;
+	geometry_mesh.mesh = mesh;
+
+	await _yield_progress("Generating collisions", 0, 1);
+	VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
+	save_collision_file();
+	generate_navmesh(geometry_mesh);
+	generate_shadow_mesh(geometry_mesh.mesh);
+	cleanup_geometry(geometry_mesh);
+	generate_detail_props(geometry_mesh);
+	unwrap_lightmap(geometry_mesh);
+	save_geometry_file(geometry_mesh);
+
+## Imports entities in batches, yielding between chunks to prevent editor freeze
+func _import_entities_batched() -> void:
+	reset_entities_node();
+
+	var total := vmf_structure.entities.size();
+
+	for i in range(total):
+		var ent = vmf_structure.entities[i];
+		ent.data.vmf = vmf;
+
+		var tscn = get_entity_scene(ent.classname);
+		if not tscn: continue;
+
+		var node = tscn.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
+
+		if node is VMFEntityNode:
+			node.is_runtime = is_runtime;
+			node.reference = ent;
+
+		push_entity_to_group(ent.classname, node);
+		set_editable_instance(node, true);
+
+		var clazz = node.get_script();
+		if clazz and "setup" in clazz: clazz.setup(ent, node);
+
+		if not is_runtime:
+			node._entity_pre_setup(ent);
+
+			## Workaround to support deprecated method
+			if node._apply_entity(ent.data) == -1:
+				node._entity_setup(ent);
+
+		if i % ENTITY_BATCH_SIZE == 0 and i > 0:
+			await _yield_progress("Importing entities", i, total);
+
+#endregion
