@@ -118,12 +118,17 @@ func reimport_geometry() -> void:
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	await _import_materials_batched();
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
-
-	await _import_geometry_batched();
+	if is_runtime or not _can_yield():
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_geometry();
+	else:
+		await _import_materials_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_geometry_batched();
 
 func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 	var detail_props := VMFDetailProps.generate(geometry_mesh.mesh);
@@ -317,13 +322,19 @@ func reimport_entities():
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	await _import_materials_batched();
-	await _import_models_batched();
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
-
-	await _import_entities_batched();
+	if is_runtime or not _can_yield():
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.import_models(vmf_structure);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_entities();
+	else:
+		await _import_materials_batched();
+		await _import_models_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_entities_batched();
 
 func import_entities() -> void:
 	reset_entities_node();
@@ -366,55 +377,38 @@ func import_map() -> void:
 	read_vmf();
 
 	VMFResourceManager.init_vpk_stack();
-	await _import_materials_batched();
-	await _import_models_batched();
-	VMFResourceManager.free_vpk_stack();
 
-	await VMFResourceManager.for_resource_import();
-
-	await _import_geometry_batched();
-	await _import_entities_batched();
+	if is_runtime or not _can_yield():
+		# Non-batched path for runtime and standalone nodes (no yields, no risk of broken scripts)
+		VMFResourceManager.import_materials(vmf_structure, is_runtime);
+		VMFResourceManager.import_models(vmf_structure);
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		import_geometry();
+		import_entities();
+	else:
+		# Batched path for editor (yields between chunks to keep editor responsive)
+		await _import_materials_batched();
+		await _import_models_batched();
+		VMFResourceManager.free_vpk_stack();
+		await VMFResourceManager.for_resource_import();
+		await _import_geometry_batched();
+		await _import_entities_batched();
 
 	import_progress.emit("Done", 1, 1);
 
-#region Batched import methods
+#region Batched import methods (editor only — yields between chunks)
 
-## Collects unique material names from the VMF structure
-func _collect_material_list() -> Array[String]:
-	var list: Array[String] = [];
-	var ignore_list: Array[String];
-	ignore_list.assign(VMFConfig.materials.ignore);
-
-	for solid in vmf_structure.solids:
-		for side in solid.sides:
-			var is_ignored = ignore_list.any(func(rx: String) -> bool: return side.material.match(rx));
-			if is_ignored: continue;
-			if not list.has(side.material):
-				list.append(side.material);
-
-	for entity in vmf_structure.entities:
-		if not entity.has_solid: continue;
-		for solid in entity.solids:
-			for side in solid.sides:
-				var is_ignored = ignore_list.any(func(rx): return side.material.match(rx));
-				if is_ignored: continue;
-				if not list.has(side.material):
-					list.append(side.material);
-
-	return list;
-
-## Imports materials in batches, yielding between chunks to prevent editor freeze
+## Imports materials in batches, yielding between chunks to prevent editor freeze.
+## Uses VMFResourceManager for all import logic.
 func _import_materials_batched() -> void:
 	if VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING:
 		return;
 
 	var editor_interface = VMFResourceManager.get_editor_interface();
-	if is_runtime or not editor_interface:
-		# Fall back to non-batched import
-		VMFResourceManager.import_materials(vmf_structure, is_runtime);
-		return;
+	if not editor_interface: return;
 
-	var list := _collect_material_list();
+	var list := VMFResourceManager.collect_material_list(vmf_structure);
 	var total := list.size();
 
 	for i in range(total):
@@ -427,7 +421,8 @@ func _import_materials_batched() -> void:
 		if i % MATERIAL_BATCH_SIZE == 0 and i > 0:
 			await _yield_progress("Importing materials", i, total);
 
-## Imports models in batches, yielding between chunks to prevent editor freeze
+## Imports models in batches, yielding between chunks to prevent editor freeze.
+## Uses VMFResourceManager.import_model_for_entity() for per-entity import logic.
 func _import_models_batched() -> void:
 	if not VMFConfig.models.import: return;
 	if vmf_structure.entities.size() == 0: return;
@@ -437,72 +432,12 @@ func _import_models_batched() -> void:
 	var batch_count := 0;
 
 	for i in range(total):
-		var entity = entities_list[i];
-		if not "model" in entity.data: continue;
-		if entity.classname != "prop_static": continue;
+		var did_import := VMFResourceManager.import_model_for_entity(entities_list[i]);
 
-		var model_path = entity.data.get("model", "").to_lower().get_basename();
-		if not model_path: continue;
-
-		var gamedir_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path);
-		var mdl_path = VMFUtils.normalize_path(gamedir_path + ".mdl");
-		var vtx_path = VMFUtils.normalize_path(gamedir_path + ".vtx");
-		var vtx_dx90_path = VMFUtils.normalize_path(gamedir_path + ".dx90.vtx");
-		var vvd_path = VMFUtils.normalize_path(gamedir_path + ".vvd");
-		var phy_path = VMFUtils.normalize_path(gamedir_path + ".phy");
-
-		var vpk_mdl_path = VMFUtils.normalize_path(model_path + ".mdl");
-		var vpk_vtx_path = VMFUtils.normalize_path(model_path + ".dx90.vtx");
-		var vpk_vvd_path = VMFUtils.normalize_path(model_path + ".vvd");
-		var vpk_phy_path = VMFUtils.normalize_path(model_path + ".phy");
-
-		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
-
-		if ResourceLoader.exists(target_path + ".mdl"): continue;
-
-		var found_in_game_dir := FileAccess.file_exists(mdl_path) \
-			and FileAccess.file_exists(vtx_path) \
-			and FileAccess.file_exists(vvd_path);
-
-		var found_in_vpk := VMFResourceManager.file_exists_in_vpk(vpk_mdl_path) \
-			and VMFResourceManager.file_exists_in_vpk(vpk_vtx_path) \
-			and VMFResourceManager.file_exists_in_vpk(vpk_vvd_path);
-
-		if not found_in_game_dir and not found_in_vpk:
-			VMFLogger.error("Model files not found for: " + vpk_mdl_path);
-			continue;
-
-		if found_in_game_dir:
-			DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
-			DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
-			DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
-			if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
-			DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
-
-		elif found_in_vpk:
-			if not VMFResourceManager.vpk_stack.extract(vpk_vtx_path, target_path + '.dx90.vtx'):
-				VMFLogger.error("Failed to extract VTX from VPK: " + vpk_vtx_path);
-				continue;
-			if not VMFResourceManager.vpk_stack.extract(vpk_vvd_path, target_path + ".vvd"):
-				VMFLogger.error("Failed to extract VVD from VPK: " + vpk_vvd_path);
-				continue;
-			if VMFResourceManager.file_exists_in_vpk(vpk_phy_path):
-				if not VMFResourceManager.vpk_stack.extract(vpk_phy_path, target_path + ".phy"):
-					VMFLogger.error("Failed to extract PHY from VPK: " + vpk_phy_path);
-			if not VMFResourceManager.vpk_stack.extract(vpk_mdl_path, target_path + ".mdl"):
-				VMFLogger.error("Failed to extract MDL from VPK: " + vpk_mdl_path);
-				continue;
-
-		var model_materials = MDLReader.new(target_path + ".mdl").get_possible_material_paths();
-		for material_path in model_materials:
-			VMFResourceManager.import_textures(material_path);
-			VMFResourceManager.import_material(material_path);
-
-		VMFResourceManager.has_imported_resources = true;
-		batch_count += 1;
-
-		if batch_count % MODEL_BATCH_SIZE == 0:
-			await _yield_progress("Importing models", batch_count, total);
+		if did_import:
+			batch_count += 1;
+			if batch_count % MODEL_BATCH_SIZE == 0:
+				await _yield_progress("Importing models", batch_count, total);
 
 ## Imports geometry in batches, yielding between chunks to prevent editor freeze
 func _import_geometry_batched() -> void:
