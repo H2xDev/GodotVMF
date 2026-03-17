@@ -12,4 +12,4 @@ func _entity_setup(entity: VMFEntity):
 		return;
 
 	$MeshInstance3D.set_mesh(mesh);
-	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = $MeshInstance3D.mesh.create_trimesh_shape();
+	$MeshInstance3D/StaticBody3D/CollisionShape3D.shape = mesh.create_trimesh_shape();

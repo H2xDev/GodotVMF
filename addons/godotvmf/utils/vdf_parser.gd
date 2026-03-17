@@ -3,6 +3,7 @@
 class_name VDFParser extends RefCounted;
 
 # Precompile the regular expressions only once
+static var _propRegex := RegEx.create_from_string('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$|(\\s\\[.+\\]))$');
 static var _vectorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _vector2Regex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
@@ -87,53 +88,10 @@ static func define_structure(hierarchy: Array, line: String, keys_to_lower = fal
 
 	hierarchy.append(newStruct);
 
-static func _get_key_value(line: String) -> Array:
-	var key_start := -1
-	var key_end := -1
-	var value_start := -1
-	var value_end := -1
-	
-	var i := 0
-	var length := line.length()
-	
-	# Parse Key
-	if i < length and line[i] == '"':
-		i += 1
-		key_start = i
-		while i < length and line[i] != '"':
-			i += 1
-		key_end = i
-		i += 1
-	else:
-		key_start = i
-		while i < length and line[i] != ' ' and line[i] != '\t':
-			i += 1
-		key_end = i
-		
-	# Skip whitespace
-	while i < length and (line[i] == ' ' or line[i] == '\t'):
-		i += 1
-		
-	if i >= length:
-		return []
-		
-	# Parse Value
-	if i < length and line[i] == '"':
-		i += 1
-		value_start = i
-		while i < length and line[i] != '"':
-			i += 1
-		value_end = i
-	else:
-		value_start = i
-		while i < length and line[i] != ' ' and line[i] != '\t':
-			i += 1
-		value_end = i
-		
-	return [line.substr(key_start, key_end - key_start), line.substr(value_start, value_end - value_start)]
-
-static func define_property(hierarchy: Array, propName: String, propValueStr: String, keys_to_lower = false):
-	var propValue := parse_value(propValueStr);
+static func define_property(hierarchy: Array, line: String, keys_to_lower = false):
+	var m := _propRegex.search(line);
+	var propName := m.get_string(1);
+	var propValue := parse_value(m.get_string(2));
 
 	if keys_to_lower:
 		propName = propName.to_lower();
@@ -168,10 +126,8 @@ static func parse_from_string(source: String, keys_to_lower := false):
 			define_structure(hierarchy, line, keys_to_lower);
 		elif line[0] == '}' or line.ends_with('}'):
 			finish_structure(hierarchy);
-		else:
-			var kv = _get_key_value(line)
-			if kv:
-				define_property(hierarchy, kv[0], kv[1], keys_to_lower);
+		elif _propRegex.search(line):
+			define_property(hierarchy, line, keys_to_lower);
 
 		previous_line = line;
 

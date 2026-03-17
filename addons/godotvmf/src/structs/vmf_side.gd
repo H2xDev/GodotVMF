@@ -89,7 +89,7 @@ func calculate_vertices() -> void:
 			raw_vertices.append(vertex as Vector3);
 
 	raw_vertices = raw_vertices.filter(func(vertex):
-		return not solid.sides.any(func(s: VMFSide): return s.plane.distance_to(vertex) > 0.01);
+		return not solid.sides.any(func(s: VMFSide): return s.plane.distance_to(vertex) > 0.001);
 	);
 
 	var side_normal: Vector3 = plane.normal;
