@@ -1,6 +1,36 @@
 @static_unload
 class_name VMFTool extends RefCounted
 
+static func generate_shadow_mesh(source_mesh: ArrayMesh) -> ArrayMesh:
+	var shadow_mesh := ArrayMesh.new();
+	var extend_corrector := Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector") as VMFGeometryCorrector;
+	var corrector := VMFGeometryCorrector.new() if not extend_corrector else extend_corrector;
+
+	for surface_idx in range(source_mesh.get_surface_count()):
+		var material = source_mesh.surface_get_material(surface_idx);
+
+		if not material: 
+			shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
+			continue;
+
+		var material_compile_keys: Array = material.get_meta("compile_keys", []);
+		var is_shadowmesh := false;
+
+		for key in material_compile_keys:
+			if extend_corrector:
+				is_shadowmesh = extend_corrector._get_shadowmesh_keys().has(key);
+				if is_shadowmesh: break;
+				continue;
+
+			is_shadowmesh = corrector._get_shadowmesh_keys().has(key);
+			if is_shadowmesh: break;
+
+		if not is_shadowmesh: continue;
+
+		shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
+
+	return VMFUtils.merge_surfaces(shadow_mesh);
+
 ## Generates collisions from mesh for each surface. It adds ability to use sufraceprop values
 static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int):
 	var bodies: Array[StaticBody3D] = [];
@@ -26,18 +56,16 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 		if compilekeys.size() > 0:
 			surface_prop = "tool_" + compilekeys[0];
 
-		var has_nocollision_extender = extend_corrector and "nocollision" in extend_corrector;
-		var is_no_collision = false;
+		var is_no_collision := false;
 
 		for key in compilekeys:
-			if has_nocollision_extender:
-				if extend_corrector.nocollision.has(key): 
-					is_no_collision = true;
-					break;
+			if extend_corrector and extend_corrector._get_nocollision_keys().has(key): 
+				is_no_collision = true;
+				break;
 
 			if is_no_collision: break;
 
-			if corrector.nocollision.has(key): 
+			if corrector._get_nocollision_keys().has(key): 
 				is_no_collision = true;
 				break;
 
@@ -81,13 +109,13 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 		VMFUtils.set_owner_recursive(static_body, mesh_instance.get_owner());
 
 ## Clear mesh from ignored textures and materials
-static func cleanup_mesh(original_mesh: ArrayMesh):
+static func cleanup_mesh(original_mesh: ArrayMesh) -> ArrayMesh:
 	var is_44 = Engine.get_version_info().minor >= 4;
 
 	var ignored_textures = VMFConfig.materials.ignore;
 	var duplicated_mesh = ArrayMesh.new() if not is_44 else null;
 	var corrector := VMFGeometryCorrector.new();
-	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector");
+	var extend_corrector := Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector") as VMFGeometryCorrector;
 	var mt = MeshDataTool.new() if not is_44 else null;
 
 	var surface_removed = 0;
@@ -100,8 +128,8 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 		var material = original_mesh.surface_get_material(surface_idx);
 		var compilekeys = material.get_meta("compile_keys", []) if material else [];
 
-		var is_ignored = ignored_textures.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
-		if is_ignored and is_44:
+		var is_material_ignored = VMTLoader.is_material_ignored(material_name);
+		if is_material_ignored and is_44:
 			original_mesh.surface_remove(surface_idx);
 			surface_removed += 1;
 			continue;
@@ -109,12 +137,12 @@ static func cleanup_mesh(original_mesh: ArrayMesh):
 		var is_norender = false;
 
 		for key in compilekeys:
-			if is_ignored: break;
-			if extend_corrector and "norender" in extend_corrector.norender:
-				is_norender = extend_corrector.norender.has(key);
+			if is_material_ignored: break;
+			if extend_corrector:
+				is_norender = extend_corrector._get_norender_keys().has(key);
 				break;
 
-			is_norender = corrector.norender.has(key);
+			is_norender = corrector._get_norender_keys().has(key);
 			if is_norender: break;
 
 		if is_norender and is_44:
@@ -167,9 +195,221 @@ static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> 
 
 			if a_removed: break;
 
+## Optimized version using spatial hashing — only compares nearby brushes.
+## Reduces O(N²) to roughly O(N×K) where K = average brushes per cell.
+static func remove_merged_faces_spatial(brushes: Array[VMFSolid], cell_size: float = 128.0) -> void:
+	if brushes.size() == 0: return;
 
-## Returns MeshInstance3D from parsed VMF structure
-static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.ZERO, optimized: bool = true) -> ArrayMesh:
+	# Step 1: Compute AABB for each brush from side vertices
+	var brush_aabbs: Array[AABB] = [];
+	for brush in brushes:
+		var bb_min := Vector3(INF, INF, INF);
+		var bb_max := Vector3(-INF, -INF, -INF);
+		for side in brush.sides:
+			for v in side.vertices:
+				bb_min = Vector3(min(bb_min.x, v.x), min(bb_min.y, v.y), min(bb_min.z, v.z));
+				bb_max = Vector3(max(bb_max.x, v.x), max(bb_max.y, v.y), max(bb_max.z, v.z));
+		brush_aabbs.append(AABB(bb_min, bb_max - bb_min));
+
+	# Step 2: Build spatial hash grid
+	var grid := {};  # "cx,cy,cz" -> Array of brush indices
+	for i in range(brushes.size()):
+		var aabb = brush_aabbs[i];
+		if aabb.size == Vector3.ZERO: continue;
+		var min_cell := Vector3i(
+			int(floor(aabb.position.x / cell_size)),
+			int(floor(aabb.position.y / cell_size)),
+			int(floor(aabb.position.z / cell_size))
+		);
+		var max_cell := Vector3i(
+			int(floor(aabb.end.x / cell_size)),
+			int(floor(aabb.end.y / cell_size)),
+			int(floor(aabb.end.z / cell_size))
+		);
+		for cx in range(min_cell.x, max_cell.x + 1):
+			for cy in range(min_cell.y, max_cell.y + 1):
+				for cz in range(min_cell.z, max_cell.z + 1):
+					var key := Vector3i(cx, cy, cz);
+					if not grid.has(key):
+						grid[key] = [];
+					grid[key].append(i);
+
+	# Step 3: For each brush, compare only against brushes in same cells
+	var checked := {};  # "i,j" -> true (avoid checking same pair twice)
+	for i in range(brushes.size()):
+		var aabb = brush_aabbs[i];
+		if aabb.size == Vector3.ZERO: continue;
+		var brush_a = brushes[i];
+
+		# Collect unique neighbor indices from all cells this brush overlaps
+		var neighbors := {};
+		var min_cell := Vector3i(
+			int(floor(aabb.position.x / cell_size)),
+			int(floor(aabb.position.y / cell_size)),
+			int(floor(aabb.position.z / cell_size))
+		);
+		var max_cell := Vector3i(
+			int(floor(aabb.end.x / cell_size)),
+			int(floor(aabb.end.y / cell_size)),
+			int(floor(aabb.end.z / cell_size))
+		);
+		for cx in range(min_cell.x, max_cell.x + 1):
+			for cy in range(min_cell.y, max_cell.y + 1):
+				for cz in range(min_cell.z, max_cell.z + 1):
+					var key := Vector3i(cx, cy, cz);
+					if grid.has(key):
+						for j in grid[key]:
+							if j != i:
+								neighbors[j] = true;
+
+		# Compare against neighbors only
+		for j in neighbors:
+			var pair_key := mini(i, j) * 100000 + maxi(i, j);
+			if pair_key in checked: continue;
+			checked[pair_key] = true;
+
+			var brush_b = brushes[j];
+
+			for side_a in brush_a.sides:
+				var a_removed = false;
+
+				for side_b in brush_b.sides:
+					if side_a.plane.normal.dot(side_b.plane.normal) > -0.99: continue;
+					if side_a.plane.get_center().distance_to(side_b.plane.get_center()) > 0.01: continue;
+
+					var material_a: Material = VMTLoader.get_material(side_a.material);
+					var material_b: Material = VMTLoader.get_material(side_b.material);
+					if is_material_transparent(material_a): continue;
+					if is_material_transparent(material_b): continue;
+
+					if side_a.is_equal_to(side_b):
+						brush_b.sides.erase(side_b);
+						brush_a.sides.erase(side_a);
+						a_removed = true;
+						break;
+
+					if side_a.is_inside_of_face(side_b):
+						brush_a.sides.erase(side_a);
+						a_removed = true;
+						break;
+
+				if a_removed: break;
+
+
+## Builds a single material surface and commits it to the given mesh.
+## Extracted from create_mesh() to allow batched/chunked imports with yield points.
+static func build_surface(mesh: ArrayMesh, sides: Array, import_scale: float, offset: Vector3, optimized: bool) -> void:
+	var sf := SurfaceTool.new();
+	sf.begin(Mesh.PRIMITIVE_TRIANGLES);
+
+	var index: int = 0;
+	for side: VMFSide in sides:
+		var base_index := index;
+
+		if not side.is_displacement and side.solid.has_displacement:
+			continue;
+
+		if side.vertices.size() < 3:
+			VMFLogger.error("Side corrupted: " + str(side.id));
+			continue;
+
+		if not side.plane: continue;
+
+		if not side.is_displacement:
+			var normal = side.plane.normal;
+			var sg := -1 if side.smoothing_groups == 0 else side.smoothing_groups;
+
+			sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+			sf.set_color(Color(1, 1, 1));
+			sf.set_smooth_group(sg);
+
+			for v: Vector3 in side.vertices:
+				sf.set_uv(side.get_uv(v));
+				sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
+				index += 1;
+
+			for i: int in range(1, side.vertices.size() - 1):
+				sf.add_index(base_index);
+				sf.add_index(base_index + i);
+				sf.add_index(base_index + i + 1);
+		else:
+			var disp: VMFDisplacementInfo = side.dispinfo;
+			var edges_count := int(disp.edges_count);
+			var verts_count := int(disp.verts_count);
+			sf.set_smooth_group(1);
+
+			for i: int in range(0, side.dispinfo.vertices.size()):
+				var x := i / verts_count;
+				var y := i % verts_count;
+				var v := side.dispinfo.vertices[i];
+				var normal := disp.get_normal(x, y);
+				var dist := disp.get_distance(x, y);
+				var voffset := disp.get_offset(x, y);
+				var uv := side.get_uv(v - dist - voffset);
+
+				sf.set_uv(uv);
+				sf.set_color(disp.get_color(x, y));
+				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
+				sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
+				index += 1;
+
+			for i: int in range(0, pow(edges_count, 2)):
+				var x := i / edges_count;
+				var y := i % edges_count;
+				var is_odd := (x + y) % 2 == 1;
+
+				if is_odd:
+					sf.add_index(base_index + x + 1 + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + y * verts_count);
+				else:
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+
+					sf.add_index(base_index + x + y * verts_count);
+					sf.add_index(base_index + x + 1 + (y + 1) * verts_count);
+					sf.add_index(base_index + x + 1 + y * verts_count);
+
+	# NOTE: In case no mesh were generated just skip commiting
+	if index == 0: return;
+
+	var material = VMTLoader.get_material(sides[0].material);
+	if material: sf.set_material(material);
+
+	if optimized: sf.optimize_indices_for_cache();
+	sf.generate_normals();
+	sf.generate_tangents();
+	sf.commit(mesh);
+
+	mesh.set_meta("surface_material_" + str(mesh.get_surface_count() - 1), sides[0].material);
+
+## Collects brush sides grouped by material name. Used by both create_mesh() and batched import.
+static func collect_material_sides(brushes: Array[VMFSolid], optimized: bool) -> Dictionary:
+	if optimized:
+		remove_merged_faces_spatial(brushes);
+
+	var material_sides: Dictionary = {};
+
+	for brush in brushes:
+		for side: VMFSide in brush.sides:
+			var material: String = side.material.to_upper();
+
+			if not material in material_sides:
+				material_sides[material] = [];
+
+			material_sides[material].append(side);
+
+	return material_sides;
+
+## Returns ArrayMesh(es) from parsed VMF structure.
+## Auto-splits at 256 surfaces (Godot's MAX_MESH_SURFACES limit).
+## Returns an Array of ArrayMesh. Single-entity callers can just use [0].
+static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.ZERO, optimized: bool = true) -> Variant:
 	var import_scale := VMFConfig.import.scale;
 
 	if vmf_structure.solids.size() == 0:
@@ -177,11 +417,14 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.Z
 
 	var brushes := vmf_structure.solids;
 	var material_sides: Dictionary = {};
+	var meshes: Array[ArrayMesh] = [];
 	var mesh := ArrayMesh.new();
+	var surface_count := 0;
+
+	if optimized:
+		remove_merged_faces_spatial(brushes);
 
 	for brush in brushes:
-		if optimized: remove_merged_faces(brush, brushes);
-
 		for side: VMFSide in brush.sides:
 			var material: String = side.material.to_upper();
 
@@ -272,15 +515,27 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.Z
 
 		var material = VMTLoader.get_material(sides[0].material);
 		if material: sf.set_material(material);
-		
+
 		if optimized: sf.optimize_indices_for_cache();
 		sf.generate_normals();
 		sf.generate_tangents();
 		sf.commit(mesh);
 
 		mesh.set_meta("surface_material_" + str(mesh.get_surface_count() - 1), sides[0].material);
+		surface_count += 1;
 
-	return mesh;
+		# Split at Godot's 256 surface limit
+		if surface_count >= 256:
+			meshes.append(mesh);
+			mesh = ArrayMesh.new();
+			surface_count = 0;
+
+	if mesh.get_surface_count() > 0:
+		meshes.append(mesh);
+
+	if meshes.is_empty(): return null;
+	if meshes.size() == 1: return meshes[0];
+	return meshes;
 
 static func generate_lods(mesh: ArrayMesh) -> ArrayMesh:
 	if not mesh.get_surface_count(): return mesh;
