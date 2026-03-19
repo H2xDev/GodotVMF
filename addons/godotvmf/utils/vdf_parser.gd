@@ -111,6 +111,26 @@ static func finish_structure(hierarchy: Array):
 static func parse_from_string(source: String, keys_to_lower := false):
 	var out := {};
 	var hierarchy: Array = [out];
+
+	# Normalize line endings (some VMT files use \r only)
+	source = source.replace("\r\n", "\n").replace("\r", "\n")
+
+	# Normalize braces onto their own lines (handles single-line VMTs like tileroof002a.vmt)
+	# Only for small files to avoid performance hit on large VMF files
+	if source.length() < 4096:
+		var normalized := ""
+		var in_quotes := false
+		for ch in source:
+			if ch == '"':
+				in_quotes = not in_quotes
+			if not in_quotes and ch == '{':
+				normalized += "\n{\n"
+			elif not in_quotes and ch == '}':
+				normalized += "\n}\n"
+			else:
+				normalized += ch
+		source = normalized
+
 	var lines := source.split('\n');
 	var line: String = '';
 	var previous_line: String = line;

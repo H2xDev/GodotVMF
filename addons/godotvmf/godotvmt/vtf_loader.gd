@@ -270,6 +270,12 @@ func _init(path, duration):
 static func get_texture(texture: String):
 	texture = texture.to_lower();
 	const extensions_priority = ['.vtf', '.tga', '.png', '.jpg'];
+
+	# Strip existing extension if present (some VMTs include .vtf in the path)
+	for ext in extensions_priority:
+		if texture.ends_with(ext):
+			texture = texture.substr(0, texture.length() - ext.length())
+			break
 	
 	for ext in extensions_priority:
 		var texture_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + texture + ext);

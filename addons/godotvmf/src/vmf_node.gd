@@ -235,18 +235,33 @@ func _create_runtime_visuals() -> void:
 
 	for model_key in unique_models:
 		var model_path: String = unique_models[model_key];
-		var resources = VMFCache.get_model_resources(model_key);
+		if not ResourceLoader.exists(model_path): continue;
+		var model_scene: PackedScene = ResourceLoader.load(model_path) as PackedScene;
+		if not model_scene: continue;
 
-		if not resources:
-			resources = prop_studio._load_native_resources(model_key);
+		var temp = model_scene.instantiate();
+		if not temp or not (temp is MeshInstance3D):
+			if temp: temp.free()
+			continue;
 
-		if not resources:
-			if not ResourceLoader.exists(model_path): continue;
-			var model_scene: PackedScene = ResourceLoader.load(model_path) as PackedScene;
-			if model_scene:
-				resources = prop_studio._extract_and_cache_resources(model_key, model_scene);
+		var mesh: ArrayMesh = temp.mesh;
+		var skin_meta := {};
+		for meta_key in temp.get_meta_list():
+			if meta_key.begins_with("skin_"):
+				skin_meta[meta_key] = temp.get_meta(meta_key);
 
-		if not resources or resources.is_empty():
+		var collision_shapes: Array[Shape3D] = [];
+		var stack = [temp];
+		while stack.size() > 0:
+			var node = stack.pop_back();
+			if node is CollisionShape3D and node.shape:
+				collision_shapes.append(node.shape.duplicate());
+			for child in node.get_children():
+				stack.append(child);
+
+		temp.free();
+
+		if not mesh:
 			continue;
 
 		loaded_count += 1;
@@ -255,20 +270,20 @@ func _create_runtime_visuals() -> void:
 		# Default (no skin) entry
 		var base_key: String = model_key + "::0";
 		if not mesh_cache.has(base_key):
-			_visual_resources.append(resources.mesh);
+			_visual_resources.append(mesh);
 			mesh_cache[base_key] = {
-				"mesh_rid": resources.mesh.get_rid(),
-				"mesh_resource": resources.mesh,
-				"collision_shapes": resources.collision_shapes,
+				"mesh_rid": mesh.get_rid(),
+				"mesh_resource": mesh,
+				"collision_shapes": collision_shapes,
 			};
 
-		for skin_key_name in resources.skin_meta:
+		for skin_key_name in skin_meta:
 			var skin_id_str: String = skin_key_name.replace("skin_", "");
 			var group_key: String = model_key + "::" + skin_id_str;
 			if mesh_cache.has(group_key): continue;
 
-			var skinned_mesh: ArrayMesh = resources.mesh.duplicate() as ArrayMesh;
-			var materials = resources.skin_meta[skin_key_name];
+			var skinned_mesh: ArrayMesh = mesh.duplicate() as ArrayMesh;
+			var materials = skin_meta[skin_key_name];
 			for s in range(skinned_mesh.get_surface_count()):
 				if s < materials.size():
 					skinned_mesh.surface_set_material(s, materials[s]);
@@ -276,7 +291,7 @@ func _create_runtime_visuals() -> void:
 			mesh_cache[group_key] = {
 				"mesh_rid": skinned_mesh.get_rid(),
 				"mesh_resource": skinned_mesh,
-				"collision_shapes": resources.collision_shapes,
+				"collision_shapes": collision_shapes,
 			};
 
 	print("[VMF] Loaded ", loaded_count, "/", unique_models.size(), " model variants, creating instances...");
@@ -375,11 +390,19 @@ func bake_navmesh_with_collisions() -> void:
 			for entry in entries:
 				var model_key: String = entry.model;
 				if not nav_mesh_cache.has(model_key):
-					var resources = VMFCache.get_model_resources(model_key);
-					if not resources:
-						resources = prop_studio._load_native_resources(model_key);
-					if resources and not resources.is_empty() and resources.mesh:
-						nav_mesh_cache[model_key] = resources.mesh;
+					var model_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_key);
+					if ResourceLoader.exists(model_path):
+						var model_scene: PackedScene = ResourceLoader.load(model_path) as PackedScene;
+						if model_scene:
+							var temp = model_scene.instantiate();
+							if temp and temp is MeshInstance3D:
+								nav_mesh_cache[model_key] = temp.mesh;
+								temp.free();
+							else:
+								if temp: temp.free()
+								nav_mesh_cache[model_key] = null;
+						else:
+							nav_mesh_cache[model_key] = null;
 					else:
 						nav_mesh_cache[model_key] = null;
 
@@ -850,4 +873,3 @@ func import_map() -> void:
 		bake_navmesh_with_collisions();
 
 	import_progress.emit("Done", 6, 6);
-

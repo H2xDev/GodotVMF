@@ -121,18 +121,29 @@ func detailblendmode(material: Material, value: Variant):
 	if "detail_blend_mode" in material:
 		material.set("detail_blend_mode", value);
 
+func color2(material: Material, value: Variant):
+	if material is not BaseMaterial3D: return;
+	var color_str = str(value).replace("{", "").replace("}", "").strip_edges();
+	var parts = color_str.split(" ", false);
+	if parts.size() >= 3:
+		material.albedo_color = Color(
+			parts[0].to_float() / 255.0,
+			parts[1].to_float() / 255.0,
+			parts[2].to_float() / 255.0
+		);
+
 func surfaceprop(material: Material, value: Variant):
 	material.set_meta("surfaceprop", value);
 
 func basetexturetransform(material: Material, value: Variant):
-	if "uv1_scale" not in material:
-		return;
-	if "uv1_offset" not in material:
-		return;
-
 	var transform = VMTLoader.parse_transform(value);
-	material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
-	material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
+
+	if material is ShaderMaterial:
+		material.set_shader_parameter("uv1_scale", Vector3(transform.scale.x, transform.scale.y, 1));
+		material.set_shader_parameter("uv1_offset", Vector3(transform.translate.x, transform.translate.y, 0));
+	elif "uv1_scale" in material and "uv1_offset" in material:
+		material.uv1_scale = Vector3(transform.scale.x, transform.scale.y, 1);
+		material.uv1_offset = Vector3(transform.translate.x, transform.translate.y, 0);
 
 func basetexturetransform2(material: Material, value: Variant):
 	if "uv1_scale2" not in material:

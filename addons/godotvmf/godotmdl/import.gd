@@ -100,42 +100,7 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 
 	var path_to_save = save_path + '.' + _get_save_extension();
 	var combiner = MDLCombiner.new(mdl, vtx, vvd, phy, options);
-
-	## Save native .res files for shared resource loading (before pack_model frees the instance)
-	_save_native_resources(mdl_path, combiner.mesh_instance, combiner.array_mesh);
-
 	var scn = pack_model(combiner.mesh_instance, model_name);
 	var error = ResourceSaver.save(scn, path_to_save, ResourceSaver.FLAG_COMPRESS);
 
 	return error;
-
-## Saves mesh, collision shapes, and skin metadata as native .res files
-## alongside the source .mdl file for fast shared resource loading.
-func _save_native_resources(mdl_path: String, mesh_instance: MeshInstance3D, array_mesh: ArrayMesh) -> void:
-	var base_path = mdl_path.get_basename();
-
-	# Save mesh
-	if array_mesh:
-		ResourceSaver.save(array_mesh, base_path + ".mesh.res", ResourceSaver.FLAG_COMPRESS);
-
-	# Save collision shapes (walk tree recursively)
-	var col_idx := 0;
-	var stack := [mesh_instance];
-	while stack.size() > 0:
-		var node = stack.pop_back();
-		if node is CollisionShape3D and node.shape:
-			ResourceSaver.save(node.shape, base_path + ".collision_" + str(col_idx) + ".res", ResourceSaver.FLAG_COMPRESS);
-			col_idx += 1;
-		for child in node.get_children():
-			stack.append(child);
-
-	# Save skin metadata
-	var has_skins := false;
-	var skin_res := Resource.new();
-	for meta_key in mesh_instance.get_meta_list():
-		if meta_key.begins_with("skin_"):
-			skin_res.set_meta(meta_key, mesh_instance.get_meta(meta_key));
-			has_skins = true;
-
-	if has_skins:
-		ResourceSaver.save(skin_res, base_path + ".skin_meta.res", ResourceSaver.FLAG_COMPRESS);

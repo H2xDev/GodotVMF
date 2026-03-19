@@ -247,12 +247,21 @@ func assign_materials():
 	
 
 	for tex in mdl.textures:
+		var found = false
 		for dir in mdl.textureDirs:
 			var path = VMFUtils.normalize_path(dir + "/" + tex.name);
 			if not VMTLoader.has_material(path.to_lower()): continue;
 			var material = VMTLoader.get_material(path.to_lower());
 			if not material: continue;
 			materials.append(material);
+			found = true
+			break
+		if not found:
+			var path = VMFUtils.normalize_path(tex.name);
+			if VMTLoader.has_material(path.to_lower()):
+				var material = VMTLoader.get_material(path.to_lower());
+				if material:
+					materials.append(material);
 
 	var surfaces = mesh_instance.mesh.get_surface_count();
 	var skin_id = 0;

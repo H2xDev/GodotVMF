@@ -455,9 +455,9 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.Z
 				var sg := -1 if side.smoothing_groups == 0 else side.smoothing_groups;
 
 				sf.set_normal(Vector3(normal.x, normal.z, -normal.y));
-				sf.set_color(Color(1, 1, 1));
+				sf.set_color(Color(0, 0, 0));
 				sf.set_smooth_group(sg);
-	
+
 				for v: Vector3 in side.vertices:
 					sf.set_uv(side.get_uv(v));
 					sf.add_vertex(Vector3(v.x, v.z, -v.y) * import_scale - offset);
