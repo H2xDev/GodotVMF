@@ -74,7 +74,8 @@ func _ready():
 	if Engine.is_editor_hint():
 		return;
 
-	if entity.get("targetname", null): add_named_entity(entity.targetname, self);
+	var _tn = entity.get("targetname", null);
+	if _tn != null: add_named_entity(str(_tn), self);
 
 	parse_connections();
 
@@ -97,8 +98,9 @@ func _entity_pre_setup(ent: VMFEntity) -> void:
 	self.transform = get_entity_transform(ent);
 	self.enabled = ent.data.get("StartDisabled", 0) == 0;
 
-	if ent.data.get("targetname", null):
-		add_named_entity(ent.data.targetname, self);
+	var _tn = ent.data.get("targetname", null);
+	if _tn != null:
+		add_named_entity(str(_tn), self);
 
 	assign_name();
 
@@ -109,7 +111,7 @@ func assign_name() -> void:
 		self.name = entity.classname + '_' + str(entity.get("id", "no-id"));
 		return;
 
-	self.name = entity.targetname + '_' + str(entity.get("id", "no-id"));
+	self.name = str(entity.targetname) + '_' + str(entity.get("id", "no-id"));
 
 static func add_named_entity(_name: String, node: Node):
 	var group_name := GROUP_PREFIX + _name;

@@ -22,4 +22,3 @@ static func add_logged_file(path: String) -> void:
 static func clear() -> void:
 	cache.clear()
 	logs.clear()
-

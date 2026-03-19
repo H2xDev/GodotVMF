@@ -160,8 +160,8 @@ static func get_texture_size(side_material: String) -> Vector2:
 
 	if not texture and (material is ShaderMaterial):
 		texture = material.get_shader_parameter('basetexture');
-	
-	if not texture: 
+
+	if not texture:
 		cached_value = Vector2(default_texture_size, default_texture_size);
 		VMFCache.add_cached(cache_key, cached_value);
 		return cached_value;

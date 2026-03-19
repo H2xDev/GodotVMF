@@ -77,6 +77,11 @@ func GetExistingVMFNodes() -> Array[VMFNode]:
 	nodes.assign(get_tree().get_nodes_in_group("vmfnode_group"));
 	return nodes.filter(func(node): return not node.get_meta("instance", false));
 
+func _on_import_progress(phase: String, current: int, total: int):
+	var label = dock.get_node_or_null('ProgressBar/label');
+	if label:
+		label.text = "%s (%d/%d)" % [phase, current, total];
+
 func ReimportVMF():
 	var nodes := GetExistingVMFNodes();
 
@@ -84,7 +89,9 @@ func ReimportVMF():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes:
-		node.import_map();
+		node.import_progress.connect(_on_import_progress);
+		await node.import_map();
+		node.import_progress.disconnect(_on_import_progress);
 	dock.get_node('ProgressBar').hide();
 
 func ReimportEntities():
@@ -93,8 +100,10 @@ func ReimportEntities():
 	dock.get_node('ProgressBar').show();
 	await get_tree().create_timer(0.1).timeout
 
-	for node in nodes: 
-		node.reimport_entities();
+	for node in nodes:
+		node.import_progress.connect(_on_import_progress);
+		await node.reimport_entities();
+		node.import_progress.disconnect(_on_import_progress);
 	dock.get_node('ProgressBar').hide();
 
 func ReimportGeometry():
@@ -104,5 +113,7 @@ func ReimportGeometry():
 	await get_tree().create_timer(0.1).timeout
 
 	for node in nodes:
-		node.reimport_geometry();
+		node.import_progress.connect(_on_import_progress);
+		await node.reimport_geometry();
+		node.import_progress.disconnect(_on_import_progress);
 	dock.get_node('ProgressBar').hide();
