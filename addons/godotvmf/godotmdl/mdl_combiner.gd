@@ -164,13 +164,8 @@ func generate_collision():
 
 			var static_body: StaticBody3D = StaticBody3D.new();
 			var collision: CollisionShape3D = CollisionShape3D.new();
+			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
 
-			# FIXME: Use ConvexPolygonShape3D instead of ConcavePolygonShape3D
-			# 		 but if it used then for some models it triggers an error
-			# 		 "Failed to build convex hull godot"
-			var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new();
-
-			collision.shape = shape;
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
 			static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
 			static_body.basis *= additional_basis;
@@ -184,7 +179,9 @@ func generate_collision():
 
 				vertices.append_array([v1, v2, v3]);
 
-			collision.shape.set_faces(PackedVector3Array(vertices));
+			shape.points = PackedVector3Array(vertices);
+			collision.shape = shape;
+
 			if skeleton and skeleton.find_bone("static_body") == -1:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
