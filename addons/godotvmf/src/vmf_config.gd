@@ -97,7 +97,11 @@ class ImportConfig:
 	## If specified, the importer will use this preset for the navigation mesh
 	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset", "");
 
-static var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
+	var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
+
+		## NOTE: Support previous version of this config where this field wasn't a part of ImportConfig
+static var gameinfo_path: String:
+	get: return ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
 
 static var models: ModelsConfig:
 	get:

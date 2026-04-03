@@ -31,13 +31,13 @@ static func for_resource_import() -> void:
 ## Returns true if any resources were imported
 static func import_models(vmf_structure: VMFStructure) -> bool:
 	if not VMFConfig.models.import: return false;
-	if not "entity" in vmf_structure: return false;
+	if vmf_structure.entities.size() == 0: return false;
 
-	for entity in vmf_structure.entity:
-		if not "model" in entity: continue;
+	for entity in vmf_structure.entities:
+		if not "model" in entity.data: continue;
 		if entity.classname != "prop_static": continue;
 
-		var model_path = entity.get("model", "").to_lower().get_basename();
+		var model_path = entity.data.get("model", "").to_lower().get_basename();
 		if not model_path: continue;
 
 		var mdl_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path + ".mdl");
