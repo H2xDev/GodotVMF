@@ -17,7 +17,6 @@ func _entity_setup(e: VMFEntity):
 	if not model_instance: return;
 
 	model_instance.set_owner(get_owner());
-	model_instance.scale *= model_scale;
 	model_instance.gi_mode = GeometryInstance3D.GI_MODE_STATIC;
 
 	var fade_margin = fade_max - fade_min;
@@ -30,10 +29,18 @@ func _entity_setup(e: VMFEntity):
 	if model_instance.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED:
 		model_instance.visibility_range_end_margin = fade_margin;
 	
-	var geometry_node = get_vmfnode().geometry;
+	var geometry_node := get_vmfnode().geometry as Node3D;
+	var models_node := geometry_node.get_node_or_null("StaticProps") as Node3D;
+	
+	if not models_node:
+		models_node = Node3D.new();
+		models_node.name = "StaticProps";
+		geometry_node.add_child(models_node)
+		models_node.set_owner(geometry_node.owner);
+	
 
 	if geometry_node: 
 		var node = model_instance;
 		node.name = model_name + str(node.get_instance_id());
-		node.reparent(geometry_node)
+		node.reparent(models_node)
 		queue_free();
