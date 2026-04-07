@@ -6,7 +6,7 @@ var pp: Vector3;
 var qp: Vector3;
 
 func longer(a: Vector3, b: Vector3) -> Vector3:
-	return a if a.length() > b.length() else b;
+	return a if a.length_squared() > b.length_squared() else b;
 
 func _init(normal, center) -> void:
 	self.normal = normal;

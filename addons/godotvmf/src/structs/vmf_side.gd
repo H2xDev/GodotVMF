@@ -21,7 +21,7 @@ func _to_string() -> String:
 
 func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 	id = raw.get("id", -1);
-	material = raw.get("material", "");
+	material = raw.get("material", "").to_lower();
 	is_displacement = "dispinfo" in raw;
 	smoothing_groups = raw.get("smoothing_groups", 0);
 	solid = _solid;
@@ -89,7 +89,7 @@ func calculate_vertices() -> void:
 			raw_vertices.append(vertex as Vector3);
 
 	raw_vertices = raw_vertices.filter(func(vertex):
-		return not solid.sides.any(func(s: VMFSide): return s.plane.distance_to(vertex) > 0.001);
+		return not solid.sides.any(func(s: VMFSide): return s.plane.distance_to(vertex) > 0.01);
 	);
 
 	var side_normal: Vector3 = plane.normal;
