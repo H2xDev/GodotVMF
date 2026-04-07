@@ -25,7 +25,6 @@ func _get_static_props_node() -> Node3D:
 
 func assign_model_properties() -> void:
 	model_instance.set_owner(get_owner());
-	model_instance.scale *= model_scale;
 	model_instance.gi_mode = GeometryInstance3D.GI_MODE_STATIC;
 
 	var fade_margin = fade_max - fade_min;
