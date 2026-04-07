@@ -220,6 +220,17 @@ static func define_project_settings():
 	ProjectSettings.set_initial_value("godot_vmf/import/entity_aliases", {});
 	ProjectSettings.set_as_basic("godot_vmf/import/entity_aliases", true);
 
+	if not ProjectSettings.has_setting("godot_vmf/import/detail_props_chunk_size"):
+		ProjectSettings.set_setting("godot_vmf/import/detail_props_chunk_size", 32.0);
+	ProjectSettings.set_initial_value("godot_vmf/import/detail_props_chunk_size", 32.0);
+	ProjectSettings.set_as_basic("godot_vmf/import/detail_props_chunk_size", true);
+
+	if not ProjectSettings.has_setting("godot_vmf/import/detail_props_draw_distance"):
+		ProjectSettings.set_setting("godot_vmf/import/detail_props_draw_distance", 100.0);
+	ProjectSettings.set_initial_value("godot_vmf/import/detail_props_draw_distance", 100.0);
+	ProjectSettings.set_as_basic("godot_vmf/import/detail_props_draw_distance", true);
+	
+
 	## Models
 	if not ProjectSettings.has_setting("godot_vmf/models/import"):
 		ProjectSettings.set_setting("godot_vmf/models/import", false);
@@ -261,7 +272,7 @@ static func define_project_settings():
 		ProjectSettings.set_setting("godot_vmf/materials/default_texture_size", 512);
 	ProjectSettings.set_initial_value("godot_vmf/materials/default_texture_size", 512);
 	ProjectSettings.set_as_basic("godot_vmf/materials/default_texture_size", true);
-	
+
 	ProjectSettings.add_property_info({
 		"name": "godot_vmf/import/gameinfo_path",
 		"type": TYPE_STRING,
