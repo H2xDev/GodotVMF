@@ -255,7 +255,7 @@ static func get_movement_vector(v) -> Vector3:
 
 	return Vector3(movement.z, movement.y, movement.x);
 
-## Returns the shape of the entity that depends on solids that it have
+## Returns the shape of the entity that depends on solids that it has
 func get_entity_shape() -> Shape3D:
 	var use_convex_shape = entity.solid is Dictionary or entity.solid.size() == 1;
 

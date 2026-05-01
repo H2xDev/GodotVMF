@@ -70,6 +70,8 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
 
 		if ResourceLoader.exists(target_path + ".mdl"): continue;
+		
+		vtx_path = vtx_path if FileAccess.file_exists(vtx_path) and file_exists_in_vpk(vtx_path) else vtx_dx90_path
 
 		var found_in_game_dir := FileAccess.file_exists(mdl_path) \
 			and FileAccess.file_exists(vtx_path) \
