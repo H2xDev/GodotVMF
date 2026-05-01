@@ -40,14 +40,17 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 	var extend_corrector = Engine.get_main_loop().root.get_node_or_null("VMFExtendGeometryCorrector");
 
 	for surface_idx in range(mesh.get_surface_count()):
-		var material = mesh.surface_get_material(surface_idx);
-		var material_name = mesh.get_meta("surface_material_" + str(surface_idx), "").to_lower();
+		var material := mesh.surface_get_material(surface_idx);
+		if not material: continue;
+
+		var material_details := material.get_meta("details", {});
+		var material_name := (mesh.get_meta("surface_material_" + str(surface_idx), "") as String).to_lower();
 
 		var is_ignored = VMFConfig.materials.ignore.any(func(rx: String) -> bool: return material_name.match(rx.to_lower()));
 		if is_ignored: continue;
 
-		var compilekeys = material.get_meta("compile_keys", []) if material else [];
-		var surface_prop = (material.get_meta("surfaceprop", "default") if material else "default");
+		var compilekeys := material.get_meta("compile_keys", []) if material else [];
+		var surface_prop = material_details.get("$surfaceprop", "default");
 		
 		# NOTE: Blend textures can have more than one surface prop. In this case we'll choose the first one.
 		if surface_prop is Array:
