@@ -64,6 +64,9 @@ var geometry: Node3D:
 
 		return node;
 
+var detail_props: Node3D:
+	get: return geometry.get_node_or_null("DetailProps") if geometry else null;
+
 var entities: Node3D:
 	get: return get_node_or_null("Entities");
 
@@ -123,6 +126,15 @@ func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 
 		detail_node.add_child(mmi);
 		mmi.set_owner(_owner);
+	
+func reimport_detail_props():
+	var geometry_mesh = geometry as MeshInstance3D;
+	if not geometry_mesh: return;
+	VMFConfig.load_config();
+
+	if detail_props: detail_props.free();
+
+	generate_detail_props(geometry_mesh);
 
 func generate_shadow_mesh(raw_geometry_mesh: ArrayMesh) -> void:
 	var shadow_mesh := VMFTool.generate_shadow_mesh(raw_geometry_mesh);
