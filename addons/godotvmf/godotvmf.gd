@@ -23,6 +23,7 @@ func _enter_tree() -> void:
 	dock.get_node('ReimportGeometry').pressed.connect(ReimportGeometry);
 	dock.get_node('Docs').pressed.connect(func(): OS.shell_open("https://github.com/H2xDev/GodotVMF/wiki"));
 	dock.get_node('DiscordSupport').pressed.connect(func(): OS.shell_open("https://discord.gg/wtSK94fPxd"));
+	dock.get_node('ReimportDetailProps').pressed.connect(ReimportDetailProps);
 
 	mdl_import_plugin = preload("res://addons/godotvmf/godotmdl/import.gd").new();
 	vmt_import_plugin = preload("res://addons/godotvmf/godotvmt/vmt_import.gd").new();
@@ -95,6 +96,17 @@ func ReimportEntities():
 
 	for node in nodes: 
 		node.reimport_entities();
+	dock.get_node('ProgressBar').hide();
+
+func ReimportDetailProps():
+	var nodes := GetExistingVMFNodes();
+
+	dock.get_node('ProgressBar').show();
+	await get_tree().create_timer(0.1).timeout
+
+	for node in nodes:
+		node.reimport_detail_props();
+
 	dock.get_node('ProgressBar').hide();
 
 func ReimportGeometry():
