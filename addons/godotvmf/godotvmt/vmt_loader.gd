@@ -39,13 +39,13 @@ static func get_material_load_path(material: String) -> String:
 	if ResourceLoader.exists(path_root + ".vmt"): return path_root + ".vmt";
 	return "";
 
-static func load(path: String):
+static func load(path: String) -> Material:
 	var structure = VDFParser.parse(path, true);
 
 	var shader_name = structure.keys()[0];
 	var details = structure[shader_name];
 	var material = null; 
-	var is_blend_texture = shader_name.trim_suffix(" ") == "worldvertextransition";
+	var is_blend_material = shader_name.trim_suffix(" ") == "worldvertextransition";
 
 	# NOTE: CS:GO/L4D
 	if "insert" in details:
@@ -63,8 +63,11 @@ static func load(path: String):
 			material.shader = ResourceLoader.load(shader_path);
 		else:
 			VMFLogger.warn("Shader %s doesn't exists for %s" % [shader_path, path]);
+	elif is_blend_material:
+		material = ShaderMaterial.new();
+		material.shader = ResourceLoader.load("res://addons/godotvmf/shaders/world_vertex_transition_material.gdshader");
 	else:
-		material = StandardMaterial3D.new() if not is_blend_texture else WorldVertexTransitionMaterial.new();
+		material = StandardMaterial3D.new();
 
 
 	var transformer = VMTTransformer.new();
@@ -77,6 +80,8 @@ static func load(path: String):
 		elif shader_name == "vertexlitgeneric":
 			material.shading_mode = 2
 
+	if not material: return null;
+
 	for key in details.keys():
 		var value = details[key];
 		var is_compile_key = key.begins_with("%");
@@ -87,7 +92,7 @@ static func load(path: String):
 			compile_keys.append(key.to_lower());
 			material.set_meta("compile_keys", compile_keys);
 
-		if material is ShaderMaterial && not is_blend_texture:
+		if material is ShaderMaterial:
 			var mat: ShaderMaterial = material;
 			var uniform_index = uniforms.find_custom(func(field): return field.name == key);
 			if uniform_index == -1: continue;
