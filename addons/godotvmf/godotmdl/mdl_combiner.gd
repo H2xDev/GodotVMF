@@ -22,7 +22,10 @@ var rotation_radians: Vector3:
 
 var additional_basis: Basis:
 	get: return Basis.from_euler(rotation_radians);
-	
+
+var is_static_prop: bool:
+	get: return (mdl.header.flags & mdl.MDLFlag.STATIC_PROP) != 0;
+
 ## Apply a skin to a mesh instance
 ## directly means that skin is applied to internal mesh itself
 static func apply_skin(mesh_instance: MeshInstance3D, skin_id: int, directly: bool = false):
@@ -122,10 +125,16 @@ func create_occluder():
 		var begin_vid = 0;
 
 		st.begin(Mesh.PRIMITIVE_TRIANGLES);
-
 		for child in colliders:
-			var s: ConcavePolygonShape3D = child.shape;
-			var points = s.get_faces();
+			var s: Shape3D = child.shape;
+			var points = [];
+
+			if s is ConvexPolygonShape3D:
+				points = s.points;
+			elif s is ConcavePolygonShape3D:
+				points = s.get_faces();
+			else:
+				continue;
 
 			for p in points:
 				st.add_vertex(p);
@@ -152,11 +161,24 @@ func create_occluder():
 	mesh_instance.add_child(occluder);
 	occluder.set_owner(mesh_instance);
 
+func generate_collision_from_mesh():
+	var simplified_mesh := VMFMeshUtils.simplify_mesh(mesh_instance.mesh, options.collision_from_mesh_simplify_level).create_trimesh_shape();
+	var static_body := StaticBody3D.new();
+	var collision := CollisionShape3D.new();
+	collision.name = "collision";
+	collision.shape = simplified_mesh;
+	static_body.name = "static_body";
+	static_body.add_child(collision);
+	mesh_instance.add_child(static_body);
+	static_body.set_owner(mesh_instance);
+	collision.set_owner(mesh_instance);
+
 # TODO: For non-static props collision should be rotated by 90 degrees around y-axis
 func generate_collision():
+	if options.collision_from_mesh: return generate_collision_from_mesh();
+
 	var yup_to_zup = Basis().rotated(Vector3.RIGHT, PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
-	var is_static_prop = skeleton && skeleton.find_bone("static_prop") != -1;
 
 	var static_body: StaticBody3D = StaticBody3D.new() if is_static_prop else null;
 
@@ -218,6 +240,8 @@ func generate_collision():
 		surface_index += 1;
 
 func setup_skeleton():
+	if is_static_prop: return;
+
 	if Engine.get_version_info().minor < 4: return;
 	if is_static_body: return;
 	skeleton.basis = additional_basis.inverse();
