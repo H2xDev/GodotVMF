@@ -73,7 +73,7 @@ func _compute_vertices_from_planes() -> void:
 
 				var valid := true;
 				for s in sides:
-					if s.plane.distance_to(vertex) > 0.001:
+					if s.plane.distance_to(vertex) > 0.01:
 						valid = false;
 						break;
 				if not valid: continue;
