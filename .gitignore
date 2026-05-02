@@ -4,5 +4,3 @@
 !script_templates/
 !addons/**/*
 !script_templates/**/*
-
-addons/**/*.uid
