@@ -8,7 +8,7 @@ static var _vector2Regex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.
 static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');
 static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)');
-static var _commentRegex := RegEx.create_from_string('\\s+?\\/\\/.+');
+static var _commentRegex := RegEx.create_from_string('\\s*\\/\\/.+');
 
 ## Returns Dictionary representation of the Valve Data Format file located at [file_path].
 ## Returns null and prints an error if the file could not be read or parsed.
@@ -60,7 +60,7 @@ static func parse_value(line: String) -> Variant:
 		
 		var v = Plane(plane[0], plane[1], plane[2]);
 
-		if not v:
+		if v.normal == Vector3.ZERO:
 			push_error('ValveFormatParser: Failed to create plane from: ' + line);
 			return null;
 		
@@ -71,7 +71,7 @@ static func parse_value(line: String) -> Variant:
 		return float(line);
 	return line;
 static func define_structure(hierarchy: Array, line: String, keys_to_lower = false):
-	var _name := line.strip_edges().replace('{', '').replace('"', '');
+	var _name := line.strip_edges().replace('{', '').replace('"', '').strip_edges();
 	if keys_to_lower:
 		_name = _name.to_lower();
 	var newStruct = {};
