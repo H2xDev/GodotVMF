@@ -64,6 +64,9 @@ var geometry: Node3D:
 
 		return node;
 
+var detail_props: Node3D:
+	get: return geometry.get_node_or_null("DetailProps") if geometry else null;
+
 var entities: Node3D:
 	get: return get_node_or_null("Entities");
 
@@ -90,11 +93,62 @@ func clear_scene_groups():
 func reimport_geometry() -> void:
 	VMFConfig.load_config();
 	read_vmf();
+
+	VMFResourceManager.init_vpk_stack();
 	VMFResourceManager.import_materials(vmf_structure, is_runtime);
+	VMFResourceManager.free_vpk_stack();
 
 	await VMFResourceManager.for_resource_import();
 
 	import_geometry();
+
+func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
+	var detail_props := VMFDetailProps.generate(geometry_mesh.mesh);
+	if detail_props.size() == 0: return;
+
+	var detail_node := Node3D.new();
+
+	detail_node.name = "DetailProps";
+	detail_node.set_display_folded(true);
+	geometry_mesh.add_child(detail_node);
+	detail_node.set_owner(_owner);
+
+	for prop in detail_props:
+		var mmi := MultiMeshInstance3D.new();
+		mmi.multimesh = prop;
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON \
+			if prop.get_meta("cast_shadows", true) \
+			else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;
+
+		mmi.visibility_range_end = VMFConfig.import.detail_props_draw_distance;
+		mmi.visibility_range_end_margin = VMFConfig.import.detail_props_draw_distance / 2.0;
+		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF;
+
+		detail_node.add_child(mmi);
+		mmi.set_owner(_owner);
+	
+func reimport_detail_props():
+	var geometry_mesh = geometry as MeshInstance3D;
+	if not geometry_mesh: return;
+	VMFConfig.load_config();
+
+	if detail_props: detail_props.free();
+
+	generate_detail_props(geometry_mesh);
+
+func generate_shadow_mesh(raw_geometry_mesh: ArrayMesh) -> void:
+	var shadow_mesh := VMFTool.generate_shadow_mesh(raw_geometry_mesh);
+	var shadow_mesh_instance := MeshInstance3D.new();
+	shadow_mesh_instance.name = "ShadowMesh";
+	shadow_mesh_instance.mesh = shadow_mesh;
+	shadow_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	geometry.add_child(shadow_mesh_instance);
+	shadow_mesh_instance.set_owner(_owner);
+
+func unwrap_lightmap(geometry_mesh: MeshInstance3D) -> void:
+	var texel_size = VMFConfig.import.lightmap_texel_size;
+	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
+		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
 
 func import_geometry() -> void:
 	var _t := Time.get_ticks_msec();
@@ -116,27 +170,22 @@ func import_geometry() -> void:
 	geometry_mesh.set_owner(_owner);
 
 	var transform = geometry_mesh.global_transform;
-	var texel_size = VMFConfig.import.lightmap_texel_size;
-
 	geometry_mesh.mesh = mesh;
 
 	VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
 	save_collision_file();
-
-	if not get_meta("instance", false):
-		generate_navmesh(geometry_mesh);
-
-	geometry_mesh.mesh = VMFTool.cleanup_mesh(geometry_mesh.mesh);
-
-	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
-		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
-
-	geometry_mesh.mesh = save_geometry_file(geometry_mesh.mesh);
+	generate_navmesh(geometry_mesh);
+	generate_shadow_mesh(geometry_mesh.mesh);
+	cleanup_geometry(geometry_mesh);
+	generate_detail_props(geometry_mesh);
+	unwrap_lightmap(geometry_mesh);
+	save_geometry_file(geometry_mesh);
 
 	VMFLogger.log("import_geometry took %d ms" % (Time.get_ticks_msec() - _t));
 
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
+	if get_meta("instance", false): return;
 
 	var navreg := NavigationRegion3D.new();
 
@@ -165,8 +214,12 @@ func generate_navmesh(geometry_mesh: MeshInstance3D):
 
 	navreg.bake_navigation_mesh.call_deferred();
 
-func save_geometry_file(target_mesh: Mesh):
-	if not save_geometry: return target_mesh;
+func cleanup_geometry(target_mesh_instance: MeshInstance3D) -> void:
+	target_mesh_instance.mesh = VMFTool.cleanup_mesh(target_mesh_instance.mesh);
+
+func save_geometry_file(target_mesh_instance: MeshInstance3D) -> void:
+	var target_mesh: Mesh = target_mesh_instance.mesh;
+	if not save_geometry: return;
 	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.import.geometry_folder, _vmf_identifer()];
 	
 	if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
@@ -178,7 +231,7 @@ func save_geometry_file(target_mesh: Mesh):
 		return;
 	
 	target_mesh.take_over_path(resource_path);
-	return target_mesh;
+	target_mesh_instance.mesh = load(resource_path);
 
 func save_collision_file() -> void:
 	if save_collision == false: return;
@@ -257,6 +310,14 @@ func reset_entities_node():
 
 func reimport_entities():
 	read_vmf();
+
+	VMFResourceManager.init_vpk_stack();
+	VMFResourceManager.import_materials(vmf_structure, is_runtime);
+	VMFResourceManager.import_models(vmf_structure);
+	VMFResourceManager.free_vpk_stack();
+
+	await VMFResourceManager.for_resource_import();
+
 	import_entities();
 
 func import_entities() -> void:
@@ -297,8 +358,10 @@ func import_map() -> void:
 	clear_scene_groups();
 	read_vmf();
 
+	VMFResourceManager.init_vpk_stack();
 	VMFResourceManager.import_materials(vmf_structure, is_runtime);
 	VMFResourceManager.import_models(vmf_structure);
+	VMFResourceManager.free_vpk_stack();
 
 	await VMFResourceManager.for_resource_import();
 

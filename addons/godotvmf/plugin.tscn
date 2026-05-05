@@ -1,6 +1,12 @@
 [gd_scene format=3 uid="uid://d2ikk3rylrg4r"]
 
-[node name="Plugin" type="HBoxContainer"]
+[ext_resource type="Texture2D" uid="uid://bjqrp2xglwigg" path="res://addons/godotvmf/icons/full.png" id="1_51cpy"]
+[ext_resource type="Texture2D" uid="uid://5t8xfn8s1b42" path="res://addons/godotvmf/icons/entities.png" id="2_1uylb"]
+[ext_resource type="Texture2D" uid="uid://1qin3e0fu440" path="res://addons/godotvmf/icons/geometry.png" id="3_f1fjy"]
+[ext_resource type="Texture2D" uid="uid://di4shis6ksy0d" path="res://addons/godotvmf/icons/detailprop.png" id="4_f1fjy"]
+[ext_resource type="Texture2D" uid="uid://dr1cxxpaorsnn" path="res://addons/godotvmf/icons/discord.png" id="5_2stca"]
+
+[node name="Plugin" type="HBoxContainer" unique_id=1189765496]
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
@@ -12,52 +18,79 @@ size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 10
 
-[node name="Label" type="Button" parent="."]
+[node name="Label" type="Button" parent="." unique_id=1664938702]
 layout_mode = 2
 size_flags_horizontal = 0
 disabled = true
 text = "GodotVMF:"
 flat = true
 
-[node name="ReimportVMF" type="Button" parent="."]
+[node name="ReimportVMF" type="Button" parent="." unique_id=777385769]
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-text = "Full"
+tooltip_text = "Import everything"
+icon = ExtResource("1_51cpy")
 flat = true
+expand_icon = true
 
-[node name="ReimportEntities" type="Button" parent="."]
+[node name="ReimportEntities" type="Button" parent="." unique_id=1044169889]
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-text = "Entities"
+tooltip_text = "Import entities only"
+icon = ExtResource("2_1uylb")
 flat = true
+icon_alignment = 1
+expand_icon = true
 
-[node name="ReimportGeometry" type="Button" parent="."]
+[node name="ReimportGeometry" type="Button" parent="." unique_id=584470251]
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-text = "Geometry"
+tooltip_text = "Import geometry only
+"
+icon = ExtResource("3_f1fjy")
 flat = true
+icon_alignment = 1
+expand_icon = true
 
-[node name="VSeparator" type="VSeparator" parent="."]
+[node name="ReimportDetailProps" type="Button" parent="." unique_id=1750751317]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+tooltip_text = "Import geometry only
+"
+icon = ExtResource("4_f1fjy")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="VSeparator" type="VSeparator" parent="." unique_id=551191452]
 layout_mode = 2
 
-[node name="Docs" type="Button" parent="."]
+[node name="Docs" type="Button" parent="." unique_id=2116350026]
 layout_mode = 2
 text = "Docs"
 flat = true
+icon_alignment = 1
+expand_icon = true
 
-[node name="VSeparator2" type="VSeparator" parent="."]
+[node name="VSeparator2" type="VSeparator" parent="." unique_id=848749026]
 layout_mode = 2
 
-[node name="DiscordSupport" type="Button" parent="."]
+[node name="DiscordSupport" type="Button" parent="." unique_id=1436039780]
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-text = "Support In Discord"
+tooltip_text = "Support In Discord"
+icon = ExtResource("5_2stca")
 flat = true
+expand_icon = true
 
-[node name="ProgressBar" type="HBoxContainer" parent="."]
+[node name="ProgressBar" type="HBoxContainer" parent="." unique_id=1489779559]
 visible = false
 layout_mode = 2
 
-[node name="VSeparator2" type="VSeparator" parent="ProgressBar"]
+[node name="VSeparator2" type="VSeparator" parent="ProgressBar" unique_id=1370242883]
 layout_mode = 2
 
-[node name="label" type="Button" parent="ProgressBar"]
+[node name="label" type="Button" parent="ProgressBar" unique_id=1755800943]
 layout_mode = 2
 size_flags_horizontal = 0
 disabled = true

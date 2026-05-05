@@ -11,28 +11,32 @@
 <a href="https://godotengine.org/asset-library/asset/2605" target="_blank">
 <img src="https://img.shields.io/badge/asset_library-%23EEEEEE.svg?style=for-the-badge&logo=godot-engine" alt="Godot Asset Library"></a>
 
-<a href="https://store-beta.godotengine.org/asset/h2xdev/godotvmf" target="_blank">
+<a href="https://store.godotengine.org/asset/h2xdev/godotvmf" target="_blank">
 <img src="https://img.shields.io/badge/asset_store-%23333333.svg?style=for-the-badge&logo=godot-engine&logoColor=%23ffffff" alt="Godot Asset Store"></a>
 </p>
 
 ## Description
-An importer of [VMF files](https://developer.valvesoftware.com/wiki/VMF_(Valve_Map_Format)) into [Godot Engine](https://godotengine.org/).
-
-Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it supports precised vertex data.
+An asset pipeline bridge between [Source Engine](https://developer.valvesoftware.com/wiki/Source) and Godot Engine. Allows to import VMF maps, MDLs, VTF and VMT from Source Engine games into Godot Engine.
+Highly recommended to use it with [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/).
 
 ### Features
-- Brushes geometry import (including UVs, materials IDs and smoothing groups)
+- VMF geometry import
 - Instances support
 - Native MDL support
 - Native VMT support
-- Native VTF support (only DXT1, DXT3, DXT5 supported)
+- Native VTF support
+    - DXT1, DXT3, DXT5
+    - RGB888, RGBA8888, BGR888, ABGR8888
+    - I8, IA88
+- Godot materials/textures export to VMT/VTF (see [here](https://github.com/h2xdev/godotvmf/wiki/materials))
 - Displacements import (with vertex data)
-	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
+	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/world_vertex_transition_material.gdshader)
 - Entities support
-- Hammer's Input/Output  system support
+- Hammer's Input/Output system support
 - Surface props support
-- Material's compile properties support
+- Detail props generation (via `$detailprop` in VMT)
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
+- Import from VPK support
 
 <img src="https://github.com/user-attachments/assets/21084c3e-3530-45e5-8e05-d669d2a3ecf1" width="100%" />
 
@@ -55,12 +59,11 @@ Or for those who just want to port their map from Source Engine to Godot and see
 - [Vampire Bloodlines map example](https://www.youtube.com/watch?v=dV3nllCZYNM)  by Rendara
 - [SurfsUp](https://store.steampowered.com/app/3454830/SurfsUp) by [@bearlikelion](https://github.com/bearlikelion)
 - [Team Fortress Jumper](https://github.com/Mickeon/team-fortress-jumper) by [Mickeon](https://github.com/Mickeon)
+- [Cirno! Lifts a Boulder](https://store.steampowered.com/app/4173110/Cirno_Lifts_a_Boulder/) by [fluuury](https://x.com/fluuury)
 
 ## Known issues
-- Extraction of materials and models from VPKs is not supported
-- Some of imported models may have wrong orientation
+- Non-static models or their collision may have wrong orientation
     - Use `Additional Rotation` property in the MDL import options
-- Avoid importing a big bunch of models/materials at once it may cause the engine crash or import freeze. There's some issue with threaded import in the engine.
 
 ## Legality of use
 If you would like to use the Source Engine SDK or other Valve Developer Tools for commercial use, please contact Valve at sourceengine@valvesoftware.com. There shouldn’t be any issues if you’re using it for non-commercial projects.  
@@ -69,13 +72,6 @@ If you would like to use the Source Engine SDK or other Valve Developer Tools fo
 If you have some ideas, suggestions regarding to quality or solutions of the problems above, feel free to contribute!
 - If you've added a new feature please add the relevant documentation.
 - Add yourself to the contributors section below
-
-### How to test the addon after adding new features or fixing some bugs
-1. Install any of Source Engine Games (L4D, HL2, TF2)
-2. Unpack all textures and models from VPKs
-3. Decompile most complex maps
-4. Try to import decompiled maps in Godot
-5. Check for errors if they appear
 
 ## Credits
 [H2xDev](https://github.com/H2xDev) - main contributor  
@@ -89,6 +85,8 @@ If you have some ideas, suggestions regarding to quality or solutions of the pro
 [ckaiser](https://github.com/ckaiser)
 [jamop4](https://github.com/jamop4)
 [Catperson6](https://github.com/catperson6real-dev)
+[Withaust](https://github.com/Withaust)
+[Asrael](https://github.com/asraeldragon)
 
 ## License
 MIT

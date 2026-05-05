@@ -68,9 +68,9 @@ func get_color(x: float, y: float) -> Color:
 	var index = y + x * verts_count;
 
 	if alphas.size() == 0:
-		return Color8(255, 0, 0);
+		return Color8(0, 0, 0);
 
-	return Color8(int(alphas[index]), 0, 0);
+	return Color8(255 - int(alphas[index]), 0, 0);
 
 func get_vertices() -> Array[Vector3]:
 	if side.vertices.size() < 3:

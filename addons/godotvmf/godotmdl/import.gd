@@ -35,6 +35,18 @@ func _get_import_options(str, int): return [
 		type = TYPE_BOOL,
 	},
 	{
+		name = "collision_from_mesh",
+		description = "Creates a collision model from the mesh itself, not from PHY file",
+		default_value = false,
+		type = TYPE_BOOL,
+	},
+	{
+		name = "collision_from_mesh_simplify_level",
+		description = "Specifies how simple the collision mesh will be. 1.0 - most simple, 0.0 - original mesh",
+		default_value = 1.0,
+		type = TYPE_FLOAT,
+	},
+	{
 		name = "generate_lods",
 		default_value = true,
 		type = TYPE_BOOL,
