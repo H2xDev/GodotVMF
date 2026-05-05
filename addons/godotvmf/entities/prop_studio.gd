@@ -28,6 +28,7 @@ func _entity_setup(_entity: VMFEntity) -> void:
 
 			VMFLogger.warn("Model not found: " + model_path);
 			VMFCache.add_logged_file(model);
+			return;
 
 		model_scene = ResourceLoader.load(model_path) as PackedScene;
 		VMFCache.add_cached(model, model_scene);

@@ -11,6 +11,9 @@ var vtx: VTXReader;
 var vvd: VVDReader;
 var phy: PHYReader;
 
+var is_static_body: bool:
+	get: return (mdl.header.flags & mdl.MDLFlag.STATIC_PROP) != 0;
+
 var scale: float:
 	get: return options.scale if not options.use_global_scale else VMFConfig.import.scale;
 
@@ -157,17 +160,25 @@ func generate_collision():
 	var surface_index = 0;
 	for surface in phy.surfaces:
 		var solid_index = 0;
+		var static_body: StaticBody3D;
 
 		for solid in surface.solids:
 			# NOTE: Skip the last solid since it's a fullbody collision shape
 			if solid_index == surface.solids.size() - 1 and surface.solids.size() > 1: break;
 
-			var static_body: StaticBody3D = StaticBody3D.new();
+			if not is_static_body:
+				static_body = StaticBody3D.new();
+				static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
+			else:
+				var is_new_static_body = static_body == null;
+				static_body = StaticBody3D.new() if not static_body else static_body;
+				if is_new_static_body:
+					static_body.name = "static_body";
+
 			var collision: CollisionShape3D = CollisionShape3D.new();
 			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
 
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
-			static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
 			static_body.basis *= additional_basis;
 
 			var vertices = [];
@@ -182,7 +193,7 @@ func generate_collision():
 			shape.points = PackedVector3Array(vertices);
 			collision.shape = shape;
 
-			if skeleton and skeleton.find_bone("static_body") == -1:
+			if not is_static_body:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
 				bone_attachment.bone_idx = max(0, solid.bone_index - 1);
@@ -204,6 +215,7 @@ func generate_collision():
 
 func setup_skeleton():
 	if Engine.get_version_info().minor < 4: return;
+	if is_static_body: return;
 	skeleton.basis = additional_basis.inverse();
 
 	for bone in mdl.bones:
