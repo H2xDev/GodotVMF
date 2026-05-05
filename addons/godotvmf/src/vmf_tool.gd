@@ -142,6 +142,10 @@ static func remove_merged_faces(brush_a: VMFSolid, brushes: Array[VMFSolid]) -> 
 	for brush_b in brushes:
 		if brush_a == brush_b: continue;
 
+		if brush_a.max.x < brush_b.min.x or brush_b.max.x < brush_a.min.x: continue;
+		if brush_a.max.y < brush_b.min.y or brush_b.max.y < brush_a.min.y: continue;
+		if brush_a.max.z < brush_b.min.z or brush_b.max.z < brush_a.min.z: continue;
+
 		for side_a in brush_a.sides:
 			var a_removed = false;
 

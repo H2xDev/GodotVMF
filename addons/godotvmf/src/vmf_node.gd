@@ -97,6 +97,8 @@ func reimport_geometry() -> void:
 	import_geometry();
 
 func import_geometry() -> void:
+	var _t := Time.get_ticks_msec();
+
 	if navmesh: navmesh.free();
 	if geometry: geometry.free();
 
@@ -130,6 +132,8 @@ func import_geometry() -> void:
 		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
 
 	geometry_mesh.mesh = save_geometry_file(geometry_mesh.mesh);
+
+	VMFLogger.log("import_geometry took %d ms" % (Time.get_ticks_msec() - _t));
 
 func generate_navmesh(geometry_mesh: MeshInstance3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
