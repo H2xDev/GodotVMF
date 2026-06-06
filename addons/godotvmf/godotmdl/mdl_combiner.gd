@@ -156,11 +156,11 @@ func create_occluder():
 func generate_collision():
 	var yup_to_zup = Basis().rotated(Vector3.RIGHT, PI / 2);
 	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
+	var static_body: StaticBody3D;
 
 	var surface_index = 0;
 	for surface in phy.surfaces:
 		var solid_index = 0;
-		var static_body: StaticBody3D;
 
 		for solid in surface.solids:
 			# NOTE: Skip the last solid since it's a fullbody collision shape

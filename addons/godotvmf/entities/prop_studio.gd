@@ -37,7 +37,10 @@ func _entity_setup(_entity: VMFEntity) -> void:
 			VMFLogger.error("Failed to load model scene: " + model_path);
 			return;
 
-	var instance := model_scene.instantiate(PackedScene.GEN_EDIT_STATE_MAIN_INHERITED);
+	var edit_state := 0 if not Engine.is_editor_hint() \
+		else PackedScene.GEN_EDIT_STATE_MAIN_INHERITED;
+
+	var instance := model_scene.instantiate(edit_state);
 	instance.name = "model";
 	instance.scale *= model_scale;
 
