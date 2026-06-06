@@ -2,7 +2,7 @@
 class_name func_detail extends VMFEntityNode
 
 func _entity_setup(entity: VMFEntity):
-	var mesh = get_mesh(true, false);
+	var mesh = get_mesh(true, false, Vector3.ZERO);
 
 	if !mesh or mesh.get_surface_count() == 0:
 		queue_free();
