@@ -207,7 +207,7 @@ func trigger_output(output) -> void:
 		emit_signal(output);
 
 ## Returns mesh of the entity
-func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
+func get_mesh(cleanup = true, lods = true, offset: Vector3 = global_position) -> ArrayMesh:
 	if not has_solid: return null;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
@@ -217,9 +217,9 @@ func get_mesh(cleanup = true, lods = true) -> ArrayMesh:
 		'world': { 'solid': solids },
 	});
 	
-	var mesh = VMFTool.cleanup_mesh(VMFTool.create_mesh(struct, global_position)) \
+	var mesh = VMFTool.cleanup_mesh(VMFTool.create_mesh(struct, offset)) \
 			if cleanup \
-			else VMFTool.create_mesh(struct, global_position);
+			else VMFTool.create_mesh(struct, offset);
 
 	if not mesh: return null;
 
