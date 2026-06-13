@@ -8,9 +8,10 @@ func _entity_setup(entity: VMFEntity):
 		queue_free();
 		return;
 
-	var unwrap_err = mesh.lightmap_unwrap(global_transform, config.import.lightmap_texel_size);
-	if unwrap_err != OK:
-		VMFLogger.warn("func_detail %s: lightmap_unwrap failed (%d), skipping UV2" % [entity.id, unwrap_err]);
+	if config.import.generate_lightmap_uv2:
+		var unwrap_err = mesh.lightmap_unwrap(global_transform, config.import.lightmap_texel_size);
+		if unwrap_err != OK:
+			VMFLogger.warn("func_detail %s: lightmap_unwrap failed (%d), skipping UV2" % [entity.id, unwrap_err]);
 
 	$MeshInstance3D.cast_shadow = entity.data.get("disableshadows", 0) == 0;
 	$MeshInstance3D.set_mesh(mesh);
