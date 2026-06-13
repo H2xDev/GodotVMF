@@ -120,8 +120,9 @@ func import_geometry() -> void:
 
 	geometry_mesh.mesh = mesh;
 
-	VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
-	save_collision_file();
+	if VMFConfig.import.generate_collision: 
+		VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
+		save_collision_file();
 
 	if not get_meta("instance", false):
 		generate_navmesh(geometry_mesh);
