@@ -22,6 +22,9 @@ static func init_vpk_stack() -> void:
 	if not VMFConfig.models.import and VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING: return;
 	vpk_stack = VPKStack.create(VMFConfig.gameinfo_path);
 
+	for path in VMFConfig.import.additional_import_paths:
+		vpk_stack.append(path);
+
 static func free_vpk_stack() -> void:
 	if vpk_stack:
 		vpk_stack.free_vpks();
