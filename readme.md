@@ -19,6 +19,10 @@
 An asset pipeline bridge between [Source Engine](https://developer.valvesoftware.com/wiki/Source) and Godot Engine. Allows to import VMF maps, MDLs, VTF and VMT from Source Engine games into Godot Engine.
 Highly recommended to use it with [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/).
 
+<p align="center">
+	<img width="100%" alt="Hammer Editior - Godot Engine Comparison" src="https://github.com/user-attachments/assets/4fc48464-a459-42e5-902a-3645c11a24b3" />
+</p>
+
 ### Features
 - VMF geometry import
 - Instances support
@@ -38,7 +42,6 @@ Highly recommended to use it with [Hammer++](https://ficool2.github.io/HammerPlu
 - FGD generator that compiles a FGD file based on source code of implemented entities in GDScript (see [here](https://github.com/H2xDev/GodotVMF/wiki/FGD-Generation))
 - Import from VPK support
 
-<img src="https://github.com/user-attachments/assets/21084c3e-3530-45e5-8e05-d669d2a3ecf1" width="100%" />
 
 ## Why?
 We with my friend [Ambiabstract](https://github.com/Ambiabstract) did not find a convenient plugin for us to create levels for Godot and so we decided to use our favorite and familiar editor :)
