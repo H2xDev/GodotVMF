@@ -27,6 +27,12 @@ func bumpmap(material: Material, value: Variant):
 	if "normal_enabled" in material:
 		material.normal_enabled = true;
 
+func normalmap(material: Material, value: Variant):
+	if "normal_texture" in material:
+		material.set("normal_texture", VTFLoader.get_texture(value));
+	if "normal_enabled" in material:
+		material.normal_enabled = true;
+
 func bumpmap2(material: Material, value: Variant):
 	if "normal_texture2" in material:
 		material.set("normal_texture2", VTFLoader.get_texture(value));
