@@ -54,7 +54,7 @@ static func apply_skin(mesh_instance: MeshInstance3D, skin_id: int, directly: bo
 		else:
 			mesh_instance.set_surface_override_material(surface_idx, materials[surface_idx]);
 
-func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary):
+func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, ani: ANIReader, options: Dictionary):
 	self.options = options;
 	self.mdl = mdl;
 	self.vtx = vtx;
@@ -68,6 +68,8 @@ func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, optio
 	generate_collision();
 	create_occluder();
 	assign_materials();
+
+	if ani: add_animations(ani.library);
 
 func get_model_transform_basis() -> Basis:
 	if is_static_body:
@@ -369,3 +371,13 @@ func generate_lods():
 		mesh.set_meta(meta, mesh.get_meta(meta));
 
 	mesh_instance.set_mesh(mesh);
+
+func add_animations(library: AnimationLibrary):
+	if not library or library.get_animation_list().is_empty(): return;
+	
+	var anim_player := AnimationPlayer.new();
+	anim_player.name = "animation_player";
+	anim_player.add_animation_library("", library);
+	
+	mesh_instance.add_child(anim_player);
+	anim_player.set_owner(mesh_instance);

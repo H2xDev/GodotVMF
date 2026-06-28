@@ -497,7 +497,7 @@ func _init(source_path: String):
 	_read_body_parts();
 	_read_skin_families();
 
-	file.close();
+func close(): file.close();
 
 func _read_skin_families():
 	file.seek(header.skin_offset);
