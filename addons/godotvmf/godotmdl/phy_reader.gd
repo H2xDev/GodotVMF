@@ -1,12 +1,13 @@
 class_name PHYReader extends RefCounted
 
+
 class PHYHeader:
 	static var scheme:
 		get: return {
-		size 											= ByteReader.Type.INT,
-		id 												= ByteReader.Type.INT,
-		solid_count 									= ByteReader.Type.INT,
-		checksum 										= ByteReader.Type.INT,
+		size											= ByteReader.Type.INT,
+		id												= ByteReader.Type.INT,
+		solid_count										= ByteReader.Type.INT,
+		checksum										= ByteReader.Type.INT,
 	};
 
 	var size: int;
@@ -22,15 +23,15 @@ class PHYHeader:
 class PHYSurfaceHeader:
 	static var scheme:
 		get: return {
-		size 											= ByteReader.Type.INT,
-		id 												= [ByteReader.Type.STRING, 4],
-		version 										= ByteReader.Type.SHORT,
-		model_type 										= ByteReader.Type.SHORT,
-		surface_size 									= ByteReader.Type.INT,
-		drag_axis_areas 								= ByteReader.Type.VECTOR3,
-		axis_map_size 									= ByteReader.Type.INT,
-		unused1 										= [ByteReader.Type.INT, 11],
-		ivps 											= [ByteReader.Type.STRING, 4],
+		size											= ByteReader.Type.INT,
+		id												= [ByteReader.Type.STRING, 4],
+		version											= ByteReader.Type.SHORT,
+		model_type										= ByteReader.Type.SHORT,
+		surface_size									= ByteReader.Type.INT,
+		drag_axis_areas									= ByteReader.Type.VECTOR3,
+		axis_map_size									= ByteReader.Type.INT,
+		unused1											= [ByteReader.Type.INT, 11],
+		ivps											= [ByteReader.Type.STRING, 4],
 	};	
 
 	var size: int;
@@ -54,13 +55,13 @@ class PHYSurfaceHeader:
 class PHYLegacySurfaceHeader:
 	static var scheme:
 		get: return {
-		mass_center 									= ByteReader.Type.VECTOR3,
-		rotation_inertia 								= ByteReader.Type.VECTOR3,
-		upper_limit_radius 								= ByteReader.Type.FLOAT,
-		max_deviation 									= ByteReader.Type.INT,
-		byte_size 										= ByteReader.Type.INT,
-		dummy 											= [ByteReader.Type.INT, 2],
-		ivps 											= [ByteReader.Type.STRING, 4],
+		mass_center										= ByteReader.Type.VECTOR3,
+		rotation_inertia								= ByteReader.Type.VECTOR3,
+		upper_limit_radius								= ByteReader.Type.FLOAT,
+		max_deviation									= ByteReader.Type.INT,
+		byte_size										= ByteReader.Type.INT,
+		dummy											= [ByteReader.Type.INT, 2],
+		ivps											= [ByteReader.Type.STRING, 4],
 	};
 
 	var mass_center: Vector3;
@@ -80,10 +81,10 @@ class PHYLegacySurfaceHeader:
 class PHYSolidHeader:
 	static var scheme:
 		get: return {
-		vertices_offset 								= ByteReader.Type.INT,
-		bone_index 										= ByteReader.Type.INT,
-		flags 											= ByteReader.Type.INT,
-		face_count 										= ByteReader.Type.INT,
+		vertices_offset									= ByteReader.Type.INT,
+		bone_index										= ByteReader.Type.INT,
+		flags											= ByteReader.Type.INT,
+		face_count										= ByteReader.Type.INT,
 	};
 
 	var vertices_offset: int;
@@ -104,15 +105,15 @@ class PHYSolidHeader:
 class PHYTriangleData:
 	static var scheme:
 		get: return {
-		vertex_index 									= ByteReader.Type.BYTE,
-		unused1 										= ByteReader.Type.BYTE,
-		unused2 										= ByteReader.Type.UNSIGNED_SHORT,
-		v1 												= ByteReader.Type.SHORT,
-		unused3 										= ByteReader.Type.SHORT,
-		v2 												= ByteReader.Type.SHORT,
-		unused4 										= ByteReader.Type.SHORT,
-		v3 												= ByteReader.Type.SHORT,
-		unused5 										= ByteReader.Type.SHORT,
+		vertex_index									= ByteReader.Type.BYTE,
+		unused1											= ByteReader.Type.BYTE,
+		unused2											= ByteReader.Type.UNSIGNED_SHORT,
+		v1												= ByteReader.Type.SHORT,
+		unused3											= ByteReader.Type.SHORT,
+		v2												= ByteReader.Type.SHORT,
+		unused4											= ByteReader.Type.SHORT,
+		v3												= ByteReader.Type.SHORT,
+		unused5											= ByteReader.Type.SHORT,
 	};
 
 	var vertex_index: int;
@@ -135,8 +136,42 @@ class PHYTriangleData:
 var header: PHYHeader;
 var surfaces: Array[PHYSurfaceHeader] = [];
 var legacy_surfaces: Array[PHYLegacySurfaceHeader] = [];
+var mdl: MDLReader;
+var solid_count: int = 0; ## Somethimes the info the header is wrong so we'll count the solids count manually :C (airboat.mdl)
 
-func _init(source_file: String):
+const TO_INCHES = 39.3700787402;
+const ROT_X_NEG90		   := Basis(Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(0,  1, 0))
+const ROT_X_POS90_FLIP_Y   := Basis(Vector3(1, 0, 0), Vector3(0, 0,  1), Vector3(0,  1, 0))
+const ROT_Y_NEG90_FLIP_Y   := Basis(Vector3(0, 0, 1), Vector3(0, -1, 0), Vector3(-1, 0, 0))
+const ROT_XZ := Basis(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0))
+
+## Method to convert physics vertices to Source Engine's coordinate system. 
+## It is different for each model, so we need to check the model's version and flags 
+## to determine how to transform the vertices.
+##
+## The formula derived through experiments and tested on models up to version 49. 
+## I hope it won't break :'(
+func transform_vertex(vec: Vector3, bone_idx: int) -> Vector3:
+	vec = vec * TO_INCHES
+
+	var bone: MDLReader.MDLBone = mdl.bones[bone_idx] if bone_idx < mdl.bones.size() else null
+	var is_autogenerated := mdl.header.flags & MDLReader.MDLFlag.AUTOGENERATED_HITBOX != 0
+
+	if mdl.is_static_prop or (mdl.header.version <= 48 and solid_count > 1):
+		return ROT_X_NEG90 * vec
+	elif mdl.header.version > 48 and is_autogenerated and solid_count > 1:
+		return ROT_X_POS90_FLIP_Y * vec
+	elif solid_count == 1 && mdl.header.version == 48:
+		return bone.pos_to_bone * (ROT_XZ * vec);
+	else:
+		return bone.pos_to_bone * (ROT_Y_NEG90_FLIP_Y * vec) \
+			if bone != null \
+			else ROT_Y_NEG90_FLIP_Y * vec;
+
+	return vec
+
+func _init(source_file: String, _mdl: MDLReader):
+	mdl = _mdl;
 	var file = FileAccess.open(source_file, FileAccess.READ);
 	if file == null: return;
 
@@ -158,6 +193,8 @@ func _init(source_file: String):
 
 		while file.get_position() < vertices_start:
 			var solid_header = ByteReader.read_by_structure(file, PHYSolidHeader) as PHYSolidHeader;
+			solid_count += 1;
+
 			vertices_start = min(solid_header.address + solid_header.vertices_offset, vertices_start);
 
 			surface_header.solids.append(solid_header);
@@ -169,11 +206,8 @@ func _init(source_file: String):
 				vertices_count = max(vertices_count, triangle_data.v1, triangle_data.v2, triangle_data.v3);
 
 		for j in range(vertices_count + 1):
-			var vertex = ByteReader._read_data(file, ByteReader.Type.VECTOR3);
-			var w = ByteReader._read_data(file, ByteReader.Type.FLOAT);
-
-			# NOTE: For some reason all collision solids are converted from inch to m. Converting them back to inch
-			vertex = Vector3(vertex.x, vertex.z, -vertex.y) / 0.0254;
+			var vertex := ByteReader._read_data(file, ByteReader.Type.VECTOR3) as Vector3;
+			var w := ByteReader._read_data(file, ByteReader.Type.FLOAT) as float;
 
 			surface_header.vertices.append(vertex);
 
@@ -181,4 +215,3 @@ func _init(source_file: String):
 
 		# NOTE: +4 means that size of header starts after the size byte
 		file.seek((surface_header.address + 4) + surface_header.size);
-

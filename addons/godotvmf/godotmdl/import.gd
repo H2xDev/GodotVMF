@@ -97,7 +97,7 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 	var mdl = MDLReader.new(mdl_path);
 	var vtx = VTXReader.new(vtx_path, mdl.header.version);
 	var vvd = VVDReader.new(vvd_path);
-	var phy = PHYReader.new(phy_path);
+	var phy = PHYReader.new(phy_path, mdl);
 
 	var model_name = mdl_path.get_file().get_basename().replace(".mdl", "");
 

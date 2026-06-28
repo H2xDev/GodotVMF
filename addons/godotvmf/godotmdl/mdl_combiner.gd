@@ -11,6 +11,19 @@ var vtx: VTXReader;
 var vvd: VVDReader;
 var phy: PHYReader;
 
+## Basis from x y z -> y z -x and rotated by 90 degrees around y-axis
+const SOURCE_TO_GODOT_DYNAMIC := Basis(
+	Vector3( -1, 0, 0),
+	Vector3( 0, 0, 1),
+	Vector3( 0, 1, 0)
+);
+
+const SOURCE_TO_GODOT_STATIC := Basis(
+	Vector3( 0, 0,-1),
+	Vector3(-1, 0, 0),
+	Vector3( 0, 1, 0)
+);
+
 var is_static_body: bool:
 	get: return (mdl.header.flags & mdl.MDLFlag.STATIC_PROP) != 0;
 
@@ -22,6 +35,9 @@ var rotation_radians: Vector3:
 
 var additional_basis: Basis:
 	get: return Basis.from_euler(rotation_radians);
+
+var mdl_version: int:
+	get: return mdl.header.version;
 
 var is_static_prop: bool:
 	get: return (mdl.header.flags & mdl.MDLFlag.STATIC_PROP) != 0;
@@ -52,6 +68,27 @@ func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, optio
 	generate_collision();
 	create_occluder();
 	assign_materials();
+
+func get_model_transform_basis() -> Basis:
+	if is_static_body:
+		return SOURCE_TO_GODOT_STATIC;
+
+	var solid_count = phy.solid_count;
+
+	if mdl.header.version == 48:
+		return SOURCE_TO_GODOT_DYNAMIC;
+
+	if (mdl.header.version == 47 && solid_count == 1) or mdl.header.version >= 49:
+		return SOURCE_TO_GODOT_DYNAMIC.rotated(Vector3.RIGHT, -PI / 2);
+
+	return SOURCE_TO_GODOT_DYNAMIC;
+
+func transform_vector(vec: Vector3) -> Vector3:
+	return get_model_transform_basis() * vec * scale;
+
+func transform_basis(basis: Basis) -> Basis:
+	var target_basis := get_model_transform_basis();
+	return target_basis * basis * target_basis.inverse();
 
 func setup_mesh_instance():
 	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
@@ -96,12 +133,12 @@ func process_mesh(mesh: VTXReader.VTXMesh, body_part_index: int, model_index: in
 			var vert := vvd.vertices[vid];
 			var tangent := vvd.tangents[vid];
 
-			st.set_normal(vert.normal * additional_basis);
+			st.set_normal(transform_vector(vert.normal));
 			st.set_tangent(tangent);
 			st.set_uv(vert.uv);
 			st.set_bones(vert.bone_weight.bone_bytes);
 			st.set_weights(vert.bone_weight.weight_bytes);
-			st.add_vertex(vert.position * additional_basis.scaled(Vector3.ONE * scale));
+			st.add_vertex(transform_vector(vert.position));
 
 		for indice in strip_group.indices:
 			if indice > strip_group.vertices.size() - 1: break;
@@ -188,6 +225,17 @@ func generate_collision():
 		for solid in surface.solids:
 			# NOTE: Skip the last solid since it's a fullbody collision shape
 			if solid_index == surface.solids.size() - 1 and surface.solids.size() > 1: break;
+			var target_bone_index := mdl.bones.find_custom(func(bone: MDLReader.MDLBone): return bone.id == solid.bone_index);
+			var target_bone: MDLReader.MDLBone;
+			var bone_transform: Transform3D;
+
+			if target_bone_index != -1:
+				target_bone = mdl.bones[target_bone_index];
+				
+				bone_transform = Transform3D(
+					Basis(target_bone.quat),
+					target_bone.pos,
+				);
 
 			if not is_static_body:
 				static_body = StaticBody3D.new();
@@ -202,19 +250,19 @@ func generate_collision():
 			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
 
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
-			static_body.basis *= additional_basis;
 
 			var vertices = [];
 
 			for face in solid.faces:
-				var v1 = surface.vertices[face.v1] * additional_basis.scaled(Vector3.ONE * scale);
-				var v2 = surface.vertices[face.v2] * additional_basis.scaled(Vector3.ONE * scale);
-				var v3 = surface.vertices[face.v3] * additional_basis.scaled(Vector3.ONE * scale);
+				var v1 = transform_vector(phy.transform_vertex(surface.vertices[face.v1], solid.bone_index));
+				var v2 = transform_vector(phy.transform_vertex(surface.vertices[face.v2], solid.bone_index));
+				var v3 = transform_vector(phy.transform_vertex(surface.vertices[face.v3], solid.bone_index));
 
 				vertices.append_array([v1, v2, v3]);
 
 			shape.points = PackedVector3Array(vertices);
 			collision.shape = shape;
+
 
 			if not is_static_body:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
@@ -225,10 +273,15 @@ func generate_collision():
 				bone_attachment.set_owner(mesh_instance);
 				static_body.set_owner(mesh_instance);
 			else:
-				# NOTE: We don't need bone attachment for static bodies since they has only one bone
-				if static_body.get_parent() != mesh_instance:
-					mesh_instance.add_child(static_body);
-					static_body.set_owner(mesh_instance);
+				var bone_attachment: BoneAttachment3D = mesh_instance.get_node_or_null("static_body_attachment");
+
+				if not bone_attachment:
+					bone_attachment = BoneAttachment3D.new();
+					bone_attachment.name = "static_body_attachment"
+					mesh_instance.add_child(bone_attachment);
+					bone_attachment.set_owner(mesh_instance);
+					bone_attachment.add_child(static_body);
+				static_body.set_owner(mesh_instance);
 
 			static_body.add_child(collision);
 			collision.set_owner(mesh_instance);
@@ -238,33 +291,20 @@ func generate_collision():
 		surface_index += 1;
 
 func setup_skeleton():
-	if is_static_prop: return;
-
 	if Engine.get_version_info().minor < 4: return;
-	if is_static_body: return;
 	skeleton.basis = additional_basis.inverse();
 
 	for bone in mdl.bones:
 		skeleton.add_bone(bone.name);
 
-	for bone in mdl.bones:
+	for bone in mdl.bones as Array[MDLReader.MDLBone]:
 		if bone.parent != -1:
 			skeleton.set_bone_parent(bone.id, bone.parent);
 
-		var parent_bone = mdl.bones[bone.parent];
-		var parent_transform = parent_bone.pos_to_bone if parent_bone else Transform3D.IDENTITY;
-		var target_transform = bone.pos_to_bone * parent_transform;
-		var basis = additional_basis if bone.parent == -1 else Basis.IDENTITY;
-		var transform = Transform3D(Basis(bone.quat), bone.pos);
-		transform = transform.scaled(Vector3.ONE * scale);
+		var rest_basis = transform_basis(Basis(bone.quat));
+		var rest_transform = Transform3D(rest_basis, transform_vector(bone.pos));
 
-		skeleton.set_bone_global_pose_override(bone.id, target_transform, 1.0);
-		skeleton.set_bone_pose_position(bone.id, transform.origin);
-		skeleton.set_bone_pose_rotation(bone.id, transform.basis.get_rotation_quaternion());
-
-		var target_rest_pose = skeleton.get_bone_pose(bone.id);
-
-		skeleton.set_bone_rest(bone.id, target_rest_pose);
+		skeleton.set_bone_rest(bone.id, rest_transform);
 		skeleton.reset_bone_pose(bone.id);
 
 	var skin = skeleton.create_skin_from_rest_transforms();
@@ -278,7 +318,6 @@ func assign_materials():
 	var materials = [];
 	var skin = 0;
 	var mesh = mesh_instance.mesh;
-	
 
 	for tex in mdl.textures:
 		for dir in mdl.textureDirs:
