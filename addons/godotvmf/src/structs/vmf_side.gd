@@ -21,7 +21,7 @@ func _to_string() -> String:
 
 func _init(raw: Dictionary, _solid: VMFSolid) -> void:
 	id = raw.get("id", -1);
-	material = raw.get("material", "");
+	material = raw.get("material", "").to_lower();
 	is_displacement = "dispinfo" in raw;
 	smoothing_groups = raw.get("smoothing_groups", 0);
 	solid = _solid;

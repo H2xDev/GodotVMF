@@ -24,7 +24,8 @@ func _entity_setup(_entity: VMFEntity) -> void:
 
 	if not model_scene:
 		if not ResourceLoader.exists(model_path):
-			if VMFCache.is_file_logged(model): return
+			queue_free();
+			if VMFCache.is_file_logged(model):  return
 
 			VMFLogger.warn("Model not found: " + model_path);
 			VMFCache.add_logged_file(model);

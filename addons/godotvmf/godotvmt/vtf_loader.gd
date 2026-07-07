@@ -6,34 +6,34 @@ enum SRGBConversionMethod {
 }
 
 enum ImageFormat {
-	IMAGE_FORMAT_RGBA8888,
-	IMAGE_FORMAT_ABGR8888,
-	IMAGE_FORMAT_RGB888,
-	IMAGE_FORMAT_BGR888,
-	IMAGE_FORMAT_RGB565,
-	IMAGE_FORMAT_I8,
-	IMAGE_FORMAT_IA88,
-	IMAGE_FORMAT_P8,
-	IMAGE_FORMAT_A8,
-	IMAGE_FORMAT_RGB888_BLUESCREEN,
-	IMAGE_FORMAT_BGR888_BLUESCREEN,
-	IMAGE_FORMAT_ARGB8888,
-	IMAGE_FORMAT_BGRA8888,
-	IMAGE_FORMAT_DXT1,
-	IMAGE_FORMAT_DXT3,
-	IMAGE_FORMAT_DXT5,
-	IMAGE_FORMAT_BGRX8888,
-	IMAGE_FORMAT_BGR565,
-	IMAGE_FORMAT_BGRX5551,
-	IMAGE_FORMAT_BGRA4444,
-	IMAGE_FORMAT_DXT1_ONEBITALPHA,
-	IMAGE_FORMAT_BGRA5551,
-	IMAGE_FORMAT_UV88,
-	IMAGE_FORMAT_UVWQ8888,
-	IMAGE_FORMAT_RGBA16161616F,
-	IMAGE_FORMAT_RGBA16161616,
-	IMAGE_FORMAT_UVLX8888,
-	IMAGE_FORMAT_NONE = -1
+	RGBA8888,
+	ABGR8888,
+	RGB888,
+	BGR888,
+	RGB565,
+	I8,
+	IA88,
+	P8,
+	A8,
+	RGB888_BLUESCREEN,
+	BGR888_BLUESCREEN,
+	ARGB8888,
+	BGRA8888,
+	DXT1,
+	DXT3,
+	DXT5,
+	BGRX8888,
+	BGR565,
+	BGRX5551,
+	BGRA4444,
+	DXT1_ONEBITALPHA,
+	BGRA5551,
+	UV88,
+	UVWQ8888,
+	RGBA16161616F,
+	RGBA16161616,
+	UVLX8888,
+	NONE = -1
 }
 
 enum Flags
@@ -66,7 +66,7 @@ enum Flags
 	TEXTUREFLAGS_BORDER = 0x20000000,
 };
 
-static var formatLabels:
+static var format_labels:
 	get: return [
 	  "RGBA8888",
 	  "ABGR8888",
@@ -98,6 +98,19 @@ static var formatLabels:
 	  "NONE",
 ];
 
+static var frame_readers: Dictionary:
+	get: return {
+		ImageFormat.DXT1: VTFDXT,
+		ImageFormat.DXT3: VTFDXT,
+		ImageFormat.DXT5: VTFDXT,
+		ImageFormat.RGBA8888: VTFRGBA,
+		ImageFormat.ABGR8888: VTFRGBA,
+		ImageFormat.RGB888: VTFRGBA,
+		ImageFormat.BGR888: VTFRGBA,
+		ImageFormat.I8: VTFI8,
+		ImageFormat.IA88: VTFI8,
+	};
+
 static var format_map:
 	get: return {
 		"13": Image.Format.FORMAT_DXT1,
@@ -105,92 +118,84 @@ static var format_map:
 		"15": Image.Format.FORMAT_DXT5,
 	};
 
-static var supported_formats:
-	get: return [
-		ImageFormat.IMAGE_FORMAT_DXT1,
-		ImageFormat.IMAGE_FORMAT_DXT3,
-		ImageFormat.IMAGE_FORMAT_DXT5,
-	];
-
-var file = null;
-var signature:
+var file: FileAccess;
+var signature: String:
 	get: return seek(0).get_buffer(16).get_string_from_utf8();
 
-var version:
+var version: float:
 	get:
 		file.seek(4);
 		return float(".".join([file.get_32(), file.get_32()]));
 
-var header_size:
+var header_size: int:
 	get: return seek(12).get_32();
 
-var width:
+var width: int:
 	get:
 		var width = seek(16).get_16();
 		return width if width > 0 else 512;
 
-var height:
+var height: int:
 	get:
 		var height = seek(18).get_16();
 		return height if height > 0 else 512;
 
-var flags:
+var flags: int:
 	get: return seek(20).get_32();
 
-var frames:
+var frames: int:
 	get: return seek(24).get_16();
 
-var first_frame:
+var first_frame: int:
 	get: return seek(26).get_16();
 
-var reflectivity:
+var reflectivity: Vector3:
 	get:
 		file.seek(32);
 		return Vector3(file.get_float(), file.get_float(), file.get_float());
 
-var bump_scale:
+var bump_scale: float:
 	get: return seek(48).get_float();
 
-var hires_image_format:
+var hires_image_format: int:
 	get: return seek(52).get_32();
 
-var mipmap_count:
+var mipmap_count: int:
 	get: 
 		if not use_mipmaps: return 1;
 		return seek(56).get_8();
 
-var low_res_image_format:
+var low_res_image_format: int:
 	get: return seek(57).get_32();
 
-var low_res_image_width:
+var low_res_image_width: int:
 	get: return seek(61).get_8();
 
-var low_res_image_height:
+var low_res_image_height: int:
 	get: return seek(62).get_8();
 
-var depth:
+var depth: int:
 	get:
 		if version < 7.2: return 0;
 		return seek(63).get_8();
 
-var num_resources:
+var num_resources: int:
 	get:
 		if version < 7.3: return 0;
 		return seek(75).get_32();
 
-var use_mipmaps:
+var use_mipmaps: bool:
 	get: return not (flags & Flags.TEXTUREFLAGS_NOMIP);
 
-var frame_duration = 0;
-var path = '';
-var alpha = false;
+var frame_duration: float = 0;
+var path: String = '';
+var alpha: bool = false;
 
 var file_name: String = '':
 	get: return path.get_file().get_basename();
 
-func seek(v: int):
-	file.seek(v);
-	return file;
+var is_format_supported: bool:
+	get: return hires_image_format in frame_readers;
 
 static func create(path: String, duration: float = 0):
 	if not FileAccess.file_exists(path):
@@ -199,33 +204,37 @@ static func create(path: String, duration: float = 0):
 
 	var vtf = VTFLoader.new(path, duration);
 
-	if not supported_formats.has(vtf.hires_image_format):
-		push_warning("Texture format {0} in not supported ({1})" \
-			  .format([VTFLoader.formatLabels[vtf.hires_image_format], path.get_file()]));
+	if not vtf.is_format_supported:
+		VMFLogger.warn("Texture format {0} in not supported ({1})" \
+			  .format([VTFLoader.format_labels[vtf.hires_image_format], path.get_file()]));
 		vtf.done();
 		return null;
 
 	return vtf;
 
+func seek(v: int) -> FileAccess:
+	file.seek(v);
+	return file;
+
 func done(): file.close();
 
 func compile_texture(srgb_conversion_method: SRGBConversionMethod):
 	if width == 0 or height == 0:
-		push_error("Corrupted file: {0}".format([file.get_path()]));
+		VMFLogger.error("Corrupted file: {0}".format([file.get_path()]));
 		return null;
 
-	var tex;
+	var tex: Texture;
 
 	if frames > 1:
 		tex = AnimatedTexture.new();
 		tex.frames = frames;
 
 		for frame in range(0, frames):
-			tex.set_frame_texture(frame, _read_frame(frame, srgb_conversion_method));
+			tex.set_frame_texture(frame, read_frame(frame, srgb_conversion_method));
 			tex.set_frame_duration(frame, frame_duration);
 
 	else:
-		tex = _read_frame(0, srgb_conversion_method);
+		tex = read_frame(0, srgb_conversion_method);
 		
 	if not tex: 
 		push_error("Texture not loaded: {0}".format([path]));
@@ -236,39 +245,21 @@ func compile_texture(srgb_conversion_method: SRGBConversionMethod):
 static var normal_conversion_shader: Shader;
 static var shader_material: ShaderMaterial;
 
-func _read_frame(frame, srgb_conversion_method: SRGBConversionMethod):
-	var data = PackedByteArray();
-	var byteRead = 0;
-	var is_dxt_1 = hires_image_format == ImageFormat.IMAGE_FORMAT_DXT1;
-	var format = format_map[str(hires_image_format)];
-	var use_mipmaps = not (flags & Flags.TEXTUREFLAGS_NOMIP);
-	frame = frames - 1 - frame;
+func read_frame(frame, srgb_conversion_method: SRGBConversionMethod):
+	var reader = VTFLoader.frame_readers.get(hires_image_format, null);
 
-	for i in range(mipmap_count):
-		var mipWidth = max(1, width >> i);
-		var mipHeight = max(1, height >> i);
-
-		var multiplier = 8 if is_dxt_1 else 16;
-		var mip_size = max(1, mipWidth / 4) * max(1, mipHeight / 4) * multiplier;
-
-		file.seek(file.get_length() - byteRead - mip_size - mip_size * frame);
-		data += file.get_buffer(mip_size);
-
-		byteRead += mip_size + mip_size * (frames - 1);
-
-	var img := Image.create_from_data(width, height, use_mipmaps, format, data);
-	
-	if srgb_conversion_method == SRGBConversionMethod.DURING_IMPORT:
-		img.decompress();
-		img.compress(Image.COMPRESS_S3TC);
-
-	alpha = flags & Flags.TEXTUREFLAGS_ONEBITALPHA or flags & Flags.TEXTUREFLAGS_EIGHTBITALPHA;
-
-	if not img:
-		push_error("Corrupted file: {0}".format([file.get_path()]));
+	if not reader:
+		VMFLogger.error("Unsupported texture format: {0} in file {1}" \
+			  .format([VTFLoader.format_labels[hires_image_format], file.get_path()]));
 		return null;
 
-	return ImageTexture.create_from_image(img);
+	var tex := reader.read(self, frame, srgb_conversion_method) as Texture;
+
+	if not tex: 
+		VMFLogger.error("Corrupted file: {0}".format([file.get_path()]));
+		return null;
+
+	return tex;
 
 func _init(path, duration):
 	self.path = path;
