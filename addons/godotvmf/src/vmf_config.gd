@@ -4,10 +4,16 @@ class_name VMFConfig extends RefCounted
 const CONFIG_FILE_PATH = "res://vmf.config.json";
 
 const SETTINGS_TO_LOAD = {
-	"godot_vmf/import/gameinfo_path": {
+	"godot_vmf/import/paths/gameinfo_path": {
 		"default_value": "res://",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_GLOBAL_DIR,
+	},
+	"godot_vmf/import/paths/additional_import_paths": {
+		"default_value": [],
+		"type": TYPE_ARRAY,
+		"hint": PROPERTY_HINT_ARRAY_TYPE,
+		"hint_string": "%d/%d:" % [TYPE_STRING, PROPERTY_HINT_GLOBAL_DIR],
 	},
 	"godot_vmf/models/import": {
 		"default_value": false,
@@ -69,12 +75,12 @@ const SETTINGS_TO_LOAD = {
 		"type": TYPE_BOOL,
 		"hint": PROPERTY_HINT_NONE,
 	},
-	"godot_vmf/import/generate_navigation_mesh": {
+	"godot_vmf/import/navmesh/enabled": {
 		"default_value": false,
 		"type": TYPE_BOOL,
 		"hint": PROPERTY_HINT_NONE,
 	},
-	"godot_vmf/import/navigation_mesh_preset": {
+	"godot_vmf/import/navmesh/preset": {
 		"default_value": "",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_RESOURCE_TYPE,
@@ -86,17 +92,17 @@ const SETTINGS_TO_LOAD = {
 		"hint": PROPERTY_HINT_RANGE,
 		"hint_string": "0,100.0,0.000001",
 	},
-	"godot_vmf/import/instances_folder": {
+	"godot_vmf/import/folders/instances": {
 		"default_value": "res://instances",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_DIR,
 	},
-	"godot_vmf/import/entities_folder": {
+	"godot_vmf/import/folders/entities": {
 		"default_value": "res://entities",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_DIR,
 	},
-	"godot_vmf/import/geometry_folder": {
+	"godot_vmf/import/folders/geometry": {
 		"default_value": "res://geometry",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_DIR,
@@ -107,24 +113,42 @@ const SETTINGS_TO_LOAD = {
 		"hint": PROPERTY_HINT_DICTIONARY_TYPE,
 		"hint_string": "%d:;%d/%d:*.tscn" % [TYPE_STRING, TYPE_STRING, PROPERTY_HINT_FILE],
 	},
-	"godot_vmf/import/detail_props_chunk_size": {
+	"godot_vmf/import/detail_props/chunk_size": {
 		"default_value": 32.0,
 		"type": TYPE_FLOAT,
 		"hint": PROPERTY_HINT_RANGE,
 		"hint_string": "0,1000.0,0.000001",
 	},
-	"godot_vmf/import/detail_props_draw_distance": {
+	"godot_vmf/import/detail_props/draw_distance": {
 		"default_value": 100.0,
 		"type": TYPE_FLOAT,
 		"hint": PROPERTY_HINT_RANGE,
 		"hint_string": "0,1000.0,0.000001",
 	},
-	"godot_vmf/import/additional_import_paths": {
-		"default_value": [],
-		"type": TYPE_ARRAY,
-		"hint": PROPERTY_HINT_ARRAY_TYPE,
-		"hint_string": "%d/%d:" % [TYPE_STRING, PROPERTY_HINT_GLOBAL_DIR],
-	}
+	"godot_vmf/import/chunked_mesh/enabled": {
+		"default_value": true,
+		"description": "If true, the importer will split the level geometry into chunks for better performance. If false, the entire level geometry will be imported as a single mesh.",
+		"type": TYPE_BOOL,
+		"hint": PROPERTY_HINT_NONE,
+	},
+
+	"godot_vmf/import/chunked_mesh/chunk_size": {
+		"default_value": 32.0,
+		"description": "The size of the chunks that the level geometry will be split into. This is only used if chunked mesh feature is enabled.",
+		"type": TYPE_FLOAT,
+		"hint": PROPERTY_HINT_RANGE,
+		"hint_string": "0,1024.0,0.01",
+	},
+};
+
+const SETTINGS_TO_REMAP = {
+	"godot_vmf/import/gameinfo_path": "godot_vmf/import/paths/gameinfo_path",
+	"godot_vmf/import/instances_folder": "godot_vmf/import/folders/instances",
+	"godot_vmf/import/entities_folder": "godot_vmf/import/folders/entities",
+	"godot_vmf/import/geometry_folder": "godot_vmf/import/folders/geometry",
+	"godot_vmf/import/navigation_mesh_preset": "godot_vmf/import/navmesh/preset",
+	"godot_vmf/import/detail_props_chunk_size": "godot_vmf/import/detail_props/chunk_size",
+	"godot_vmf/import/detail_props_draw_distance": "godot_vmf/import/detail_props/draw_distance",
 };
 
 class ModelsConfig:
@@ -181,13 +205,13 @@ class ImportConfig:
 	var lightmap_size: int = ProjectSettings.get_setting("godot_vmf/import/lightmap_size", 1024);
 
 	## The path where imported instances be saved
-	var instances_folder: String = ProjectSettings.get_setting("godot_vmf/import/instances_folder", "res://instances");
+	var instances_folder: String = ProjectSettings.get_setting("godot_vmf/import/folders/instances", "res://instances");
 
-	## The path from importer will grab entities
-	var entities_folder: String = ProjectSettings.get_setting("godot_vmf/import/entities_folder", "res://entities");
+	## The path the importer will grab entities from during import
+	var entities_folder: String = ProjectSettings.get_setting("godot_vmf/import/folders/entities",  "res://entities");
 
 	## The path where imported geometry and collision be saved
-	var geometry_folder: String = ProjectSettings.get_setting("godot_vmf/import/geometry_folder", "res://geometry");
+	var geometry_folder: String = ProjectSettings.get_setting("godot_vmf/import/folders/geometry", "res://geometry");
 
 	## A dictionary of entity aliases where key is an entity name and value is a path to the scene
 	var entity_aliases: Dictionary = ProjectSettings.get_setting("godot_vmf/import/entity_aliases", {}):
@@ -195,26 +219,28 @@ class ImportConfig:
 			ProjectSettings.set_setting("godot_vmf/entity_aliases", value);
 
 	## If true, the importer will generate a navigation mesh for the level geometry
-	var use_navigation_mesh: bool = ProjectSettings.get_setting("godot_vmf/import/generate_navigation_mesh", false);
+	var use_navigation_mesh: bool = ProjectSettings.get_setting("godot_vmf/import/navmesh/enabled", false);
 
 	## If specified, the importer will use this preset for the navigation mesh
-	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navigation_mesh_preset", "");
+	var navigation_mesh_preset: String = ProjectSettings.get_setting("godot_vmf/import/navmesh/preset", "");
 
 	## Detail props are meshes instanced across the level geometry based on material metadata. 
 	## This field defines a size of one chunk of detail props. The bigger the chunk size, the less multimesh instances will be created, 
 	## but the more detail props will be in one chunk, which can lead to worse performance.
-	var detail_props_chunk_size: float = ProjectSettings.get_setting("godot_vmf/import/detail_props_chunk_size", 32.0);
+	var detail_props_chunk_size: float = ProjectSettings.get_setting("godot_vmf/import/detail_props/chunk_size", 32.0);
 
 	## The maximum distance at which detail props will be visible. This is important for performance, as rendering too many detail props at long distances can be costly.
-	var detail_props_draw_distance: float = ProjectSettings.get_setting("godot_vmf/import/detail_props_draw_distance", 100.0);
+	var detail_props_draw_distance: float = ProjectSettings.get_setting("godot_vmf/import/detail_props/draw_distance", 100.0);
 
-	var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
-
+	var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/paths/gameinfo_path", "res://")
 	var additional_import_paths: Array = ProjectSettings.get_setting("godot_vmf/import/additional_import_paths", []);
+
+	var chunked_mesh_enabled: bool = ProjectSettings.get_setting("godot_vmf/import/chunked_mesh/enabled", true);
+	var chunked_mesh_chunk_size: float = ProjectSettings.get_setting("godot_vmf/import/chunked_mesh/chunk_size", 32.0);
 
 ## NOTE: Support previous version of this config where this field wasn't a part of ImportConfig
 static var gameinfo_path: String:
-	get: return ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
+	get: return import.gameinfo_path
 
 static var models: ModelsConfig:
 	get:
@@ -257,8 +283,6 @@ static func is_dictionary_equal(a: Dictionary, b: Dictionary):
 	return true;
 
 static func update_config_field():
-	gameinfo_path = ProjectSettings.get_setting("godot_vmf/import/gameinfo_path", "res://");
-
 	import = ImportConfig.new();
 	models = ModelsConfig.new();
 	materials = MaterialsConfig.new();
@@ -283,6 +307,8 @@ static func define_project_settings():
 
 static func load_config():
 	if not Engine.is_editor_hint(): return;
+	remap_old_settings();
+
 	if not FileAccess.file_exists(CONFIG_FILE_PATH): return;
 	var file = FileAccess.open(CONFIG_FILE_PATH, FileAccess.READ);
 	var json = JSON.parse_string(file.get_as_text());
@@ -290,3 +316,12 @@ static func load_config():
 
 	assign(VMFConfig, json);
 	update_config_field();
+
+## Remap old settings to new settings if they exist in the project settings
+static func remap_old_settings():
+	for old_setting in SETTINGS_TO_REMAP:
+		if ProjectSettings.has_setting(old_setting):
+			var new_setting = SETTINGS_TO_REMAP[old_setting];
+			var value = ProjectSettings.get_setting(old_setting);
+			ProjectSettings.set_setting(new_setting, value);
+			ProjectSettings.set_setting(old_setting, null);
