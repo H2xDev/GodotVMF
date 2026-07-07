@@ -22,6 +22,9 @@ static func init_vpk_stack() -> void:
 	if not VMFConfig.models.import and VMFConfig.materials.import_mode == VMFConfig.MaterialsConfig.ImportMode.USE_EXISTING: return;
 	vpk_stack = VPKStack.create(VMFConfig.gameinfo_path);
 
+	for path in VMFConfig.import.additional_import_paths:
+		vpk_stack.append(path);
+
 static func free_vpk_stack() -> void:
 	if vpk_stack:
 		vpk_stack.free_vpks();
@@ -53,29 +56,30 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 		var model_path = entity.data.get("model", "").to_lower().get_basename();
 		if not model_path: continue;
 
-		# Game directory paths
-		var gamedir_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/" + model_path);
-		var mdl_path = VMFUtils.normalize_path(gamedir_path + ".mdl");
-		var vtx_path = VMFUtils.normalize_path(gamedir_path + ".vtx");
-		var vtx_dx90_path = VMFUtils.normalize_path(gamedir_path + ".dx90.vtx");
-		var vvd_path = VMFUtils.normalize_path(gamedir_path + ".vvd");
-		var phy_path = VMFUtils.normalize_path(gamedir_path + ".phy");
-
 		# VPK paths
 		var vpk_mdl_path = VMFUtils.normalize_path(model_path + ".mdl");
 		var vpk_vtx_path = VMFUtils.normalize_path(model_path + ".dx90.vtx");
+		var vpk_vtx_fallback_path = VMFUtils.normalize_path(model_path + ".vtx");
 		var vpk_vvd_path = VMFUtils.normalize_path(model_path + ".vvd");
 		var vpk_phy_path = VMFUtils.normalize_path(model_path + ".phy");
 
 		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
 
 		if ResourceLoader.exists(target_path + ".mdl"): continue;
-		
-		vtx_path = vtx_path if FileAccess.file_exists(vtx_path) and file_exists_in_vpk(vtx_path) else vtx_dx90_path
 
-		var found_in_game_dir := FileAccess.file_exists(mdl_path) \
-			and FileAccess.file_exists(vtx_path) \
-			and FileAccess.file_exists(vvd_path);
+		# Game directory paths
+		var mdl_path = VMFGameFolder.get_import_path(vpk_mdl_path);
+		var vtx_path = VMFGameFolder.get_import_path(vpk_vtx_path);
+		if not vtx_path:
+			vtx_path = VMFGameFolder.get_import_path(vpk_vtx_fallback_path);
+		var vvd_path = VMFGameFolder.get_import_path(vpk_vvd_path);
+		var phy_path = VMFGameFolder.get_import_path(vpk_phy_path);
+
+		var found_in_game_dir := mdl_path != "" and vtx_path != "" and vvd_path != "";
+
+		# Update vpk_vtx_path if fallback is used in VPK
+		if not file_exists_in_vpk(vpk_vtx_path) and file_exists_in_vpk(vpk_vtx_fallback_path):
+			vpk_vtx_path = vpk_vtx_fallback_path;
 
 		var found_in_vpk := file_exists_in_vpk(vpk_mdl_path) \
 			and file_exists_in_vpk(vpk_vtx_path) \
@@ -89,7 +93,7 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 			DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
 			DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
 			DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
-			if FileAccess.file_exists(phy_path): DirAccess.copy_absolute(phy_path, target_path + ".phy");
+			if phy_path != "": DirAccess.copy_absolute(phy_path, target_path + ".phy");
 			DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
 
 		elif found_in_vpk:
@@ -123,23 +127,32 @@ static func file_exists_in_vpk(vpk_file_path: String) -> bool:
 	if not vpk_stack: return false;
 	return vpk_stack.exists(vpk_file_path);
 
+static func file_exists_in_additional_dir(file_path: String) -> bool:
+	if VMFConfig.import.additional_import_paths.size() == 0: return false;
+
+	for path in VMFConfig.import.additional_import_paths:
+		var full_path = VMFUtils.normalize_path(path + "/" + file_path);
+		if FileAccess.file_exists(full_path):
+			return true;
+
+	return false;
+
 static func import_material(material: String) -> bool:
 	material = material.to_lower();
 
 	var vpk_path = "materials/" + material + ".vmt";
-	var vmt_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
+	#var vmt_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
+	var vmt_path = VMFGameFolder.get_import_path(vpk_path); ## Returns the full path to the file if it exists in any of the game folder paths, otherwise returns an empty string
 	var target_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + material + ".vmt");
 
 	if ResourceLoader.exists(target_path): return false;
 
-	# Trying to find material in game directory first, as it can be overridden by mods and thus differ from the one in VPKs
-	if FileAccess.file_exists(vmt_path):
+	if vmt_path:
 		DirAccess.make_dir_recursive_absolute(target_path.get_base_dir());
 		if DirAccess.copy_absolute(vmt_path, target_path): return false;
 
 		has_imported_resources = true;
-
-	# Trying to find material in VPKs
+	# In case the file is not found in any of game folder paths - trying to find material in VPKs
 	elif file_exists_in_vpk(vpk_path):
 		if not vpk_stack.extract(vpk_path, target_path):
 			VMFLogger.error("Failed to extract material from VPK: " + vpk_path);
@@ -153,6 +166,7 @@ static func import_material(material: String) -> bool:
 
 	return has_imported_resources;
 
+## Looks through the VMF structure and imports all materials used in solids and entities, unless they are in the ignore list.
 static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -> void:
 	var editor_interface = get_editor_interface();
 
@@ -192,12 +206,13 @@ static func import_materials(vmf_structure: VMFStructure, is_runtime := false) -
 static func import_textures(material: String) -> bool:
 	material = material.to_lower();
 
-	var target_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + material + ".vmt");
+	## Returns the full path to the file if it exists in any of the game folder paths, otherwise returns an empty string
 	var vmt_vpk_path = "materials/" + material + ".vmt";
+	var target_path = VMFGameFolder.get_import_path(vmt_vpk_path); 
 
 	var details: Dictionary = {};
 
-	if FileAccess.file_exists(target_path): 
+	if target_path:  # If the material file exists in any of the game folder paths, parse it to get the details
 		details = VDFParser.parse(target_path, true).values()[0];
 
 	elif file_exists_in_vpk(vmt_vpk_path):
@@ -219,13 +234,14 @@ static func import_textures(material: String) -> bool:
 	for key in MATERIAL_KEYS_TO_IMPORT:
 		if key not in details: continue;
 		var vpk_path = VMFUtils.normalize_path("materials/" + details[key].to_lower() + ".vtf");
-		var vtf_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + details[key].to_lower() + ".vtf");
+		## var vtf_path = VMFUtils.normalize_path(VMFConfig.gameinfo_path + "/materials/" + details[key].to_lower() + ".vtf");
+		var vtf_path = VMFGameFolder.get_import_path(vpk_path); ## Returns the full path to the file if it exists in any of the game folder paths, otherwise returns an empty string
 		var target_vtf_path = VMFUtils.normalize_path(VMFConfig.materials.target_folder + "/" + details[key].to_lower() + ".vtf");
 
 		if ResourceLoader.exists(target_vtf_path): continue;
 
 		# Trying to find texture in game directory first, as it can be overridden by mods and thus differ from the one in VPKs
-		if FileAccess.file_exists(vtf_path): 
+		if vtf_path: # If the texture file exists in any of the game folder paths, copy it to the target location
 			DirAccess.make_dir_recursive_absolute(target_vtf_path.get_base_dir());
 
 			if DirAccess.copy_absolute(vtf_path, target_vtf_path):
