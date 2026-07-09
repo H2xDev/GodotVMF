@@ -5,14 +5,14 @@ class_name VMFRuntimeController extends Node3D;
 @export var default_map_name: String = "";
 @export_dir var maps_folder: String = "res://maps";
 
-const IMPORTANT_MESSAGE = "In hammer do following steps:
+const IMPORTANT_MESSAGE = """In hammer do following steps:
 	1. Open Tools -> Options -> Build programs tab. In the \"Game Executable\" specify path to the Godot Engine launcher.
 	2. Open Run Map window (F9).
 	3. Click \"Edit\" and add new configuration.
 	4. Select the created configuration in Configurations field
 	5. Click \"New\" and add into \"Command\" field this - $game_exe
 	6. Add into \"Parameters\" field this
-	 --path $gamedir {scene_path} --vmf $file";
+	 --path $gamedir {scene_path} --vmf $file""";
 
 @export_multiline var hammer_setup: String;
 
@@ -23,11 +23,11 @@ static var instance: VMFRuntimeController;
 func kill_existing_process():
 	var pid = FileAccess.open(PROCESS_FILE, FileAccess.READ);
 	if pid:
-		var processToKill = int(pid.get_line());
+		var process_to_kill = int(pid.get_line());
 
-		if processToKill:
-			print("Killing existing process: {0}".format([pid.get_line()]));
-			OS.kill(processToKill);
+		if process_to_kill:
+			print("Killing existing process: {0}".format([process_to_kill]));
+			OS.kill(process_to_kill);
 
 		pid.close();
 
@@ -40,7 +40,7 @@ func launch_map():
 	var vmf_arg = args.find("--vmf");
 	var map_name = default_map_name;
 
-	if vmf_arg != -1:
+	if vmf_arg != -1 && vmf_arg + 1 < args.size():
 		map_name = args[vmf_arg + 1];
 	
 	var map_path = (maps_folder + "/{0}.vmf").format([map_name]);
@@ -61,7 +61,7 @@ func launch_map():
 	vmf.save_geometry = false;
 	vmf.save_collision = false;
 	vmf.is_runtime = true;
-	vmf.import_map();
+	await vmf.import_map();
 	vmf.set_owner(scene);
 
 func _ready():

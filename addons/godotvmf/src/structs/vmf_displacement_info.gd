@@ -48,6 +48,9 @@ func get_normal(x: float, y: float) -> Vector3:
 	if normals.size() == 0:
 		return Vector3.ZERO;
 
+	if index > normals.size() - 1:
+		return Vector3.ZERO;
+
 	return normals[index];
 
 func get_offset(x: float, y: float) -> Vector3:

@@ -59,18 +59,18 @@ const SETTINGS_TO_LOAD = {
 		"type": TYPE_INT,
 		"hint": PROPERTY_HINT_NONE,
 	},
-	"godot_vmf/import/scale": {
+	"godot_vmf/import/general/scale": {
 		"default_value": 0.02,
 		"type": TYPE_FLOAT,
 		"hint": PROPERTY_HINT_RANGE,
 		"hint_string": "0,100.0,0.000001",
 	},
-	"godot_vmf/import/generate_lightmap_uv2": {
+	"godot_vmf/import/general/generate_lightmap_uv2": {
 		"default_value": true,
 		"type": TYPE_BOOL,
 		"hint": PROPERTY_HINT_NONE,
 	},
-	"godot_vmf/import/generate_collision": {
+	"godot_vmf/import/general/generate_collision": {
 		"default_value": true,
 		"type": TYPE_BOOL,
 		"hint": PROPERTY_HINT_NONE,
@@ -86,7 +86,7 @@ const SETTINGS_TO_LOAD = {
 		"hint": PROPERTY_HINT_RESOURCE_TYPE,
 		"hint_string": "NavigationMesh",
 	},
-	"godot_vmf/import/lightmap_texel_size": {
+	"godot_vmf/import/general/lightmap_texel_size": {
 		"default_value": 0.2,
 		"type": TYPE_FLOAT,
 		"hint": PROPERTY_HINT_RANGE,
@@ -107,7 +107,7 @@ const SETTINGS_TO_LOAD = {
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_DIR,
 	},
-	"godot_vmf/import/entity_aliases": {
+	"godot_vmf/import/general/entity_aliases": {
 		"default_value": {},
 		"type": TYPE_DICTIONARY,
 		"hint": PROPERTY_HINT_DICTIONARY_TYPE,
@@ -125,15 +125,9 @@ const SETTINGS_TO_LOAD = {
 		"hint": PROPERTY_HINT_RANGE,
 		"hint_string": "0,1000.0,0.000001",
 	},
-	"godot_vmf/import/chunked_mesh/enabled": {
-		"default_value": true,
-		"description": "If true, the importer will split the level geometry into chunks for better performance. If false, the entire level geometry will be imported as a single mesh.",
-		"type": TYPE_BOOL,
-		"hint": PROPERTY_HINT_NONE,
-	},
 
-	"godot_vmf/import/chunked_mesh/chunk_size": {
-		"default_value": 32.0,
+	"godot_vmf/import/chunked_mesh/default_chunk_size": {
+		"default_value": 256.0,
 		"description": "The size of the chunks that the level geometry will be split into. This is only used if chunked mesh feature is enabled.",
 		"type": TYPE_FLOAT,
 		"hint": PROPERTY_HINT_RANGE,
@@ -149,6 +143,13 @@ const SETTINGS_TO_REMAP = {
 	"godot_vmf/import/navigation_mesh_preset": "godot_vmf/import/navmesh/preset",
 	"godot_vmf/import/detail_props_chunk_size": "godot_vmf/import/detail_props/chunk_size",
 	"godot_vmf/import/detail_props_draw_distance": "godot_vmf/import/detail_props/draw_distance",
+	"godot_vmf/import/chunked_mesh/chunk_size": "godot_vmf/import/chunked_mesh/default_chunk_size",
+	"godot_vmf/import/chunked_mesh/enabled": "", ## Will be removed during migration
+	"godot_vmf/import/scale": "godot_vmf/import/general/scale",
+	"godot_vmf/import/generate_lightmap_uv2": "godot_vmf/import/general/generate_lightmap_uv2",
+	"godot_vmf/import/generate_collision": "godot_vmf/import/general/generate_collision",
+	"godot_vmf/import/lightmap_texel_size": "godot_vmf/import/general/lightmap_texel_size",
+	"godot_vmf/import/entity_aliases": "godot_vmf/import/general/entity_aliases",
 };
 
 class ModelsConfig:
@@ -190,16 +191,16 @@ class MaterialsConfig:
 
 class ImportConfig:
 	## Target scale that will be applied to all imported models and maps
-	var scale: float = ProjectSettings.get_setting("godot_vmf/import/scale", 0.02);
+	var scale: float = ProjectSettings.get_setting("godot_vmf/import/general/scale", 0.02);
 
 	## If true, the importer will generate collision meshes for the level geometry
-	var generate_collision: bool = ProjectSettings.get_setting("godot_vmf/import/generate_collision", true);
+	var generate_collision: bool = ProjectSettings.get_setting("godot_vmf/import/general/generate_collision", true);
 
 	## If true, the importer will generate lightmap UV2 for the level geometry
-	var generate_lightmap_uv2: bool = ProjectSettings.get_setting("godot_vmf/import/generate_lightmap_uv2", true);
+	var generate_lightmap_uv2: bool = ProjectSettings.get_setting("godot_vmf/import/general/generate_lightmap_uv2", true);
 
 	## Texel size for lightmap 
-	var lightmap_texel_size: float = ProjectSettings.get_setting("godot_vmf/import/lightmap_texel_size", 0.2);
+	var lightmap_texel_size: float = ProjectSettings.get_setting("godot_vmf/import/general/lightmap_texel_size", 0.2);
 
 	## Lightmap texture size
 	var lightmap_size: int = ProjectSettings.get_setting("godot_vmf/import/lightmap_size", 1024);
@@ -214,7 +215,7 @@ class ImportConfig:
 	var geometry_folder: String = ProjectSettings.get_setting("godot_vmf/import/folders/geometry", "res://geometry");
 
 	## A dictionary of entity aliases where key is an entity name and value is a path to the scene
-	var entity_aliases: Dictionary = ProjectSettings.get_setting("godot_vmf/import/entity_aliases", {}):
+	var entity_aliases: Dictionary = ProjectSettings.get_setting("godot_vmf/import/general/entity_aliases", {}):
 		set(value):
 			ProjectSettings.set_setting("godot_vmf/entity_aliases", value);
 
@@ -235,8 +236,7 @@ class ImportConfig:
 	var gameinfo_path: String = ProjectSettings.get_setting("godot_vmf/import/paths/gameinfo_path", "res://")
 	var additional_import_paths: Array = ProjectSettings.get_setting("godot_vmf/import/additional_import_paths", []);
 
-	var chunked_mesh_enabled: bool = ProjectSettings.get_setting("godot_vmf/import/chunked_mesh/enabled", true);
-	var chunked_mesh_chunk_size: float = ProjectSettings.get_setting("godot_vmf/import/chunked_mesh/chunk_size", 32.0);
+	var chunked_mesh_default_size: float = ProjectSettings.get_setting("godot_vmf/import/chunked_mesh/default_chunk_size", 256.0);
 
 ## NOTE: Support previous version of this config where this field wasn't a part of ImportConfig
 static var gameinfo_path: String:
@@ -322,6 +322,9 @@ static func remap_old_settings():
 	for old_setting in SETTINGS_TO_REMAP:
 		if ProjectSettings.has_setting(old_setting):
 			var new_setting = SETTINGS_TO_REMAP[old_setting];
+			if new_setting == "":
+				ProjectSettings.set_setting(old_setting, null);
+				continue;
 			var value = ProjectSettings.get_setting(old_setting);
 			ProjectSettings.set_setting(new_setting, value);
 			ProjectSettings.set_setting(old_setting, null);

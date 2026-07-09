@@ -8,10 +8,7 @@ static func generate_shadow_mesh(source_mesh: ArrayMesh) -> ArrayMesh:
 
 	for surface_idx in range(source_mesh.get_surface_count()):
 		var material = source_mesh.surface_get_material(surface_idx);
-
-		if not material: 
-			shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
-			continue;
+		if not material: continue;
 
 		var material_compile_keys: Array = material.get_meta("compile_keys", []);
 		var is_shadowmesh := false;
@@ -28,6 +25,8 @@ static func generate_shadow_mesh(source_mesh: ArrayMesh) -> ArrayMesh:
 		if not is_shadowmesh: continue;
 
 		shadow_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, source_mesh.surface_get_arrays(surface_idx));
+	
+	if shadow_mesh.get_surface_count() == 0: return null;
 
 	return VMFUtils.merge_surfaces(shadow_mesh);
 
@@ -66,8 +65,6 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 				is_no_collision = true;
 				break;
 
-			if is_no_collision: break;
-
 			if corrector._get_nocollision_keys().has(key): 
 				is_no_collision = true;
 				break;
@@ -88,7 +85,7 @@ static func generate_collisions(mesh_instance: MeshInstance3D, physics_mask: int
 		var static_body = StaticBody3D.new();
 		var collision = CollisionShape3D.new();
 		var compilekeys = surface_props[surface_prop].get_meta("compile_keys", []);
-
+		surface_props[surface_prop] = VMFMeshUtils.simplify_mesh(surface_props[surface_prop], 0.8);
 		static_body.collision_layer = physics_mask;
 
 		for key in compilekeys:
@@ -143,7 +140,7 @@ static func cleanup_mesh(original_mesh: ArrayMesh) -> ArrayMesh:
 			if is_material_ignored: break;
 			if extend_corrector:
 				is_norender = extend_corrector._get_norender_keys().has(key);
-				break;
+				if is_norender: break;
 
 			is_norender = corrector._get_norender_keys().has(key);
 			if is_norender: break;
@@ -317,6 +314,101 @@ static func create_mesh(vmf_structure: VMFStructure, offset: Vector3 = Vector3.Z
 
 	return mesh;
 
+static func split_mesh_by_chunks(mesh: ArrayMesh, chunk_size = VMFConfig.import.chunked_mesh_default_size) -> Array:
+	var output: Array[ArrayMesh] = [];
+
+	if chunk_size <= 1.0:
+		VMFLogger.warn("Chunk size must be greater than 1.0");
+		return output;
+
+	if not mesh or mesh.get_surface_count() == 0:
+		return output;
+
+	var chunk_meshes: Dictionary = {};
+	var surface_count: int = mesh.get_surface_count();
+
+	for surface_idx in range(surface_count):
+		var arrays := mesh.surface_get_arrays(surface_idx);
+		var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array;
+		var indices := arrays[Mesh.ARRAY_INDEX] as PackedInt32Array;
+
+		if not vertices or vertices.is_empty() or not indices or indices.is_empty():
+			continue;
+
+		var material := mesh.surface_get_material(surface_idx);
+		var surface_material_name: String = mesh.get_meta("surface_material_" + str(surface_idx), "");
+
+		var src_normals := arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array;
+		var src_uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array;
+		var src_colors := arrays[Mesh.ARRAY_COLOR] as PackedColorArray;
+		var src_tangents := arrays[Mesh.ARRAY_TANGENT] as PackedFloat32Array;
+
+		# Group triangle indices by spatial chunk key
+		var chunk_triangles: Dictionary = {};
+		for i in range(0, indices.size(), 3):
+			var i0 := indices[i];
+			var i1 := indices[i + 1];
+			var i2 := indices[i + 2];
+			var centroid := (vertices[i0] + vertices[i1] + vertices[i2]) / 3.0;
+			var chunk_key := Vector3i(
+				int(floor(centroid.x / chunk_size)),
+				int(floor(centroid.y / chunk_size)),
+				int(floor(centroid.z / chunk_size))
+			);
+
+			var tri: PackedInt32Array = chunk_triangles.get(chunk_key, PackedInt32Array());
+			tri.append(i0);
+			tri.append(i1);
+			tri.append(i2);
+			chunk_triangles[chunk_key] = tri;
+
+		# Build per-chunk surfaces, remapping only the vertices used by each chunk
+		for chunk_key in chunk_triangles:
+			var tri_indices := chunk_triangles[chunk_key] as PackedInt32Array;
+			var old_to_new: Dictionary = {};
+			var new_vertices := PackedVector3Array();
+			var new_normals := PackedVector3Array();
+			var new_uvs := PackedVector2Array();
+			var new_uv2s := PackedVector2Array();
+			var new_colors := PackedColorArray();
+			var new_tangents := PackedFloat32Array();
+			var new_indices := PackedInt32Array();
+
+			for old_idx in tri_indices:
+				if not old_idx in old_to_new:
+					old_to_new[old_idx] = new_vertices.size();
+					new_vertices.append(vertices[old_idx]);
+					if src_normals: new_normals.append(src_normals[old_idx]);
+					if src_uvs: new_uvs.append(src_uvs[old_idx]);
+					if src_colors: new_colors.append(src_colors[old_idx]);
+					if src_tangents:
+						var t := old_idx * 4;
+						new_tangents.append(src_tangents[t]);
+						new_tangents.append(src_tangents[t + 1]);
+						new_tangents.append(src_tangents[t + 2]);
+						new_tangents.append(src_tangents[t + 3]);
+				new_indices.append(old_to_new[old_idx]);
+
+			var new_arrays: Array = [];
+			new_arrays.resize(Mesh.ARRAY_MAX);
+			new_arrays[Mesh.ARRAY_VERTEX] = new_vertices;
+			new_arrays[Mesh.ARRAY_INDEX] = new_indices;
+			if not new_normals.is_empty(): new_arrays[Mesh.ARRAY_NORMAL] = new_normals;
+			if not new_uvs.is_empty(): new_arrays[Mesh.ARRAY_TEX_UV] = new_uvs;
+			if not new_colors.is_empty(): new_arrays[Mesh.ARRAY_COLOR] = new_colors;
+			if not new_tangents.is_empty(): new_arrays[Mesh.ARRAY_TANGENT] = new_tangents;
+
+			if not chunk_key in chunk_meshes:
+				chunk_meshes[chunk_key] = ArrayMesh.new();
+
+			var chunk_mesh := chunk_meshes[chunk_key] as ArrayMesh;
+			var new_surface_idx := chunk_mesh.get_surface_count();
+			chunk_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, new_arrays);
+			chunk_mesh.surface_set_material(new_surface_idx, material);
+			chunk_mesh.set_meta("surface_material_" + str(new_surface_idx), surface_material_name);
+
+	return chunk_meshes.values();
+
 static func generate_lods(mesh: ArrayMesh) -> ArrayMesh:
 	if not mesh.get_surface_count(): return mesh;
 
@@ -330,6 +422,11 @@ static func generate_lods(mesh: ArrayMesh) -> ArrayMesh:
 			'surface_' + str(surface_idx)
 		);
 
-	importer_mesh.generate_lods(60, 60, []);
+	importer_mesh.generate_lods(180, -1, []);
 
-	return importer_mesh.get_mesh();
+	var result := importer_mesh.get_mesh();
+	for surface_idx in range(mesh.get_surface_count()):
+		var meta_key := "surface_material_" + str(surface_idx);
+		if mesh.has_meta(meta_key):
+			result.set_meta(meta_key, mesh.get_meta(meta_key));
+	return result;

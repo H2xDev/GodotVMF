@@ -21,6 +21,7 @@ var skin: int = 0:
 func _entity_setup(_entity: VMFEntity) -> void:
 	var model_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model);
 	var model_scene: PackedScene = VMFCache.get_cached(model);
+	var skin_prefix: String = entity.get("skin_prefix", "");
 
 	if not model_scene:
 		if not ResourceLoader.exists(model_path):
@@ -46,6 +47,19 @@ func _entity_setup(_entity: VMFEntity) -> void:
 	instance.scale *= model_scale;
 
 	MDLCombiner.apply_skin(instance, skin);
+
+	if skin_prefix != "":
+		var surface_prefix: Array = skin_prefix.split(" ");
+
+		for surface_idx in range(instance.mesh.get_surface_count()):
+			var prefix := surface_prefix[surface_idx % surface_prefix.size()] as String;
+			if prefix == "": continue;
+
+			var material_path: String = instance.get_active_material(surface_idx).resource_path.replace(config.materials.target_folder + "/", "").get_basename();
+			var new_material_path: String = material_path + "_" + prefix;
+
+			instance.set_surface_override_material(surface_idx, VMTLoader.get_material(new_material_path));
+
 
 	add_child(instance);
 	model_instance.set_owner(get_owner());

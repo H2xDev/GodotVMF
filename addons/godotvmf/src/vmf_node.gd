@@ -2,13 +2,6 @@
 @icon("res://addons/godotvmf/icon.svg")
 class_name VMFNode extends Node3D;
 
-enum MaterialImportMode {
-	USE_EXISTING,
-	IMPORT_FROM_MOD_FOLDER,
-}
-
-@export_category("VMF File")
-
 ## Allow the file picker to select an external file
 @export var use_external_file: bool = false:
 	set(val):
@@ -19,21 +12,23 @@ enum MaterialImportMode {
 @export_file("*.vmf")
 var vmf: String = '';
 
-@export_category("Import")
-
 ## Full import of VMF with specified options
-@export var import: bool = false:
-	set(value):
-		if not value: return;
-		import_map();
-		import = false;
+@export_tool_button("Import map", "Callable") var import_button = import_map;
 
+@export_category("Tweaks")
+
+## Enable double sided shadow casting for the geometry mesh. This will make the shadows casted by the geometry to be visible from both sides of the faces.
 @export var double_sided_shadow_cast: bool = false;
+
+## Enable chunked mesh generation. This will split the geometry into smaller chunks for better performance. Increases the import time.
+@export var chunked_mesh: bool = true;
+
+## Size of one chunk. This will affect the number of chunks generated and the performance of the import.
+@export_range(32.0, 1024.0, 0.01) var chunked_mesh_size: float = 256.0;
 
 @export_category("Resource Generation")
 
-## During import the importer will remove all invisible faces from the mesh.
-## Increases the import time
+## If true, removes merged faces from the geometry mesh. This will reduce the number of faces in the mesh and improve performance. Increases the import time
 @export var remove_merged_faces: bool = true;
 
 ## Save the resulting geometry mesh as a resource (saves to the "Geometry folder" in Project Settings)
@@ -56,13 +51,8 @@ var _owner:
 
 		return o;
 
-var geometry: Node3D:
-	get: 
-		var node = get_node_or_null("Geometry");
-		node = get_node_or_null(NodePath("NavigationMesh/Geometry")) \
-			if node == null else node;
-
-		return node;
+@export_storage var navmesh: NavigationRegion3D;
+@export_storage var geometry: Node3D;
 
 var detail_props: Node3D:
 	get: return geometry.get_node_or_null("DetailProps") if geometry else null;
@@ -70,10 +60,10 @@ var detail_props: Node3D:
 var entities: Node3D:
 	get: return get_node_or_null("Entities");
 
-var navmesh: NavigationRegion3D:
-	get: return get_node_or_null("NavigationMesh");
-
 var has_imported_resources = false;
+
+func is_instance() -> bool:
+	return get_meta("instance", false);
 
 func _validate_property(property: Dictionary) -> void:
 	if property.name == "vmf":
@@ -82,11 +72,34 @@ func _validate_property(property: Dictionary) -> void:
 func _ready() -> void:
 	add_to_group("vmfnode_group");
 
+	storage_navmesh_node();
+	storage_geometry_node();
+
+func storage_geometry_node():
+	geometry = get_node_or_null("Geometry") if not navmesh else navmesh.get_node_or_null("Geometry")
+
+func storage_navmesh_node():
+	navmesh = get_node_or_null("NavigationMesh");
+
+func get_geometry_node(clazz := MeshInstance3D) -> Node3D:
+	if geometry: return geometry;
+
+	geometry = clazz.new();
+	geometry.name = "Geometry";
+	if not navmesh:
+		add_child(geometry);
+	else:
+		navmesh.add_child(geometry);
+
+	geometry.set_owner(_owner);
+	geometry.set_display_folded(true);
+	return geometry;
+
 func clear_scene_groups():
 	var tree = get_tree();
-	var groups := get_tree().edited_scene_root.get_groups() if tree else self.get_groups();
+	var groups: Array[StringName] = tree.edited_scene_root.get_groups() if tree else self.get_groups();
 	for group in groups:
-		var nodes := get_tree().get_nodes_in_group(group);
+		var nodes := tree.get_nodes_in_group(group);
 		for node in nodes:
 			node.remove_from_group(group);
 
@@ -102,6 +115,8 @@ func reimport_geometry() -> void:
 
 	import_geometry();
 
+	if Engine.is_editor_hint():
+		EditorInterface.mark_scene_as_unsaved();
 func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 	var detail_props := VMFDetailProps.generate(geometry_mesh.mesh);
 	if detail_props.size() == 0: return;
@@ -123,6 +138,7 @@ func generate_detail_props(geometry_mesh: MeshInstance3D) -> void:
 		mmi.visibility_range_end = VMFConfig.import.detail_props_draw_distance;
 		mmi.visibility_range_end_margin = VMFConfig.import.detail_props_draw_distance / 2.0;
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF;
+		mmi.gi_mode = GeometryInstance3D.GI_MODE_DYNAMIC;
 
 		detail_node.add_child(mmi);
 		mmi.set_owner(_owner);
@@ -136,8 +152,13 @@ func reimport_detail_props():
 
 	generate_detail_props(geometry_mesh);
 
+	if Engine.is_editor_hint():
+		EditorInterface.mark_scene_as_unsaved();
+
 func generate_shadow_mesh(raw_geometry_mesh: ArrayMesh) -> void:
 	var shadow_mesh := VMFTool.generate_shadow_mesh(raw_geometry_mesh);
+	if not shadow_mesh: return;
+
 	var shadow_mesh_instance := MeshInstance3D.new();
 	shadow_mesh_instance.name = "ShadowMesh";
 	shadow_mesh_instance.mesh = shadow_mesh;
@@ -150,81 +171,88 @@ func unwrap_lightmap(geometry_mesh: MeshInstance3D) -> void:
 	if VMFConfig.import.generate_lightmap_uv2 and not is_runtime:
 		geometry_mesh.mesh.lightmap_unwrap(geometry_mesh.global_transform, texel_size);
 
-func import_geometry() -> void:
-	var _t := Time.get_ticks_msec();
-
-	if navmesh: navmesh.free();
-	if geometry: geometry.free();
-
-	var mesh: ArrayMesh = VMFTool.create_mesh(vmf_structure, Vector3.ZERO, remove_merged_faces);
-	if not mesh: return;
-
-	var geometry_mesh := MeshInstance3D.new()
-	geometry_mesh.name = "Geometry";
-	geometry_mesh.set_display_folded(true);
-	
+func process_geometry(geometry_mesh: MeshInstance3D) -> void:
 	if double_sided_shadow_cast:
 		geometry_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED;
-	
-	add_child(geometry_mesh);
-	geometry_mesh.set_owner(_owner);
-
-	var transform = geometry_mesh.global_transform;
-	geometry_mesh.mesh = mesh;
 
 	if VMFConfig.import.generate_collision: 
 		VMFTool.generate_collisions(geometry_mesh, default_physics_mask);
-		save_collision_file();
+		save_collision_file(geometry_mesh, geometry_mesh.name);
 
-	if not get_meta("instance", false):
-		generate_navmesh(geometry_mesh);
-
-	generate_shadow_mesh(geometry_mesh.mesh);
 	cleanup_geometry(geometry_mesh);
 	generate_detail_props(geometry_mesh);
 	unwrap_lightmap(geometry_mesh);
 	save_geometry_file(geometry_mesh);
 
-	VMFLogger.log("import_geometry took %d ms" % (Time.get_ticks_msec() - _t));
+func import_geometry() -> void:
+	if geometry: geometry.free();
+	if navmesh: navmesh.free();
 
-func generate_navmesh(geometry_mesh: MeshInstance3D):
+	var mesh: ArrayMesh = VMFTool.create_mesh(vmf_structure, Vector3.ZERO, remove_merged_faces);
+	if not mesh: return;
+	
+	var geometry_root: Node3D;
+	generate_shadow_mesh(mesh);
+
+	if not chunked_mesh:
+		geometry_root = get_geometry_node();
+		geometry_root.mesh = mesh;
+		process_geometry(geometry_root);
+	else:
+		geometry_root = get_geometry_node(Node3D);
+		var chunk_meshes := VMFTool.split_mesh_by_chunks(mesh, chunked_mesh_size);
+		var chunk_id := 0;
+		
+		for chunk_mesh in chunk_meshes:
+			var mi := MeshInstance3D.new();
+			mi.name = "chunk_" + str(chunk_id);
+			mi.mesh = VMFTool.generate_lods(chunk_mesh);
+			mi.set_display_folded(true);
+			geometry_root.add_child(mi);
+			mi.set_owner(_owner);
+			process_geometry(mi);
+			chunk_id += 1;
+
+	generate_navmesh(geometry_root);
+
+func generate_navmesh(geometry_mesh: Node3D):
 	if not VMFConfig.import.use_navigation_mesh: return;
 	if get_meta("instance", false): return;
 
-	var navreg := NavigationRegion3D.new();
+	navmesh = NavigationRegion3D.new();
 
 	var navmesh_preset := VMFConfig.import.navigation_mesh_preset;
 
 	if navmesh_preset == "":
-		navreg.navigation_mesh = NavigationMesh.new();
+		navmesh.navigation_mesh = NavigationMesh.new();
 
 	if ResourceLoader.exists(navmesh_preset):
 		var res := load(navmesh_preset);
 
 		if res is not NavigationMesh:
 			VMFLogger.warn("Navigation mesh preset \"%s\" is not a NavigationMesh resource. Falling back to default." % navmesh_preset);
-			navreg.navigation_mesh = NavigationMesh.new();
+			navmesh.navigation_mesh = NavigationMesh.new();
 		else:
-			navreg.navigation_mesh = load(navmesh_preset);
+			navmesh.navigation_mesh = load(navmesh_preset).duplicate();
 	else:
 		VMFLogger.warn("Navigation mesh preset \"%s\" is not found. Falling back to default." % navmesh_preset);
-		navreg.navigation_mesh = NavigationMesh.new();
+		navmesh.navigation_mesh = NavigationMesh.new();
 
-	navreg.name = "NavigationMesh";
+	navmesh.name = "NavigationMesh";
 
-	add_child(navreg);
-	navreg.set_owner(_owner);
-	geometry_mesh.reparent(navreg);
+	add_child(navmesh);
+	navmesh.set_owner(_owner);
+	geometry_mesh.reparent(navmesh);
 
-	navreg.bake_navigation_mesh.call_deferred();
+	navmesh.bake_navigation_mesh.call_deferred();
 
 func cleanup_geometry(target_mesh_instance: MeshInstance3D) -> void:
 	target_mesh_instance.mesh = VMFTool.cleanup_mesh(target_mesh_instance.mesh);
 
-func save_geometry_file(target_mesh_instance: MeshInstance3D) -> void:
+func save_geometry_file(target_mesh_instance: MeshInstance3D, postfix: String = "") -> void:
 	var target_mesh: Mesh = target_mesh_instance.mesh;
 	if not save_geometry: return;
-	var resource_path: String = "%s/%s_import.mesh" % [VMFConfig.import.geometry_folder, _vmf_identifer()];
+	var resource_path: String = "%s/%s%s_import.mesh" % [VMFConfig.import.geometry_folder, _vmf_identifer(), postfix];
 	
 	if not DirAccess.dir_exists_absolute(resource_path.get_base_dir()):
 		DirAccess.make_dir_recursive_absolute(resource_path.get_base_dir());
@@ -237,15 +265,16 @@ func save_geometry_file(target_mesh_instance: MeshInstance3D) -> void:
 	target_mesh.take_over_path(resource_path);
 	target_mesh_instance.mesh = load(resource_path);
 
-func save_collision_file() -> void:
+func save_collision_file(mesh_instance: MeshInstance3D = geometry, postfix = "") -> void:
 	if save_collision == false: return;
-
-	var collisions = $Geometry.get_children() as Array[StaticBody3D];
+	var collisions := mesh_instance.get_children();
 
 	for body in collisions:
+		if body is not StaticBody3D: continue;
+
 		var collision := body.get_node('collision');
 		var shape = collision.shape;
-		var save_path := "%s/%s_collision_%s.res" % [VMFConfig.import.geometry_folder, _vmf_identifer(), body.name];
+		var save_path := "%s/%s%s_collision_%s.res" % [VMFConfig.import.geometry_folder, _vmf_identifer(), postfix, body.name];
 
 		if not DirAccess.dir_exists_absolute(save_path.get_base_dir()):
 			DirAccess.make_dir_recursive_absolute(save_path.get_base_dir());
