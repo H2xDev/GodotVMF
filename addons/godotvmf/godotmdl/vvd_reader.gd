@@ -1,7 +1,5 @@
 class_name VVDReader extends RefCounted
 
-const MAX_NUM_LODS = 8;
-
 class VVDHeader:
 	static var scheme:
 		get: return {
@@ -9,7 +7,7 @@ class VVDHeader:
 		version									= ByteReader.Type.INT,
 		checksum								= ByteReader.Type.INT,
 		num_lods								= ByteReader.Type.INT,
-		num_lods_vertexes						= [ByteReader.Type.INT, MAX_NUM_LODS],
+		num_lods_vertexes						= [ByteReader.Type.INT, 8],
 		num_fixups								= ByteReader.Type.INT,
 		fixup_table_offset						= ByteReader.Type.INT,
 		vertex_data_offset						= ByteReader.Type.INT,
