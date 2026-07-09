@@ -18,7 +18,8 @@
 ## Description
 An importer of [VMF files](https://developer.valvesoftware.com/wiki/VMF_(Valve_Map_Format)) into [Godot Engine](https://godotengine.org/).
 
-Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it supports precised vertex data.
+Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-Website/) since it supports precised vertex data.  
+A C# version of the plugin - [@parrssee/godotvmf-sharp](https://github.com/parrssee/godotvmf-sharp)
 
 ### Features
 - Brushes geometry import (including UVs, materials IDs and smoothing groups)
