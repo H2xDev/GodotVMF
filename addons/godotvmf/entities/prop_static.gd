@@ -12,13 +12,8 @@ var fade_max: float = 0.0:
 	get: return entity.get('fademaxdist', 0.0) * VMFConfig.import.scale
 
 func _get_static_props_node() -> Node3D:
-	var geometry_node := get_vmfnode().geometry as MeshInstance3D;
-	if not geometry_node:
-		geometry_node = MeshInstance3D.new();
-		geometry_node.name = "Geometry";
-		get_vmfnode().add_child(geometry_node);
-		geometry_node.set_owner(get_vmfnode().owner);
-	
+	if not model_instance: return;
+	var geometry_node := get_vmfnode().get_geometry_node();
 	var static_props_node := geometry_node.get_node_or_null("StaticProps");
 
 	if not static_props_node:
@@ -26,12 +21,11 @@ func _get_static_props_node() -> Node3D:
 		static_props_node.name = "StaticProps";
 		geometry_node.add_child(static_props_node);
 		static_props_node.set_owner(geometry_node.owner);
-	
+
 	return static_props_node;
 
 func assign_model_properties() -> void:
 	model_instance.set_owner(get_owner());
-	model_instance.scale *= model_scale;
 	model_instance.gi_mode = GeometryInstance3D.GI_MODE_STATIC;
 
 	var fade_margin = fade_max - fade_min;

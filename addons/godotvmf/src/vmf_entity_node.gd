@@ -43,8 +43,9 @@ func Disable(_param = null):
 	enabled = false;
 
 func Kill(_param = null):
-	if entity.get("targetname", "") in VMFEntityNode.named_entities:
-		named_entities.erase(entity.targetname);
+	var targetname := entity.get("targetname", "");
+	if targetname in VMFEntityNode.named_entities:
+		named_entities.erase(targetname);
 
 	get_parent().remove_child(self);
 	queue_free();
@@ -137,7 +138,7 @@ func get_target(n: String) -> Node3D:
 
 	if node == null: return null;
 	if not is_instance_valid(node):
-		VMFEntityNode.named_entities[n].erase(node);
+		VMFEntityNode.named_entities.get(GROUP_PREFIX + n, []).erase(node);
 		return get_target(n);
 
 	return node;
@@ -153,7 +154,7 @@ func get_all_targets(target_name: String) -> Array:
 	return VMFEntityNode.named_entities.get(group_name, []);
 
 func parse_connections() -> void:
-	if not "entity" in self or not "connections" in entity: return;
+	if not ("connections" in entity): return;
 
 	var outputs = entity.connections.keys();
 
@@ -177,7 +178,7 @@ func parse_connections() -> void:
 			connect(output, func(): call_target_input(target, input, param, delay, self));
 
 ## Returns the VMFNode where the entity placed
-func get_vmfnode():
+func get_vmfnode() -> VMFNode:
 	var p = get_parent();
 
 	while p:
@@ -269,12 +270,7 @@ func get_entity_convex_shape() -> ConvexPolygonShape3D:
 	if not has_solid: return null;
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
-	var struct := VMFStructure.new({
-		'world': {
-			'solid': solids,
-		},
-	});
-
+	var struct := VMFStructure.new({ 'world': { 'solid': solids } });
 	var mesh = VMFTool.create_mesh(struct, global_position);
 
 	if (not mesh or mesh.get_surface_count() == 0): return;
@@ -288,9 +284,9 @@ func get_entity_trimesh_shape() -> ConcavePolygonShape3D:
 	var combiner = CSGCombiner3D.new();
 
 	for solid in solids:
-		var struct = VMFStructure.new({ 'world': { 'solid': [solid] } });
-		var csgmesh = CSGMesh3D.new();
-		var mesh = VMFTool.create_mesh(struct, global_position);
+		var struct := VMFStructure.new({ 'world': { 'solid': [solid] } });
+		var csgmesh := CSGMesh3D.new();
+		var mesh := VMFTool.create_mesh(struct, global_position);
 
 		if not mesh or mesh.get_surface_count() == 0: continue;
 
@@ -310,8 +306,8 @@ func get_separated_collisions() -> Array[CollisionShape3D]:
 
 	var solids = entity.solid if entity.solid is Array else [entity.solid];
 	for solid in solids:
-		var struct = { 'world': { 'solid': [solid] } };
-		var mesh = VMFTool.create_mesh(struct, global_position);
+		var struct := VMFStructure.new({ 'world': { 'solid': [solid] } });
+		var mesh := VMFTool.create_mesh(struct, global_position);
 		var collision_shape := CollisionShape3D.new();
 		collision_shape.shape = mesh.create_convex_shape(true);
 		collisions.append(collision_shape);
