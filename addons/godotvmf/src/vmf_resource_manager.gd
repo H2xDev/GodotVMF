@@ -12,7 +12,7 @@ const MATERIAL_KEYS_TO_IMPORT = [
 static var has_imported_resources: bool = false;
 
 static func get_editor_interface():
-	return Engine.get_singleton("EditorInterface") if Engine.has_singleton("EditorInterface") else null;
+	return Engine.get_singleton("EditorInterface") if Engine.is_editor_hint() and Engine.has_singleton("EditorInterface") else null;
 
 static func for_resource_import() -> void:
 	if not has_imported_resources: return;

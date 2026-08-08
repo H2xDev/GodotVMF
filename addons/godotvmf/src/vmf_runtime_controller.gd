@@ -51,13 +51,14 @@ func launch_map():
 
 	print("Loading map: {0}".format([map_path]));
 
-	var vmf = VMFNode.new();
-	var scene = get_tree().current_scene;
+	var vmf := VMFNode.new();
+	var scene := get_tree().current_scene;
+	begin_import.call_deferred(map_name, map_path, vmf, scene);
 
+func begin_import(map_name: String, map_path: String, vmf: VMFNode, scene: Node) -> void:
 	scene.add_child(vmf);
-
 	vmf.vmf = map_path;
-	vmf.name = map_name;
+	vmf.name = default_map_name;
 	vmf.save_geometry = false;
 	vmf.save_collision = false;
 	vmf.is_runtime = true;
