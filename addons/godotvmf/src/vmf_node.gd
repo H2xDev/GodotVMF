@@ -80,12 +80,13 @@ func _ready() -> void:
 	add_to_group("vmfnode_group");
 
 func clear_scene_groups():
-	var tree = get_tree();
-	var groups := get_tree().edited_scene_root.get_groups() if tree else self.get_groups();
-	for group in groups:
-		var nodes := get_tree().get_nodes_in_group(group);
-		for node in nodes:
-			node.remove_from_group(group);
+	if not entities or not Engine.is_editor_hint():  return;
+
+	for ent_group in entities.get_children():
+		for child in ent_group.get_children():
+			for group in child.get_groups():
+				if not group.begins_with("vmf:"): continue;
+				child.remove_from_group(group);
 
 func reimport_geometry() -> void:
 	VMFConfig.load_config();

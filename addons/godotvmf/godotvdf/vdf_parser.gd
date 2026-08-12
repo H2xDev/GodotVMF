@@ -3,12 +3,23 @@
 class_name VDFParser extends RefCounted;
 
 # Precompile the regular expressions only once
-static var _propRegex := RegEx.create_from_string('^"?(.*?)?"?\\s+"?(.*?)?"?(?:$|(\\s\\[.+\\]))$');
 static var _vectorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
+static var _vector2Regex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _colorRegex := RegEx.create_from_string('^([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)$');
 static var _uvRegex := RegEx.create_from_string('\\[([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\s([-\\d\\.e]+)\\]\\s([-\\d\\.e]+)');
 static var _planeRegex := RegEx.create_from_string('\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)\\s?\\(([\\d\\-\\.e]+\\s[\\d\\-\\.e]+\\s[\\d\\-\\.e]+)\\)');
-static var _commentRegex := RegEx.create_from_string('\\s+?\\/\\/.+');
+
+## Strips trailing // comments, but only outside quoted strings.
+## Prevents false positives on values like "res://path/to/file".
+static func _strip_comment(line: String) -> String:
+	var in_quote := false
+	for i in range(line.length()):
+		var c := line[i]
+		if c == '"':
+			in_quote = !in_quote
+		elif not in_quote and c == '/' and i + 1 < line.length() and line[i + 1] == '/':
+			return line.substr(0, i).strip_edges()
+	return line
 
 ## Returns Dictionary representation of the Valve Data Format file located at [file_path].
 ## Returns null and prints an error if the file could not be read or parsed.
@@ -31,6 +42,9 @@ static func parse_value(line: String) -> Variant:
 	var m = _vectorRegex.search(line)
 	if m:
 		return Vector3(m.get_string(1).to_float(), m.get_string(2).to_float(), m.get_string(3).to_float());
+	m = _vector2Regex.search(line)
+	if m:
+		return Vector2(m.get_string(1).to_float(), m.get_string(2).to_float());
 	m = _colorRegex.search(line)
 	if m:
 		return Color(
@@ -57,7 +71,7 @@ static func parse_value(line: String) -> Variant:
 		
 		var v = Plane(plane[0], plane[1], plane[2]);
 
-		if not v:
+		if v.normal == Vector3.ZERO:
 			push_error('ValveFormatParser: Failed to create plane from: ' + line);
 			return null;
 		
@@ -68,7 +82,7 @@ static func parse_value(line: String) -> Variant:
 		return float(line);
 	return line;
 static func define_structure(hierarchy: Array, line: String, keys_to_lower = false):
-	var _name := line.strip_edges().replace('{', '').replace('"', '');
+	var _name := line.strip_edges().replace('{', '').replace('"', '').strip_edges();
 	if keys_to_lower:
 		_name = _name.to_lower();
 	var newStruct = {};
@@ -84,10 +98,53 @@ static func define_structure(hierarchy: Array, line: String, keys_to_lower = fal
 
 	hierarchy.append(newStruct);
 
-static func define_property(hierarchy: Array, line: String, keys_to_lower = false):
-	var m := _propRegex.search(line);
-	var propName := m.get_string(1);
-	var propValue := parse_value(m.get_string(2));
+static func _get_key_value(line: String) -> Array:
+	var key_start := -1
+	var key_end := -1
+	var value_start := -1
+	var value_end := -1
+	
+	var i := 0
+	var length := line.length()
+	
+	# Parse Key
+	if i < length and line[i] == '"':
+		i += 1
+		key_start = i
+		while i < length and line[i] != '"':
+			i += 1
+		key_end = i
+		i += 1
+	else:
+		key_start = i
+		while i < length and line[i] != ' ' and line[i] != '\t':
+			i += 1
+		key_end = i
+		
+	# Skip whitespace
+	while i < length and (line[i] == ' ' or line[i] == '\t'):
+		i += 1
+		
+	if i >= length:
+		return []
+		
+	# Parse Value
+	if i < length and line[i] == '"':
+		i += 1
+		value_start = i
+		while i < length and line[i] != '"':
+			i += 1
+		value_end = i
+	else:
+		value_start = i
+		while i < length and line[i] != ' ' and line[i] != '\t':
+			i += 1
+		value_end = i
+		
+	return [line.substr(key_start, key_end - key_start), line.substr(value_start, value_end - value_start)]
+
+static func define_property(hierarchy: Array, propName: String, propValueStr: String, keys_to_lower = false):
+	var propValue := parse_value(propValueStr);
 
 	if keys_to_lower:
 		propName = propName.to_lower();
@@ -112,8 +169,8 @@ static func parse_from_string(source: String, keys_to_lower := false):
 	var previous_line: String = line;
 
 	for l in lines:
-		line = _commentRegex.sub(l.strip_edges(), '');
-		if line.begins_with('//') or line == '':
+		line = _strip_comment(l.strip_edges());
+		if line == '':
 			continue;
 
 		if line[0] == '{':
@@ -122,8 +179,10 @@ static func parse_from_string(source: String, keys_to_lower := false):
 			define_structure(hierarchy, line, keys_to_lower);
 		elif line[0] == '}' or line.ends_with('}'):
 			finish_structure(hierarchy);
-		elif _propRegex.search(line):
-			define_property(hierarchy, line, keys_to_lower);
+		else:
+			var kv = _get_key_value(line)
+			if kv:
+				define_property(hierarchy, kv[0], kv[1], keys_to_lower);
 
 		previous_line = line;
 
