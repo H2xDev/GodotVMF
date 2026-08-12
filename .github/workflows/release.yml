@@ -27,7 +27,7 @@ jobs:
 
       - name: Create ZIP archive with version in name
         run: |
-          zip -r godotvmf-v${{ steps.get_version.outputs.version }}.zip addons script_templates
+          zip -r godotvmf-v${{ steps.get_version.outputs.version }}.zip addons script_templates LICENSE
 
       - name: Create GitHub release and upload archive
         uses: softprops/action-gh-release@v2
