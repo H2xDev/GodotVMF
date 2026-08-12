@@ -58,7 +58,7 @@ func launch_map():
 func begin_import(map_name: String, map_path: String, vmf: VMFNode, scene: Node) -> void:
 	scene.add_child(vmf);
 	vmf.vmf = map_path;
-	vmf.name = default_map_name;
+	vmf.name = map_name;
 	vmf.save_geometry = false;
 	vmf.save_collision = false;
 	vmf.is_runtime = true;
