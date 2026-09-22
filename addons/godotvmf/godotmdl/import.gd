@@ -90,14 +90,15 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 	var vtx_path = mdl_path.replace(".mdl", ".vtx");
 	var vvd_path = mdl_path.replace(".mdl", ".vvd");
 	var phy_path = mdl_path.replace(".mdl", ".phy");
-	# TODO: Add support for animations
-	# var ani_path = mdl_path.replace(".mdl", ".ani");
-	# var ani = ANIReader.new(mdl_path, mdl.header);
+	var ani_path = mdl_path.replace(".mdl", ".ani");
 
 	var mdl = MDLReader.new(mdl_path);
 	var vtx = VTXReader.new(vtx_path, mdl.header.version);
 	var vvd = VVDReader.new(vvd_path);
-	var phy = PHYReader.new(phy_path);
+	var phy = PHYReader.new(phy_path, mdl);
+	# var ani := ANIReader.new(ani_path, mdl);
+
+	mdl.close();
 
 	var model_name = mdl_path.get_file().get_basename().replace(".mdl", "");
 
@@ -111,7 +112,9 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 		return ERR_PARSE_ERROR;
 
 	var path_to_save = save_path + '.' + _get_save_extension();
-	var combiner = MDLCombiner.new(mdl, vtx, vvd, phy, options);
+	var combiner = MDLCombiner.new(mdl, vtx, vvd, phy, null, options);
+	
+	
 	var scn = pack_model(combiner.mesh_instance, model_name);
 	var error = ResourceSaver.save(scn, path_to_save, ResourceSaver.FLAG_COMPRESS);
 
