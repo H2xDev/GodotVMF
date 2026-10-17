@@ -135,6 +135,7 @@ class PHYTriangleData:
 var header: PHYHeader;
 var surfaces: Array[PHYSurfaceHeader] = [];
 var legacy_surfaces: Array[PHYLegacySurfaceHeader] = [];
+var keyvalues: Dictionary = {};
 
 func _init(source_file: String):
 	var file = FileAccess.open(source_file, FileAccess.READ);
@@ -182,3 +183,7 @@ func _init(source_file: String):
 		# NOTE: +4 means that size of header starts after the size byte
 		file.seek((surface_header.address + 4) + surface_header.size);
 
+	# The text after the collision solids contains mass and surface properties.
+	var text_bytes := file.get_buffer(file.get_length() - file.get_position());
+	if not text_bytes.is_empty() and text_bytes[-1] == 0: text_bytes.resize(text_bytes.size() - 1);
+	keyvalues = VDFParser.parse_from_string(text_bytes.get_string_from_utf8(), true);
