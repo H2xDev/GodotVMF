@@ -50,6 +50,14 @@ func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, optio
 
 	generate_lods()
 	generate_collision();
+	var physics_data := MDLPhysicsData.new();
+	var solid_data: Variant = phy.keyvalues.get("solid", {});
+	if solid_data is Array: solid_data = solid_data[0] if not solid_data.is_empty() else {};
+	physics_data.mass = maxf(float(phy.keyvalues.get("editparams", {}).get("totalmass", mdl.header.mass)), 0.001);
+	physics_data.surface_prop = String(solid_data.get("surfaceprop", "default"));
+	physics_data.linear_damp = maxf(float(solid_data.get("damping", 0.0)), 0.0);
+	physics_data.angular_damp = maxf(float(solid_data.get("rotdamping", 0.0)), 0.0);
+	mesh_instance.set_meta("physics_data", physics_data);
 	create_occluder();
 	assign_materials();
 
@@ -173,12 +181,11 @@ func generate_collision_from_mesh():
 	static_body.set_owner(mesh_instance);
 	collision.set_owner(mesh_instance);
 
-# TODO: For non-static props collision should be rotated by 90 degrees around y-axis
 func generate_collision():
 	if options.collision_from_mesh: return generate_collision_from_mesh();
 
-	var yup_to_zup = Basis().rotated(Vector3.RIGHT, PI / 2);
-	var yup_to_zup_transform = Transform3D(yup_to_zup, Vector3.ZERO);
+	# Single-bone props have model-space PHY geometry, including dynamic props.
+	var model_space_collision := is_static_body or mdl.header.bone_count == 1;
 	var static_body: StaticBody3D;
 
 	var surface_index = 0;
@@ -189,7 +196,7 @@ func generate_collision():
 			# NOTE: Skip the last solid since it's a fullbody collision shape
 			if solid_index == surface.solids.size() - 1 and surface.solids.size() > 1: break;
 
-			if not is_static_body:
+			if not model_space_collision:
 				static_body = StaticBody3D.new();
 				static_body.name = "solid_" + str(surface_index) + "_" + str(solid_index);
 			else:
@@ -202,7 +209,6 @@ func generate_collision():
 			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
 
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
-			static_body.basis *= additional_basis;
 
 			var vertices = [];
 
@@ -216,7 +222,7 @@ func generate_collision():
 			shape.points = PackedVector3Array(vertices);
 			collision.shape = shape;
 
-			if not is_static_body:
+			if not model_space_collision:
 				var bone_attachment: BoneAttachment3D = BoneAttachment3D.new();
 				bone_attachment.name = "bone_attachment_" + str(surface_index) + "_" + str(solid_index);
 				bone_attachment.bone_idx = max(0, solid.bone_index - 1);

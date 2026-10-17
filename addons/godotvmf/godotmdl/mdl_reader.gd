@@ -72,6 +72,8 @@ class MDLHeader:
 		flex_desc_index 									= ByteReader.Type.INT,
 		flex_controller_count 								= ByteReader.Type.INT,
 		flex_controller_index 								= ByteReader.Type.INT,
+		flex_rule_count 									= ByteReader.Type.INT,
+		flex_rule_index 									= ByteReader.Type.INT,
 		ikchain_count 										= ByteReader.Type.INT,
 		ikchain_index 										= ByteReader.Type.INT,
 		mouth_count 										= ByteReader.Type.INT,
@@ -150,6 +152,8 @@ class MDLHeader:
 	var flex_desc_index: int;
 	var flex_controller_count: int;
 	var flex_controller_index: int;
+	var flex_rule_count: int;
+	var flex_rule_index: int;
 	var ikchain_count: int;
 	var ikchain_index: int;
 	var mouth_count: int;
