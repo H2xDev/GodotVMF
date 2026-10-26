@@ -1,6 +1,8 @@
 @tool
 class_name prop_studio extends VMFEntityNode
 
+const MODEL_TO_WORLD_ROTATION := Vector3(0, -PI / 2.0, 0);
+
 ## @exposed
 ## @type studio
 var model: String = "":
@@ -44,6 +46,7 @@ func _entity_setup(_entity: VMFEntity) -> void:
 	var instance := model_scene.instantiate(edit_state);
 	instance.name = "model";
 	instance.scale *= model_scale;
+	instance.basis = Basis.from_euler(MODEL_TO_WORLD_ROTATION) * instance.basis;
 
 	MDLCombiner.apply_skin(instance, skin);
 

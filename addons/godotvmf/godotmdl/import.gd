@@ -25,7 +25,7 @@ func _get_import_options(str, int): return [
 	},
 	{
 		name = "additional_rotation",
-		description = "In case you have wrong oriented model you can add the additional rotaion here to correct the original orientation",
+		description = "Models are already rotated to face -Z like any other Godot asset. Use this to correct models that are still wrongly oriented.",
 		default_value = Vector3.ZERO,
 		type = TYPE_VECTOR3,
 	},
@@ -69,6 +69,12 @@ func _get_import_options(str, int): return [
 		type = TYPE_INT,
 		property_hint = PROPERTY_HINT_ENUM,
 		hint_string = "Disabled,Static,Dynamic",
+	},
+	{
+		name = "import_animations",
+		default_value = true,
+		type = TYPE_BOOL,
+		description = "Imports the skeletal animations stored in the MDL file and in its companion ANI file into an AnimationPlayer. Has no effect on static props.",
 	}
 ];
 
@@ -90,9 +96,6 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 	var vtx_path = mdl_path.replace(".mdl", ".vtx");
 	var vvd_path = mdl_path.replace(".mdl", ".vvd");
 	var phy_path = mdl_path.replace(".mdl", ".phy");
-	# TODO: Add support for animations
-	# var ani_path = mdl_path.replace(".mdl", ".ani");
-	# var ani = ANIReader.new(mdl_path, mdl.header);
 
 	var mdl = MDLReader.new(mdl_path);
 	var vtx = VTXReader.new(vtx_path, mdl.header.version);
@@ -111,7 +114,8 @@ func _import(mdl_path: String, save_path: String, options: Dictionary, _platform
 		return ERR_PARSE_ERROR;
 
 	var path_to_save = save_path + '.' + _get_save_extension();
-	var combiner = MDLCombiner.new(mdl, vtx, vvd, phy, options);
+	var ani = ANIReader.new(mdl) if options.get("import_animations", true) else null;
+	var combiner = MDLCombiner.new(mdl, vtx, vvd, phy, options, ani);
 	var scn = pack_model(combiner.mesh_instance, model_name);
 	var error = ResourceSaver.save(scn, path_to_save, ResourceSaver.FLAG_COMPRESS);
 
