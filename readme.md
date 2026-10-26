@@ -27,6 +27,7 @@ Highly recommended to use it with [Hammer++](https://ficool2.github.io/HammerPlu
 - VMF geometry import
 - Instances support
 - Native MDL support
+    - Skeletal animations from MDL and from its external ANI file
 - Native VMT support
 - Native VTF support
     - DXT1, DXT3, DXT5

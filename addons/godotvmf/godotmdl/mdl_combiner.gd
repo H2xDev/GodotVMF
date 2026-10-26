@@ -10,12 +10,19 @@ var mdl: MDLReader;
 var vtx: VTXReader;
 var vvd: VVDReader;
 var phy: PHYReader;
+var ani: ANIReader;
 
 var is_static_body: bool:
 	get: return (mdl.header.flags & mdl.MDLFlag.STATIC_PROP) != 0;
 
 var scale: float:
 	get: return options.scale if not options.use_global_scale else VMFConfig.import.scale;
+
+const FORWARD_CORRECTION := Vector3(0, 90, 0);
+const FORWARD_CORRECTION_DYNAMIC := Vector3(0, 180, 0);
+
+var forward_correction: Vector3:
+	get: return (FORWARD_CORRECTION if is_static_prop else FORWARD_CORRECTION_DYNAMIC) / 180.0 * PI;
 
 var rotation_radians: Vector3:
 	get: return options.get("additional_rotation", Vector3.ZERO) / 180.0 * PI;
@@ -38,12 +45,13 @@ static func apply_skin(mesh_instance: MeshInstance3D, skin_id: int, directly: bo
 		else:
 			mesh_instance.set_surface_override_material(surface_idx, materials[surface_idx]);
 
-func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary):
+func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, options: Dictionary, ani: ANIReader = null):
 	self.options = options;
 	self.mdl = mdl;
 	self.vtx = vtx;
 	self.vvd = vvd;
 	self.phy = phy;
+	self.ani = ani;
 
 	setup_mesh_instance();
 	setup_skeleton();
@@ -52,6 +60,7 @@ func _init(mdl: MDLReader, vtx: VTXReader, vvd: VVDReader, phy: PHYReader, optio
 	generate_collision();
 	create_occluder();
 	assign_materials();
+	setup_animations();
 
 func setup_mesh_instance():
 	var scale = options.scale if not options.use_global_scale else VMFConfig.import.scale;
@@ -63,6 +72,7 @@ func setup_mesh_instance():
 
 	array_mesh.lightmap_unwrap(Transform3D.IDENTITY, VMFConfig.models.lightmap_texel_size);
 	mesh_instance.name = "mesh";
+	mesh_instance.rotation = forward_correction;
 	mesh_instance.gi_mode = options.get("gi_mode", GeometryInstance3D.GI_MODE_DYNAMIC);
 	mesh_instance.set_mesh(array_mesh);
 
@@ -202,7 +212,9 @@ func generate_collision():
 			var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new();
 
 			collision.name = "collision_" + str(surface_index) + "_" + str(solid_index);
-			static_body.basis *= additional_basis;
+
+			if not is_static_body:
+				static_body.basis = additional_basis;
 
 			var vertices = [];
 
@@ -251,10 +263,9 @@ func setup_skeleton():
 		if bone.parent != -1:
 			skeleton.set_bone_parent(bone.id, bone.parent);
 
-		var parent_bone = mdl.bones[bone.parent];
+		var parent_bone = mdl.bones[bone.parent] if bone.parent >= 0 and bone.parent < mdl.bones.size() else null;
 		var parent_transform = parent_bone.pos_to_bone if parent_bone else Transform3D.IDENTITY;
 		var target_transform = bone.pos_to_bone * parent_transform;
-		var basis = additional_basis if bone.parent == -1 else Basis.IDENTITY;
 		var transform = Transform3D(Basis(bone.quat), bone.pos);
 		transform = transform.scaled(Vector3.ONE * scale);
 
@@ -273,6 +284,25 @@ func setup_skeleton():
 	mesh_instance.add_child(skeleton);
 	mesh_instance.set_skin(skin);
 	skeleton.set_owner(mesh_instance);
+
+## Imports the animations of the MDL file (and of its companion ANI file) into an AnimationPlayer
+func setup_animations():
+	if not options.get("import_animations", true): return;
+	if ani == null or not ani.has_animations(): return;
+
+	# Animations require a skeleton, which static props don't have
+	if skeleton.get_parent() != mesh_instance: return;
+
+	var library := ani.build_library(scale, skeleton.name);
+	if library.get_animation_list().is_empty(): return;
+
+	var animation_player := AnimationPlayer.new();
+	animation_player.name = "animations";
+
+	mesh_instance.add_child(animation_player);
+	animation_player.set_owner(mesh_instance);
+	animation_player.root_node = NodePath("..");
+	animation_player.add_animation_library("", library);
 
 func assign_materials():
 	var materials = [];

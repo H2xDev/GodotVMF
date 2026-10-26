@@ -57,20 +57,24 @@ class PHYLegacySurfaceHeader:
 		mass_center 									= ByteReader.Type.VECTOR3,
 		rotation_inertia 								= ByteReader.Type.VECTOR3,
 		upper_limit_radius 								= ByteReader.Type.FLOAT,
-		max_deviation 									= ByteReader.Type.INT,
-		byte_size 										= ByteReader.Type.INT,
-		dummy 											= [ByteReader.Type.INT, 2],
-		ivps 											= [ByteReader.Type.STRING, 4],
+		# max_deviation : 8 and byte_size : 24 are bitfields packed into a single int
+		max_deviation_and_byte_size 					= ByteReader.Type.INT,
+		offset_ledgetree_root 							= ByteReader.Type.INT,
+		dummy 											= [ByteReader.Type.INT, 3],
 	};
 
 	var mass_center: Vector3;
 	var rotation_inertia: Vector3;
 	var upper_limit_radius: float;
-	var max_deviation: int;
-	var byte_size: int;
+	var max_deviation_and_byte_size: int;
 	var offset_ledgetree_root: int;
 	var dummy: Array[int] = [];
-	var ivps: String;
+
+	var max_deviation: int:
+		get: return max_deviation_and_byte_size & 0xFF;
+
+	var byte_size: int:
+		get: return (max_deviation_and_byte_size >> 8) & 0xFFFFFF;
 
 	var address = 0;
 
@@ -83,7 +87,8 @@ class PHYSolidHeader:
 		vertices_offset 								= ByteReader.Type.INT,
 		bone_index 										= ByteReader.Type.INT,
 		flags 											= ByteReader.Type.INT,
-		face_count 										= ByteReader.Type.INT,
+		face_count 										= ByteReader.Type.SHORT,
+		unused1 										= ByteReader.Type.SHORT,
 	};
 
 	var vertices_offset: int;
@@ -142,33 +147,47 @@ func _init(source_file: String):
 
 	header = ByteReader.read_by_structure(file, PHYHeader);
 
-	var vertices_start = INF;
+	# NOTE: phyheader_t::size is the size of the header itself
+	file.seek(header.size);
 
 	for i in range(header.solid_count):
 		var surface_header = ByteReader.read_by_structure(file, PHYSurfaceHeader);
 		surfaces.append(surface_header);
 
+		var surface_end: int = (surface_header.address + 4) + surface_header.size;
+
 		if surface_header.id != "VPHY":
+			# Legacy surfaces have no compact header, the data starts with the legacy header itself
 			file.seek(surface_header.address);
 
 			var legacy_surface_header = ByteReader.read_by_structure(file, PHYLegacySurfaceHeader);
 			legacy_surfaces.append(legacy_surface_header);
 
 		var vertices_count = 0;
+		var vertices_start: int = surface_end;
 
-		while file.get_position() < vertices_start:
+		# Ledges are stored back to back and are directly followed by the vertex array
+		while file.get_position() < vertices_start and not file.eof_reached():
 			var solid_header = ByteReader.read_by_structure(file, PHYSolidHeader) as PHYSolidHeader;
-			vertices_start = min(solid_header.address + solid_header.vertices_offset, vertices_start);
+			var solid_vertices_start: int = solid_header.address + solid_header.vertices_offset;
 
+			if solid_header.face_count < 0 or solid_vertices_start <= solid_header.address: break;
+			if solid_vertices_start > surface_end: break;
+
+			vertices_start = mini(solid_vertices_start, vertices_start);
 			surface_header.solids.append(solid_header);
-	
+
 			for j in range(solid_header.face_count):
 				var triangle_data = ByteReader.read_by_structure(file, PHYTriangleData) as PHYTriangleData;
 				solid_header.faces.append(triangle_data);
 
 				vertices_count = max(vertices_count, triangle_data.v1, triangle_data.v2, triangle_data.v3);
 
+		file.seek(vertices_start);
+
 		for j in range(vertices_count + 1):
+			if file.get_position() + 16 > surface_end: break;
+
 			var vertex = ByteReader._read_data(file, ByteReader.Type.VECTOR3);
 			var w = ByteReader._read_data(file, ByteReader.Type.FLOAT);
 
@@ -177,8 +196,5 @@ func _init(source_file: String):
 
 			surface_header.vertices.append(vertex);
 
-		vertices_start = INF;
-
-		# NOTE: +4 means that size of header starts after the size byte
-		file.seek((surface_header.address + 4) + surface_header.size);
+		file.seek(surface_end);
 

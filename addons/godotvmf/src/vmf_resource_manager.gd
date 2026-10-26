@@ -62,6 +62,7 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 		var vpk_vtx_fallback_path = VMFUtils.normalize_path(model_path + ".vtx");
 		var vpk_vvd_path = VMFUtils.normalize_path(model_path + ".vvd");
 		var vpk_phy_path = VMFUtils.normalize_path(model_path + ".phy");
+		var vpk_ani_path = VMFUtils.normalize_path(model_path + ".ani");
 
 		var target_path = VMFUtils.normalize_path(VMFConfig.models.target_folder + "/" + model_path);
 
@@ -74,6 +75,7 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 			vtx_path = VMFGameFolder.get_import_path(vpk_vtx_fallback_path);
 		var vvd_path = VMFGameFolder.get_import_path(vpk_vvd_path);
 		var phy_path = VMFGameFolder.get_import_path(vpk_phy_path);
+		var ani_path = VMFGameFolder.get_import_path(vpk_ani_path);
 
 		var found_in_game_dir := mdl_path != "" and vtx_path != "" and vvd_path != "";
 
@@ -94,6 +96,7 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 			DirAccess.copy_absolute(vtx_path, target_path + '.dx90.vtx');
 			DirAccess.copy_absolute(vvd_path, target_path + ".vvd");
 			if phy_path != "": DirAccess.copy_absolute(phy_path, target_path + ".phy");
+			if ani_path != "": DirAccess.copy_absolute(ani_path, target_path + ".ani");
 			DirAccess.copy_absolute(mdl_path, target_path + ".mdl");
 
 		elif found_in_vpk:
@@ -108,6 +111,10 @@ static func import_models(vmf_structure: VMFStructure) -> bool:
 			if file_exists_in_vpk(vpk_phy_path):
 				if not vpk_stack.extract(vpk_phy_path, target_path + ".phy"):
 					VMFLogger.error("Failed to extract PHY from VPK: " + vpk_phy_path);
+
+			if file_exists_in_vpk(vpk_ani_path):
+				if not vpk_stack.extract(vpk_ani_path, target_path + ".ani"):
+					VMFLogger.error("Failed to extract ANI from VPK: " + vpk_ani_path);
 
 			if not vpk_stack.extract(vpk_mdl_path, target_path + ".mdl"):
 				VMFLogger.error("Failed to extract MDL from VPK: " + vpk_mdl_path);

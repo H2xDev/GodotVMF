@@ -72,6 +72,8 @@ class MDLHeader:
 		flex_desc_index 									= ByteReader.Type.INT,
 		flex_controller_count 								= ByteReader.Type.INT,
 		flex_controller_index 								= ByteReader.Type.INT,
+		flex_rule_count 									= ByteReader.Type.INT,
+		flex_rule_index 									= ByteReader.Type.INT,
 		ikchain_count 										= ByteReader.Type.INT,
 		ikchain_index 										= ByteReader.Type.INT,
 		mouth_count 										= ByteReader.Type.INT,
@@ -150,6 +152,8 @@ class MDLHeader:
 	var flex_desc_index: int;
 	var flex_controller_count: int;
 	var flex_controller_index: int;
+	var flex_rule_count: int;
+	var flex_rule_index: int;
 	var ikchain_count: int;
 	var ikchain_index: int;
 	var mouth_count: int;
@@ -466,6 +470,181 @@ class MDLMesh:
 
 	func _to_string():
 		return "MDLMesh: {material: %d, model_offset: %d, vertex_count: %d, vertex_index_start: %d, flexes_count: %d, flexes_offset: %d, material_type: %d, material_param: %d, mesh_id: %d, center: %s, number_vertices_lod: %s, vertex_offset_lod: %s}" % [material, model_offset, vertex_count, vertex_index_start, flexes_count, flexes_offset, material_type, material_param, mesh_id, center, number_vertices_lod, vertex_offset_lod];
+
+## mstudioanimdesc_t (100 bytes). Describes a single raw animation clip.
+class MDLAnimDesc:
+	static var scheme:
+		get: return {
+		base_pointer 									= ByteReader.Type.INT,
+		name_offset 									= ByteReader.Type.INT,
+		fps 											= ByteReader.Type.FLOAT,
+		flags 											= ByteReader.Type.INT,
+		frame_count 									= ByteReader.Type.INT,
+		movement_count 									= ByteReader.Type.INT,
+		movement_offset 								= ByteReader.Type.INT,
+		unused1 										= [ByteReader.Type.INT, 6],
+		anim_block 										= ByteReader.Type.INT,
+		anim_offset 									= ByteReader.Type.INT,
+		ik_rule_count 									= ByteReader.Type.INT,
+		ik_rule_offset 									= ByteReader.Type.INT,
+		anim_block_ik_rule_offset 						= ByteReader.Type.INT,
+		local_hierarchy_count 							= ByteReader.Type.INT,
+		local_hierarchy_offset 							= ByteReader.Type.INT,
+		section_offset 									= ByteReader.Type.INT,
+		section_frame_count 							= ByteReader.Type.INT,
+		zero_frame_span 								= ByteReader.Type.SHORT,
+		zero_frame_count 								= ByteReader.Type.SHORT,
+		zero_frame_offset 								= ByteReader.Type.INT,
+		zero_frame_stall_time 							= ByteReader.Type.FLOAT,
+	}
+
+	var base_pointer: int;
+	var name_offset: int;
+	var name: String;
+	var fps: float;
+	var flags: int;
+	var frame_count: int;
+	var movement_count: int;
+	var movement_offset: int;
+	var unused1: Array[int];
+	var anim_block: int;
+	var anim_offset: int;
+	var ik_rule_count: int;
+	var ik_rule_offset: int;
+	var anim_block_ik_rule_offset: int;
+	var local_hierarchy_count: int;
+	var local_hierarchy_offset: int;
+	var section_offset: int;
+	var section_frame_count: int;
+	var zero_frame_span: int;
+	var zero_frame_count: int;
+	var zero_frame_offset: int;
+	var zero_frame_stall_time: float;
+
+	var address: int = 0;
+	var sections: Array = [];
+
+	func _to_string():
+		return ByteReader.get_structure_string("MDLAnimDesc", self, ["name"]);
+
+## mstudioanimsections_t (8 bytes)
+class MDLAnimSection:
+	static var scheme:
+		get: return {
+		anim_block 										= ByteReader.Type.INT,
+		anim_offset 									= ByteReader.Type.INT,
+	}
+
+	var anim_block: int;
+	var anim_offset: int;
+
+	var address: int = 0;
+
+## mstudioanimblock_t (8 bytes). Points to a chunk inside the external .ani file.
+class MDLAnimBlock:
+	static var scheme:
+		get: return {
+		data_start 										= ByteReader.Type.INT,
+		data_end 										= ByteReader.Type.INT,
+	}
+
+	var data_start: int;
+	var data_end: int;
+
+	var address: int = 0;
+
+## mstudioseqdesc_t (212 bytes). A named, user facing sequence built from one or more MDLAnimDesc.
+class MDLSeqDesc:
+	static var scheme:
+		get: return {
+		base_pointer 									= ByteReader.Type.INT,
+		label_offset 									= ByteReader.Type.INT,
+		activity_name_offset 							= ByteReader.Type.INT,
+		flags 											= ByteReader.Type.INT,
+		activity 										= ByteReader.Type.INT,
+		activity_weight 								= ByteReader.Type.INT,
+		event_count 									= ByteReader.Type.INT,
+		event_offset 									= ByteReader.Type.INT,
+		bb_min 											= ByteReader.Type.VECTOR3,
+		bb_max 											= ByteReader.Type.VECTOR3,
+		blend_count 									= ByteReader.Type.INT,
+		anim_index_offset 								= ByteReader.Type.INT,
+		movement_offset 								= ByteReader.Type.INT,
+		group_size 										= [ByteReader.Type.INT, 2],
+		param_index 									= [ByteReader.Type.INT, 2],
+		param_start 									= [ByteReader.Type.FLOAT, 2],
+		param_end 										= [ByteReader.Type.FLOAT, 2],
+		param_parent 									= ByteReader.Type.INT,
+		fade_in_time 									= ByteReader.Type.FLOAT,
+		fade_out_time 									= ByteReader.Type.FLOAT,
+		local_entry_node 								= ByteReader.Type.INT,
+		local_exit_node 								= ByteReader.Type.INT,
+		node_flags 										= ByteReader.Type.INT,
+		entry_phase 									= ByteReader.Type.FLOAT,
+		exit_phase 										= ByteReader.Type.FLOAT,
+		last_frame 										= ByteReader.Type.FLOAT,
+		next_seq 										= ByteReader.Type.INT,
+		pose 											= ByteReader.Type.INT,
+		ik_rule_count 									= ByteReader.Type.INT,
+		auto_layer_count 								= ByteReader.Type.INT,
+		auto_layer_offset 								= ByteReader.Type.INT,
+		weight_list_offset 								= ByteReader.Type.INT,
+		pose_key_offset 								= ByteReader.Type.INT,
+		ik_lock_count 									= ByteReader.Type.INT,
+		ik_lock_offset 									= ByteReader.Type.INT,
+		key_value_offset 								= ByteReader.Type.INT,
+		key_value_size 									= ByteReader.Type.INT,
+		cycle_pose_index 								= ByteReader.Type.INT,
+		unused 											= [ByteReader.Type.INT, 7],
+	}
+
+	var base_pointer: int;
+	var label_offset: int;
+	var label: String;
+	var activity_name_offset: int;
+	var activity_name: String;
+	var flags: int;
+	var activity: int;
+	var activity_weight: int;
+	var event_count: int;
+	var event_offset: int;
+	var bb_min: Vector3;
+	var bb_max: Vector3;
+	var blend_count: int;
+	var anim_index_offset: int;
+	var movement_offset: int;
+	var group_size: Array[int];
+	var param_index: Array[int];
+	var param_start: Array[float];
+	var param_end: Array[float];
+	var param_parent: int;
+	var fade_in_time: float;
+	var fade_out_time: float;
+	var local_entry_node: int;
+	var local_exit_node: int;
+	var node_flags: int;
+	var entry_phase: float;
+	var exit_phase: float;
+	var last_frame: float;
+	var next_seq: int;
+	var pose: int;
+	var ik_rule_count: int;
+	var auto_layer_count: int;
+	var auto_layer_offset: int;
+	var weight_list_offset: int;
+	var pose_key_offset: int;
+	var ik_lock_count: int;
+	var ik_lock_offset: int;
+	var key_value_offset: int;
+	var key_value_size: int;
+	var cycle_pose_index: int;
+	var unused: Array[int];
+
+	var address: int = 0;
+	var anim_indices: Array[int] = [];
+
+	func _to_string():
+		return ByteReader.get_structure_string("MDLSeqDesc", self, ["label"]);
 #endregion
 
 var header: MDLHeader;
@@ -479,6 +658,15 @@ var materials: Array = [];
 var skin_families: Array = [];
 var source_path: String = "";
 var is_static_prop: bool = false;
+
+## mstudioanimdesc_t entries (header.anim_count / header.anim_offset)
+var anim_descs: Array = [];
+## mstudioseqdesc_t entries (header.local_anim_count / header.local_anim_offset)
+var seq_descs: Array = [];
+## mstudioanimblock_t entries, describing chunks of the external .ani file
+var anim_blocks: Array = [];
+## Relative path of the external .ani file, if the model uses one
+var anim_block_name: String = "";
 
 var model_name:
 	get: return source_path.get_file().split(".")[0];
@@ -495,8 +683,43 @@ func _init(source_path: String):
 	_read_bones();
 	_read_body_parts();
 	_read_skin_families();
+	_read_animations();
 
 	file.close();
+
+func _read_animations():
+	if header.anim_count > 0 and header.anim_offset > 0:
+		anim_descs = ByteReader.read_array(file, header, "anim_offset", "anim_count", MDLAnimDesc);
+
+		for anim_desc in anim_descs:
+			anim_desc.name = ByteReader.read_string(file, anim_desc.address + anim_desc.name_offset);
+
+			if anim_desc.section_frame_count > 0 and anim_desc.section_offset > 0 and anim_desc.frame_count > 0:
+				# Sections cover the whole animation plus one extra entry for the final frame.
+				var section_count = int(anim_desc.frame_count / anim_desc.section_frame_count) + 2;
+				file.seek(anim_desc.address + anim_desc.section_offset);
+
+				for i in range(section_count):
+					anim_desc.sections.append(ByteReader.read_by_structure(file, MDLAnimSection));
+
+	if header.local_anim_count > 0 and header.local_anim_offset > 0:
+		seq_descs = ByteReader.read_array(file, header, "local_anim_offset", "local_anim_count", MDLSeqDesc);
+
+		for seq_desc in seq_descs:
+			seq_desc.label = ByteReader.read_string(file, seq_desc.address + seq_desc.label_offset);
+			seq_desc.activity_name = ByteReader.read_string(file, seq_desc.address + seq_desc.activity_name_offset);
+
+			var blend_count = max(1, seq_desc.group_size[0] * seq_desc.group_size[1]);
+			file.seek(seq_desc.address + seq_desc.anim_index_offset);
+
+			for i in range(blend_count):
+				seq_desc.anim_indices.append(ByteReader._read_data(file, ByteReader.Type.SHORT));
+
+	if header.anim_block_count > 0 and header.anim_block_index > 0:
+		anim_blocks = ByteReader.read_array(file, header, "anim_block_index", "anim_block_count", MDLAnimBlock);
+
+	if header.anim_block_name_index > 0:
+		anim_block_name = ByteReader.read_string(file, header.anim_block_name_index);
 
 func _read_skin_families():
 	file.seek(header.skin_offset);
