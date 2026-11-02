@@ -42,6 +42,7 @@ const TYPE_DICTIONARY = {
 };
 
 var script_hashes = {};
+var poll_timer: Timer;
 
 func get_aliases_scripts():
 	return VMFConfig.import.entity_aliases.values() \
@@ -95,10 +96,20 @@ func recompose_fgd(resources = null):
 
 func _enter_tree():
 	get_editor_interface().get_resource_filesystem().sources_changed.connect(recompose_fgd);
+
+	# Script saves don't emit any editor signal that we can rely on, so poll the
+	# script hashes; recompose_fgd() only writes when a script actually changed.
+	poll_timer = Timer.new();
+	poll_timer.wait_time = 1.0;
+	poll_timer.timeout.connect(recompose_fgd);
+	add_child(poll_timer);
+	poll_timer.start();
+
 	recompose_fgd();
 
 func _exit_tree():
 	get_editor_interface().get_resource_filesystem().sources_changed.disconnect(recompose_fgd);
+	poll_timer.queue_free();
 
 func get_flags(script: Script):
 	var index = 0;
@@ -127,6 +138,7 @@ func get_flags(script: Script):
 	return "\n".join(flags);
 
 func get_inputs(script: Script):
+	var inputs_processed := [];
 	var inputs = script.get_script_method_list() \
 	.filter(func(method):
 		var is_pascal_cased = method.name == method.name.to_pascal_case();
@@ -135,13 +147,18 @@ func get_inputs(script: Script):
 		return get_prop_decorators(script, method.name).has("exposed")
 	) \
 	.map(func(method):
-		var type = method.args[0].name if method.args.size() > 0 else "void";
+		var decorators = get_prop_decorators(script, method.name);
+		var type = decorators.get(
+			"type",
+			method.args[0].name if method.args.size() > 0 else "void"
+		);
 		if type.begins_with("_"): type = "void";
 
-		var decorators = get_prop_decorators(script, method.name);
 		var name = decorators.get("exposed", "");
 		name = name if name != "" else method.name;
 		name = name.replace("_", " ").capitalize().replace(" ", "");
+		if inputs_processed.has(name): return "";
+		inputs_processed.append(name);
 
 		return INPUT_TEMPLATE.format({
 			"input_name": name,
@@ -151,9 +168,12 @@ func get_inputs(script: Script):
 	return "\n".join(inputs);
 
 func get_outputs(script: Script):
+	var outputs_processed := [];
 	var outputs = script.get_script_signal_list().map(func(sig):
 		var type = sig.args[0].name if sig.args.size() > 0 else "void";
 		if type.begins_with("_"): type = "void";
+		if outputs_processed.has(sig.name): return "";
+		outputs_processed.append(sig.name);
 
 		return SIGNAL_TEMPLATE.format({
 			"signal_name": sig.name,
